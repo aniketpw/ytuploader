@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-[#f8fafc] text-slate-800">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video Upload Tracker Portal</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f8fafc;
+      color: #1e293b;
+    }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  </style>
+</head>
+<body class="min-h-full flex flex-col antialiased bg-[#f8fafc]">
+
+  <!-- 1. Top Enterprise Header -->
+  <header class="border-b border-slate-200 bg-white sticky top-0 z-50 shadow-2xs">
+    <div class="max-w-[1550px] mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-[#5046e5] flex items-center justify-center text-white shadow-2xs">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/>
+          </svg>
+        </div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-sm font-bold text-slate-900 tracking-tight">Drive ➔ YouTube Video Portal</h1>
+          <span class="text-[10px] px-2 py-0.5 rounded font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 uppercase tracking-wider">Unlisted Engine</span>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2.5">
+        <!-- Auth Status -->
+        <div id="authStatusContainer">
+          <a id="navAuthBtn" href="/auth/google" class="inline-flex items-center gap-1.5 px-3 h-8 rounded text-xs font-semibold bg-[#5046e5] hover:bg-[#4338ca] text-white transition-colors shadow-2xs">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M12.24 10.285V14.4h6.806c-.275 1.765-2.056 5.174-6.806 5.174-4.095 0-7.439-3.389-7.439-7.574s3.345-7.574 7.439-7.574c2.33 0 3.891.989 4.785 1.849l3.254-3.138C18.189 1.186 15.479 0 12.24 0c-6.635 0-12 5.365-12 12s5.365 12 12 12c6.926 0 11.52-4.869 11.52-11.726 0-.788-.085-1.39-.189-1.989H12.24z"/></svg>
+            <span>Connect Google</span>
+          </a>
+          <div id="navConnectedBadge" class="hidden items-center gap-1.5 px-3 h-8 rounded text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-300">
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span>Google Connected</span>
+          </div>
+        </div>
+
+        <a href="https://www.youtube.com/verify" target="_blank" rel="noopener noreferrer" class="hidden sm:inline-flex items-center gap-1.5 px-3 h-8 rounded text-xs font-medium text-amber-800 bg-amber-50 border border-amber-300 hover:bg-amber-100 transition-colors shadow-2xs" title="Unlock >15min video upload limits">
+          <svg class="w-3.5 h-3.5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+          <span>Verify Channel (&gt;15 min)</span>
+        </a>
+
+        <div id="connectionBadge" class="flex items-center gap-1.5 px-3 h-8 rounded text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
+          <span class="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
+          <span>Connecting SSE...</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Background Notice Banner -->
+  <div id="bgNoticeBanner" class="hidden bg-indigo-50 border-b border-indigo-200 px-4 py-2 text-indigo-900 text-xs">
+    <div class="max-w-[1550px] mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+        <span><strong>Background Pipeline Active:</strong> Videos are streaming automatically on the server. Safe to refresh or close tab anytime.</span>
+      </div>
+      <button id="cancelJobBtn" class="px-2.5 py-0.5 rounded bg-rose-100 text-rose-700 border border-rose-300 font-semibold hover:bg-rose-200 text-xs transition-colors cursor-pointer">
+        Cancel Upload
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Content Container -->
+  <main class="flex-1 max-w-[1550px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-4">
+
+    <!-- 2. Metrics Filter Pills Row -->
+    <div class="flex items-center gap-2.5 overflow-x-auto pb-1 text-xs select-none">
+      <span class="font-bold text-slate-800 text-sm whitespace-nowrap mr-1">Videos</span>
+
+      <!-- 1. Total Pill -->
+      <button
+        type="button"
+        id="filterPillAll"
+        onclick="setTableFilter('all')"
+        class="inline-flex items-center h-8 px-4 rounded border border-slate-900 bg-slate-900 text-white font-bold shadow-xs whitespace-nowrap cursor-pointer transition-all"
+        title="Click to view all videos"
+      >
+        Total - <span id="metricTotal" class="ml-1 font-bold">0</span>
+      </button>
+
+      <!-- 2. Uploaded Pill -->
+      <button
+        type="button"
+        id="filterPillCompleted"
+        onclick="setTableFilter('completed')"
+        class="inline-flex items-center h-8 px-4 rounded border border-emerald-500 bg-white text-emerald-600 font-semibold shadow-2xs whitespace-nowrap cursor-pointer hover:bg-emerald-50 transition-all"
+        title="Click to view uploaded videos only"
+      >
+        Uploaded - <span id="metricUploaded" class="ml-1">0 (0.00%)</span>
+      </button>
+
+      <!-- 3. In Progress Pill -->
+      <button
+        type="button"
+        id="filterPillPending"
+        onclick="setTableFilter('pending')"
+        class="inline-flex items-center h-8 px-4 rounded border border-indigo-400 bg-white text-indigo-600 font-semibold shadow-2xs whitespace-nowrap cursor-pointer hover:bg-indigo-50 transition-all"
+        title="Click to view in-progress videos only"
+      >
+        In Progress - <span id="metricPending" class="ml-1">0 (0.00%)</span>
+      </button>
+
+      <!-- 4. Playlist Pill Badge -->
+      <a
+        id="playlistPill"
+        href="#"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="hidden items-center h-8 px-3.5 rounded border border-[#5046e5] bg-indigo-50 hover:bg-indigo-100 font-bold text-[#5046e5] shadow-2xs whitespace-nowrap gap-1.5 transition-colors cursor-pointer"
+        title="Click to open full YouTube Playlist"
+      >
+        <svg class="w-3.5 h-3.5 text-[#5046e5]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/></svg>
+        <span>Playlist: <span id="playlistPillTitle" class="underline">View Playlist</span> ↗</span>
+      </a>
+
+      <!-- 5. Failed Pill -->
+      <button
+        type="button"
+        id="filterPillFailed"
+        onclick="setTableFilter('failed')"
+        class="hidden inline-flex items-center h-8 px-4 rounded border border-rose-400 bg-white font-semibold text-rose-600 shadow-2xs whitespace-nowrap cursor-pointer hover:bg-rose-50 transition-all"
+        title="Click to view failed videos only"
+      >
+        Failed - <span id="metricFailed" class="ml-1">0</span>
+      </button>
+
+      <!-- 6. Privacy Pill -->
+      <div class="inline-flex items-center h-8 px-4 rounded border border-slate-300 bg-white font-semibold text-slate-700 shadow-2xs whitespace-nowrap">
+        Privacy - <span class="ml-1 font-bold text-slate-900">Unlisted (100.00%)</span>
+      </div>
+    </div>
+
+    <!-- 3. Inputs & Controls Row (Clean & Direct with Interactive Date Range) -->
+    <div class="bg-white p-3.5 rounded-lg border border-slate-200 shadow-2xs">
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+        
+        <!-- Drive Folder Link (Clean on Load) -->
+        <div class="md:col-span-4 flex flex-col">
+          <label class="text-[11px] font-semibold text-slate-700 mb-1.5">Google Drive Folder Link / ID (Recursive subfolders auto-scanned)</label>
+          <div class="relative flex items-center">
+            <input
+              type="text"
+              id="folderInput"
+              placeholder="Paste Drive Folder Link (e.g. 27-LNE51MP 2026)..."
+              class="w-full h-9 pl-3 pr-8 text-xs bg-white border border-slate-300 rounded text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#5046e5] focus:ring-1 focus:ring-[#5046e5]"
+            />
+            <button type="button" onclick="pasteFromClipboard()" class="absolute right-2 text-slate-400 hover:text-[#5046e5] p-1 cursor-pointer" title="Paste from clipboard">
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Custom Playlist Name (Clean on Load) -->
+        <div class="md:col-span-2 flex flex-col">
+          <label class="text-[11px] font-semibold text-slate-700 mb-1.5">Playlist Name (Optional)</label>
+          <input
+            type="text"
+            id="playlistNameInput"
+            placeholder="e.g. 27-LNE51MP"
+            class="w-full h-9 px-3 text-xs bg-white border border-slate-300 rounded text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#5046e5] focus:ring-1 focus:ring-[#5046e5]"
+          />
+        </div>
+
+        <!-- Interactive Date Range Selector -->
+        <div class="md:col-span-3 flex flex-col">
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="text-[11px] font-semibold text-slate-700">Filter Date Range</label>
+            <div class="flex items-center gap-1 text-[10px]">
+              <button type="button" onclick="setDatePreset('today')" class="text-[#5046e5] font-semibold hover:underline cursor-pointer">Today</button>
+              <span class="text-slate-300">|</span>
+              <button type="button" onclick="setDatePreset('yesterday')" class="text-slate-600 hover:text-[#5046e5] cursor-pointer">Yesterday</button>
+              <span class="text-slate-300">|</span>
+              <button type="button" onclick="setDatePreset('all')" class="text-slate-600 hover:text-[#5046e5] cursor-pointer">All Time</button>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <input
+              type="date"
+              id="startDateInput"
+              class="w-1/2 h-9 px-2 text-xs bg-white border border-slate-300 rounded text-slate-900 focus:outline-none focus:border-[#5046e5] focus:ring-1 focus:ring-[#5046e5] cursor-pointer"
+              title="From Date"
+            />
+            <span class="text-slate-400 text-xs font-bold">–</span>
+            <input
+              type="date"
+              id="endDateInput"
+              class="w-1/2 h-9 px-2 text-xs bg-white border border-slate-300 rounded text-slate-900 focus:outline-none focus:border-[#5046e5] focus:ring-1 focus:ring-[#5046e5] cursor-pointer"
+              title="To Date"
+            />
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="md:col-span-3 flex items-center gap-2">
+          <button
+            type="button"
+            id="startButton"
+            class="flex-1 h-9 px-4 bg-[#5046e5] hover:bg-[#4338ca] text-white text-xs font-semibold rounded shadow-2xs transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
+          >
+            <svg id="startIcon" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1555.832l3.197-2.132a1 1 0 000-1.664z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span id="buttonText">Start Process</span>
+          </button>
+
+          <button
+            type="button"
+            id="downloadCsvBtn"
+            class="h-9 px-3.5 bg-[#5046e5] hover:bg-[#4338ca] text-white text-xs font-semibold rounded shadow-2xs transition-colors whitespace-nowrap flex items-center gap-1.5 cursor-pointer"
+            title="Download uploaded links as CSV"
+          >
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+            <span>Download CSV</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 4. Clean Enterprise Table -->
+    <div class="bg-white border border-slate-200 rounded-lg shadow-2xs overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs border-collapse">
+          <thead class="bg-slate-50 text-slate-700 border-b border-slate-200 font-bold tracking-tight">
+            <tr>
+              <th scope="col" class="py-3 px-3 w-12 text-center border-r border-slate-200">#</th>
+              <th scope="col" class="py-3 px-4 min-w-[340px] border-r border-slate-200">
+                File Name &amp; Batch
+                <span class="block text-[10px] text-slate-400 font-normal lowercase">(click ✏️ to edit title live)</span>
+              </th>
+              <th scope="col" class="py-3 px-4 w-28 border-r border-slate-200 text-center">Date</th>
+              <th scope="col" class="py-3 px-4 w-36 border-r border-slate-200">File Type</th>
+              <th scope="col" class="py-3 px-4 w-80 border-r border-slate-200">
+                Upload Status
+                <span class="block text-[10px] text-slate-400 font-normal lowercase">(live progress &amp; speed)</span>
+              </th>
+              <th scope="col" class="py-3 px-4 w-36 text-center">Action</th>
+            </tr>
+          </thead>
+          <tbody id="trackingTableBody" class="divide-y divide-slate-200 bg-white">
+            <tr id="emptyRow" class="text-slate-400">
+              <td colspan="6" class="py-16 text-center">
+                <div class="flex flex-col items-center justify-center gap-2">
+                  <svg class="w-8 h-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                  <p class="text-xs font-semibold text-slate-500">No videos in queue. Paste Google Drive folder link above and click "Start Process".</p>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- 5. Interactive Video Player Modal -->
+  <div id="videoModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl max-w-3xl w-full overflow-hidden shadow-2xl border border-slate-200">
+      <div class="px-4 py-3 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+        <div class="flex items-center gap-2 truncate pr-4">
+          <span class="p-1 rounded bg-indigo-50 text-[#5046e5]">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M4 6.47v11.06c0 .8.88 1.28 1.54.84l8.29-5.53c.61-.41.61-1.27 0-1.68L5.54 5.63C4.88 5.19 4 5.67 4 6.47z"/></svg>
+          </span>
+          <h3 id="modalVideoTitle" class="text-sm font-bold text-slate-900 truncate">Video Preview</h3>
+        </div>
+        <button onclick="closeVideoModal()" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="relative bg-black aspect-video w-full">
+        <iframe id="modalIframe" class="w-full h-full" src="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+      </div>
+      <div class="p-4 bg-white flex items-center justify-between flex-wrap gap-2 text-xs">
+        <div class="flex items-center gap-2">
+          <span id="modalBatchTag" class="px-2 py-0.5 rounded bg-indigo-50 text-[#5046e5] font-semibold border border-indigo-200">Batch</span>
+          <span id="modalSubjectTag" class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-semibold border border-slate-200">Subject</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="modalCopyBtn" onclick="copyModalEmbedLink()" class="px-3 py-1.5 rounded bg-[#5046e5] hover:bg-[#4338ca] text-white font-semibold shadow-2xs transition-colors flex items-center gap-1.5 cursor-pointer">
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+            <span>Copy Embed Link</span>
+          </button>
+          <a id="modalYtLink" href="#" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold border border-slate-300 transition-colors">
+            Open Watch URL ↗
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification Toast -->
+  <div id="toast" class="fixed bottom-5 right-5 transform transition-all duration-300 translate-y-20 opacity-0 bg-slate-900 text-white px-4 py-2.5 rounded shadow-xl flex items-center gap-2.5 z-50 text-xs font-medium">
+    <div id="toastIcon"></div>
+    <div id="toastMessage"></div>
+  </div>
+
+  <script>
+    let clientId = 'client_' + (Date.now ? Date.now() : new Date().getTime()) + '_' + Math.random().toString(36).substr(2, 6);
+    let eventSource = null;
+    let currentState = null;
+    let currentFilter = 'all'; // 'all' | 'completed' | 'pending' | 'failed'
+
+    const connectionBadge = document.getElementById('connectionBadge');
+    const navAuthBtn = document.getElementById('navAuthBtn');
+    const navConnectedBadge = document.getElementById('navConnectedBadge');
+    const bgNoticeBanner = document.getElementById('bgNoticeBanner');
+    const cancelJobBtn = document.getElementById('cancelJobBtn');
+    const folderInput = document.getElementById('folderInput');
+    const playlistNameInput = document.getElementById('playlistNameInput');
+    const playlistPill = document.getElementById('playlistPill');
+    const playlistPillTitle = document.getElementById('playlistPillTitle');
+    const startDateInput = document.getElementById('startDateInput');
+    const endDateInput = document.getElementById('endDateInput');
+    const startButton = document.getElementById('startButton');
+    const buttonText = document.getElementById('buttonText');
+    const downloadCsvBtn = document.getElementById('downloadCsvBtn');
+    const trackingTableBody = document.getElementById('trackingTableBody');
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toastMessage');
+    const toastIcon = document.getElementById('toastIcon');
+
+    // Filter pill buttons
+    const filterPillAll = document.getElementById('filterPillAll');
+    const filterPillCompleted = document.getElementById('filterPillCompleted');
+    const filterPillPending = document.getElementById('filterPillPending');
+    const filterPillFailed = document.getElementById('filterPillFailed');
+
+    // Modal elements
+    const videoModal = document.getElementById('videoModal');
+    const modalIframe = document.getElementById('modalIframe');
+    const modalVideoTitle = document.getElementById('modalVideoTitle');
+    const modalBatchTag = document.getElementById('modalBatchTag');
+    const modalSubjectTag = document.getElementById('modalSubjectTag');
+    const modalYtLink = document.getElementById('modalYtLink');
+    let currentModalEmbedLink = '';
+
+    // Date Presets Function
+    function formatDateToYMD(d) {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    window.setDatePreset = function(preset) {
+      const now = new Date();
+      if (preset === 'today') {
+        const todayStr = formatDateToYMD(now);
+        startDateInput.value = todayStr;
+        endDateInput.value = todayStr;
+        showToast('Date set to Today', 'info');
+      } else if (preset === 'yesterday') {
+        const yest = new Date(now);
+        yest.setDate(yest.getDate() - 1);
+        const yestStr = formatDateToYMD(yest);
+        startDateInput.value = yestStr;
+        endDateInput.value = yestStr;
+        showToast('Date set to Yesterday', 'info');
+      } else if (preset === 'all') {
+        startDateInput.value = '2020-01-01';
+        endDateInput.value = formatDateToYMD(now);
+        showToast('Date range set to All Time', 'info');
+      }
+    };
+
+    // Set Table Filter Function
+    window.setTableFilter = function(filter) {
+      currentFilter = filter;
+      updateFilterPillsUI();
+      renderFilteredTable();
+    };
+
+    function updateFilterPillsUI() {
+      filterPillAll.className = "inline-flex items-center h-8 px-4 rounded border border-slate-300 bg-white text-slate-800 font-semibold shadow-2xs whitespace-nowrap cursor-pointer hover:bg-slate-50 transition-all";
+      filterPillCompleted.className = "inline-flex items-center h-8 px-4 rounded border border-emerald-500 bg-white text-emerald-600 font-semibold shadow-2xs whitespace-nowrap cursor-pointer hover:bg-emerald-50 transition-all";
+      filterPillPending.className = "inline-flex items-center h-8 px-4 rounded border border-indigo-400 bg-white text-indigo-600 font-semibold shadow-2xs whitespace-nowrap cursor-pointer hover:bg-indigo-50 transition-all";
+      filterPillFailed.className = "inline-flex items-center h-8 px-4 rounded border border-rose-400 bg-white text-rose-600 font-semibold shadow-2xs whitespace-nowrap cursor-pointer hover:bg-rose-50 transition-all";
+
+      if (currentFilter === 'all') {
+        filterPillAll.className = "inline-flex items-center h-8 px-4 rounded border border-slate-900 bg-slate-900 text-white font-bold shadow-xs whitespace-nowrap cursor-pointer transition-all";
+      } else if (currentFilter === 'completed') {
+        filterPillCompleted.className = "inline-flex items-center h-8 px-4 rounded border border-emerald-600 bg-emerald-600 text-white font-bold shadow-xs whitespace-nowrap cursor-pointer transition-all";
+      } else if (currentFilter === 'pending') {
+        filterPillPending.className = "inline-flex items-center h-8 px-4 rounded border border-[#5046e5] bg-[#5046e5] text-white font-bold shadow-xs whitespace-nowrap cursor-pointer transition-all";
+      } else if (currentFilter === 'failed') {
+        filterPillFailed.className = "inline-flex items-center h-8 px-4 rounded border border-rose-600 bg-rose-600 text-white font-bold shadow-xs whitespace-nowrap cursor-pointer transition-all";
+      }
+    }
+
+    function pasteFromClipboard() {
+      navigator.clipboard.readText().then(text => {
+        if (text) {
+          folderInput.value = text;
+          showToast('Pasted from clipboard', 'info');
+        }
+      }).catch(() => {
+        showToast('Please paste manually', 'error');
+      });
+    }
+
+    function formatBytes(bytes, decimals = 2) {
+      if (!bytes || bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const dm = decimals < 0 ? 0 : decimals;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function showToast(message, type = 'info') {
+      toastMessage.textContent = message;
+      if (type === 'success') {
+        toastIcon.innerHTML = `<svg class="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>`;
+      } else if (type === 'error') {
+        toastIcon.innerHTML = `<svg class="w-4 h-4 text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>`;
+      } else {
+        toastIcon.innerHTML = `<svg class="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`;
+      }
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+      setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 4000);
+    }
+
+    function updateStats(stats) {
+      if (!stats) return;
+      const total = stats.total || 0;
+      const completed = stats.completed || 0;
+      const pending = stats.pending || 0;
+      const failed = stats.failed || 0;
+
+      const completedPct = total > 0 ? ((completed / total) * 100).toFixed(2) : '0.00';
+      const pendingPct = total > 0 ? ((pending / total) * 100).toFixed(2) : '0.00';
+
+      document.getElementById('metricTotal').textContent = total;
+      document.getElementById('metricUploaded').textContent = `${completed} (${completedPct}%)`;
+      document.getElementById('metricPending').textContent = `${pending} (${pendingPct}%)`;
+
+      if (failed > 0) {
+        filterPillFailed.classList.remove('hidden');
+        document.getElementById('metricFailed').textContent = failed;
+      } else {
+        filterPillFailed.classList.add('hidden');
+      }
+    }
+
+    async function checkAuthStatus() {
+      try {
+        const res = await fetch('/api/auth-status');
+        const data = await res.json();
+        if (data.configured) {
+          navAuthBtn.classList.add('hidden');
+          navConnectedBadge.classList.remove('hidden');
+          navConnectedBadge.classList.add('inline-flex');
+        } else {
+          navAuthBtn.classList.remove('hidden');
+          navConnectedBadge.classList.add('hidden');
+          navConnectedBadge.classList.remove('inline-flex');
+        }
+      } catch (e) {
+        console.error('Failed to check auth status:', e);
+      }
+    }
+
+    function checkUrlParams() {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('auth') === 'success') {
+        showToast('Google Account authorized successfully!', 'success');
+        window.history.replaceState({}, document.title, window.location.pathname);
+        checkAuthStatus();
+      }
+    }
+
+    // Modal Video Preview
+    window.openVideoModal = function(videoId, title, batch, subject) {
+      if (!videoId) return;
+      currentModalEmbedLink = `https://www.youtube.com/embed/${videoId}`;
+      modalIframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+      modalVideoTitle.textContent = title;
+      modalBatchTag.textContent = batch || 'Batch';
+      modalSubjectTag.textContent = subject || 'Subject';
+      modalYtLink.href = `https://www.youtube.com/watch?v=${videoId}`;
+      videoModal.classList.remove('hidden');
+    };
+
+    window.closeVideoModal = function() {
+      modalIframe.src = '';
+      videoModal.classList.add('hidden');
+    };
+
+    window.copyModalEmbedLink = function() {
+      if (currentModalEmbedLink) {
+        copyToClipboard(currentModalEmbedLink, 'Embed Link');
+      }
+    };
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !videoModal.classList.contains('hidden')) {
+        closeVideoModal();
+      }
+    });
+
+    window.startEditTitle = function(fileId) {
+      const titleTextEl = document.getElementById(`title-text-${fileId}`);
+      const titleEditForm = document.getElementById(`title-edit-${fileId}`);
+      const editInput = document.getElementById(`edit-input-${fileId}`);
+
+      if (titleTextEl && titleEditForm && editInput) {
+        titleTextEl.classList.add('hidden');
+        titleEditForm.classList.remove('hidden');
+        editInput.focus();
+        editInput.select();
+      }
+    };
+
+    window.cancelEditTitle = function(fileId) {
+      const titleTextEl = document.getElementById(`title-text-${fileId}`);
+      const titleEditForm = document.getElementById(`title-edit-${fileId}`);
+      if (titleTextEl && titleEditForm) {
+        titleTextEl.classList.remove('hidden');
+        titleEditForm.classList.add('hidden');
+      }
+    };
+
+    window.saveTitle = async function(fileId) {
+      const editInput = document.getElementById(`edit-input-${fileId}`);
+      if (!editInput) return;
+      const newTitle = editInput.value.trim();
+      if (!newTitle) return;
+
+      showToast('Updating title on YouTube...', 'info');
+
+      try {
+        const res = await fetch('/api/update-title', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileId, newTitle })
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || 'Failed to update title');
+        }
+
+        showToast('Title updated successfully on YouTube!', 'success');
+        cancelEditTitle(fileId);
+        loadJobStatus();
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    };
+
+    window.copyToClipboard = function(text, label = 'Embed Link') {
+      if (!text) return;
+      navigator.clipboard.writeText(text).then(() => {
+        showToast(`✔ Copied ${label}: ${text}`, 'success');
+      }).catch(() => {
+        showToast('Failed to copy', 'error');
+      });
+    };
+
+    function renderFilteredTable() {
+      if (!currentState || !currentState.files || currentState.files.length === 0) {
+        trackingTableBody.innerHTML = `
+          <tr id="emptyRow" class="text-slate-400">
+            <td colspan="6" class="py-16 text-center">
+              <div class="flex flex-col items-center justify-center gap-2">
+                <svg class="w-8 h-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                <p class="text-xs font-semibold text-slate-500">No videos in queue. Paste Google Drive folder link above and click "Start Process".</p>
+              </div>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      let filteredFiles = currentState.files;
+      if (currentFilter === 'completed') {
+        filteredFiles = currentState.files.filter(f => f.status === 'completed');
+      } else if (currentFilter === 'pending') {
+        filteredFiles = currentState.files.filter(f => f.status === 'uploading' || f.status === 'queued');
+      } else if (currentFilter === 'failed') {
+        filteredFiles = currentState.files.filter(f => f.status === 'failed');
+      }
+
+      if (filteredFiles.length === 0) {
+        trackingTableBody.innerHTML = `
+          <tr class="text-slate-400">
+            <td colspan="6" class="py-12 text-center text-xs font-medium text-slate-500">
+              No videos matching "${currentFilter}" filter.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      trackingTableBody.innerHTML = '';
+      filteredFiles.forEach((file, index) => {
+        const row = document.createElement('tr');
+        row.id = `file-row-${file.id}`;
+        row.className = 'hover:bg-slate-50/80 transition-colors text-slate-800 border-b border-slate-200';
+
+        const displayTitle = file.customTitle || file.name || file.originalName || 'Lecture Video';
+        const extMatch = (file.originalName || file.name || '').match(/\.([0-9a-z]+)$/i);
+        const ext = extMatch ? extMatch[1].toUpperCase() : 'VIDEO';
+        const embedUrl = file.videoId ? `https://www.youtube.com/embed/${file.videoId}` : '';
+
+        let statusHtml = '';
+        if (file.status === 'completed') {
+          const thumb = file.thumbnailUrl || (file.videoId ? `https://img.youtube.com/vi/${file.videoId}/mqdefault.jpg` : 'https://placehold.co/100x60?text=Preview');
+          statusHtml = `
+            <div class="flex items-center gap-3">
+              <button onclick="openVideoModal('${file.videoId}', '${escapeHtml(displayTitle)}', '${escapeHtml(file.batch)}', '${escapeHtml(file.subject)}')" class="relative group w-16 h-10 rounded border border-slate-200 overflow-hidden shadow-2xs flex-shrink-0 bg-slate-900 cursor-pointer" title="Click to preview lecture">
+                <img src="${thumb}" alt="Preview" class="w-full h-full object-cover group-hover:opacity-80 transition-opacity" onerror="this.src='https://placehold.co/100x60?text=Preview'"/>
+                <div class="absolute inset-0 flex items-center justify-center">
+                  <span class="w-4 h-4 rounded-full bg-black/60 group-hover:bg-[#5046e5] text-white flex items-center justify-center text-[8px] transition-colors">▶</span>
+                </div>
+              </button>
+              <div class="space-y-0.5">
+                <div class="flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
+                  <span class="font-bold text-emerald-700 text-xs">Uploaded (100%)</span>
+                </div>
+                <div class="text-[10px] text-slate-500 font-mono">Stream Completed</div>
+              </div>
+            </div>
+          `;
+        } else if (file.status === 'uploading') {
+          const speedText = file.speedMBps ? `${file.speedMBps} MB/s` : 'Streaming...';
+          const etaText = file.etaSeconds ? `${file.etaSeconds}s left` : '';
+          statusHtml = `
+            <div class="space-y-1.5 max-w-[280px]">
+              <div class="flex items-center justify-between text-xs font-semibold">
+                <span class="text-[#5046e5] flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-[#5046e5] animate-ping"></span>
+                  <span>Uploading ${file.percentage || 0}%</span>
+                </span>
+                <span class="font-mono text-slate-500 text-[10px]" id="progress-bytes-${file.id}">
+                  ${formatBytes(file.uploadedBytes || 0)} / ${formatBytes(file.totalBytes || file.size)}
+                </span>
+              </div>
+              <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden border border-slate-200">
+                <div id="progress-bar-${file.id}" class="bg-[#5046e5] h-full rounded-full transition-all duration-150" style="width: ${file.percentage || 0}%"></div>
+              </div>
+              <div class="flex items-center justify-between text-[10px] text-slate-500 font-mono">
+                <span id="speed-${file.id}">⚡ ${speedText}</span>
+                <span id="eta-${file.id}">${etaText}</span>
+              </div>
+            </div>
+          `;
+        } else if (file.status === 'failed') {
+          statusHtml = `
+            <div class="space-y-0.5">
+              <div class="flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-rose-500 inline-block"></span>
+                <span class="font-bold text-rose-600 text-xs">Failed</span>
+              </div>
+              <div class="text-[10px] text-rose-500 font-mono truncate max-w-[240px]" title="${escapeHtml(file.error)}">${escapeHtml(file.error)}</div>
+            </div>
+          `;
+        } else {
+          statusHtml = `
+            <div class="flex items-center gap-1.5 text-slate-500">
+              <span class="w-2 h-2 rounded-full bg-slate-300 inline-block"></span>
+              <span class="font-medium text-slate-600 text-xs">Queued</span>
+            </div>
+          `;
+        }
+
+        let actionHtml = '';
+        if (embedUrl) {
+          actionHtml = `
+            <div class="flex items-center justify-center gap-1.5">
+              <a href="${embedUrl}" target="_blank" rel="noopener noreferrer" class="w-8 h-8 rounded border border-indigo-200 bg-white hover:bg-indigo-50 text-[#5046e5] flex items-center justify-center transition-colors shadow-2xs cursor-pointer" title="Open YouTube Embed URL">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                </svg>
+              </a>
+              <button onclick="copyToClipboard('${embedUrl}', 'Embed Link')" class="w-8 h-8 rounded border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 flex items-center justify-center transition-colors shadow-2xs cursor-pointer" title="Copy Embed URL">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                </svg>
+              </button>
+              <a href="${file.studioUrl || 'https://studio.youtube.com/video/' + file.videoId + '/edit'}" target="_blank" rel="noopener noreferrer" class="w-8 h-8 rounded border border-slate-200 bg-white hover:bg-amber-50 text-slate-600 hover:text-amber-700 flex items-center justify-center transition-colors shadow-2xs cursor-pointer" title="Open in YouTube Studio">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                </svg>
+              </a>
+            </div>
+          `;
+        } else {
+          actionHtml = `<span class="text-[11px] text-slate-400 font-medium italic">Pending</span>`;
+        }
+
+        const fileDate = file.createdTime ? new Date(file.createdTime).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB');
+
+        row.innerHTML = `
+          <td class="py-3 px-3 text-center font-mono text-slate-400 border-r border-slate-200">${index + 1}</td>
+          <td class="py-3 px-4 border-r border-slate-200">
+            <div id="title-text-${file.id}" class="space-y-1">
+              <div class="flex items-center gap-1.5 group">
+                <span class="font-bold text-slate-900 text-xs leading-snug" title="${escapeHtml(displayTitle)}">
+                  ${escapeHtml(displayTitle)}
+                </span>
+                <button onclick="startEditTitle('${file.id}')" class="opacity-0 group-hover:opacity-100 p-0.5 text-[#5046e5] hover:bg-indigo-50 rounded transition-all cursor-pointer" title="Edit Title Live">
+                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                  </svg>
+                </button>
+              </div>
+
+              <div class="flex items-center flex-wrap gap-1.5 pt-0.5">
+                <button onclick="copyToClipboard('${escapeHtml(displayTitle)}', 'Title')" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-500 hover:bg-blue-600 text-white text-[10px] font-mono font-medium shadow-2xs cursor-pointer">
+                  <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                  <span>Copy Title</span>
+                </button>
+                <span class="px-2 py-0.5 rounded bg-indigo-50 text-[#5046e5] font-semibold border border-indigo-200 text-[10px]">
+                  ${escapeHtml(file.batch || 'Batch')}
+                </span>
+                <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-semibold border border-slate-200 text-[10px]">
+                  ${escapeHtml(file.subject || 'Lecture')}
+                </span>
+              </div>
+            </div>
+
+            <!-- Inline Edit Form -->
+            <div id="title-edit-${file.id}" class="hidden flex items-center gap-1.5 mt-1">
+              <input
+                type="text"
+                id="edit-input-${file.id}"
+                value="${escapeHtml(displayTitle)}"
+                class="px-2 py-1 text-xs bg-white border border-[#5046e5] rounded text-slate-900 focus:outline-none w-60"
+                onkeydown="if(event.key==='Enter') saveTitle('${file.id}'); else if(event.key==='Escape') cancelEditTitle('${file.id}');"
+              />
+              <button onclick="saveTitle('${file.id}')" class="px-2 py-1 bg-[#5046e5] hover:bg-[#4338ca] text-white rounded text-xs font-semibold cursor-pointer">Save</button>
+              <button onclick="cancelEditTitle('${file.id}')" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded text-xs cursor-pointer">Cancel</button>
+            </div>
+          </td>
+          <td class="py-3 px-4 text-center font-mono text-slate-600 border-r border-slate-200 text-xs">
+            ${fileDate}
+          </td>
+          <td class="py-3 px-4 border-r border-slate-200">
+            <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-slate-100 text-slate-800 text-[11px] font-semibold border border-slate-200">
+              <svg class="w-3.5 h-3.5 text-[#5046e5]" fill="currentColor" viewBox="0 0 24 24"><path d="M4 6.47v11.06c0 .8.88 1.28 1.54.84l8.29-5.53c.61-.41.61-1.27 0-1.68L5.54 5.63C4.88 5.19 4 5.67 4 6.47z"/></svg>
+              <span>Video</span>
+            </div>
+            <div class="text-[11px] text-slate-500 font-mono mt-0.5">${formatBytes(file.size || file.totalBytes)} (${ext})</div>
+          </td>
+          <td class="py-3 px-4 border-r border-slate-200" id="status-cell-${file.id}">
+            ${statusHtml}
+          </td>
+          <td class="py-3 px-4 text-center" id="action-cell-${file.id}">
+            ${actionHtml}
+          </td>
+        `;
+        trackingTableBody.appendChild(row);
+      });
+    }
+
+    function renderState(state) {
+      if (!state) return;
+      currentState = state;
+
+      // Ensure inputs stay clean for fresh input
+      if (state.playlistUrl) {
+        playlistPill.classList.remove('hidden');
+        playlistPill.classList.add('inline-flex');
+        playlistPill.href = state.playlistUrl;
+        playlistPillTitle.textContent = state.playlistTitle || 'View Playlist';
+      } else {
+        playlistPill.classList.add('hidden');
+        playlistPill.classList.remove('inline-flex');
+      }
+
+      updateStats(state.stats);
+
+      const isRunning = state.status === 'processing' || state.status === 'scanning';
+      if (isRunning) {
+        bgNoticeBanner.classList.remove('hidden');
+        startButton.disabled = true;
+        buttonText.textContent = state.status === 'scanning' ? 'Scanning...' : 'Streaming...';
+        document.getElementById('startIcon').classList.add('animate-spin');
+      } else {
+        bgNoticeBanner.classList.add('hidden');
+        startButton.disabled = false;
+        buttonText.textContent = 'Start Process';
+        document.getElementById('startIcon').classList.remove('animate-spin');
+      }
+
+      renderFilteredTable();
+    }
+
+    async function loadJobStatus() {
+      try {
+        const res = await fetch('/api/job-status?t=' + Date.now());
+        const data = await res.json();
+        if (data.success && data.state) {
+          renderState(data.state);
+        }
+      } catch (err) {
+        console.error('Failed to load job status:', err);
+      }
+    }
+
+    function initSSE() {
+      if (eventSource) eventSource.close();
+
+      eventSource = new EventSource(`/api/events?clientId=${clientId}`);
+
+      eventSource.onopen = () => {
+        connectionBadge.innerHTML = `
+          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          <span class="text-slate-800 font-semibold">Live SSE Connected</span>
+        `;
+        connectionBadge.className = "flex items-center gap-1.5 px-3 h-8 rounded text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-300";
+      };
+
+      eventSource.onerror = () => {
+        connectionBadge.innerHTML = `
+          <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+          <span class="text-amber-800">SSE Reconnecting...</span>
+        `;
+        connectionBadge.className = "flex items-center gap-1.5 px-3 h-8 rounded text-xs font-medium bg-amber-50 text-amber-800 border border-amber-300";
+      };
+
+      eventSource.onmessage = (e) => {
+        try {
+          const data = JSON.parse(e.data);
+          handlePipelineEvent(data);
+        } catch (parseErr) {
+          console.error('SSE JSON parse error:', parseErr);
+        }
+      };
+    }
+
+    function handlePipelineEvent(event) {
+      switch (event.type) {
+        case 'state_sync':
+          renderState(event.state);
+          break;
+
+        case 'title_updated':
+          showToast(`Title updated: "${event.newTitle}"`, 'success');
+          loadJobStatus();
+          break;
+
+        case 'playlist_ready':
+          showToast(`Playlist Ready: "${event.playlistTitle}"`, 'success');
+          loadJobStatus();
+          break;
+
+        case 'no_files_found':
+          showToast(event.message, 'info');
+          loadJobStatus();
+          break;
+
+        case 'file_start':
+          loadJobStatus();
+          break;
+
+        case 'upload_progress':
+          handleUploadProgress(event);
+          break;
+
+        case 'file_completed':
+          loadJobStatus();
+          break;
+
+        case 'file_error':
+          loadJobStatus();
+          break;
+
+        case 'process_completed':
+          showToast('All video uploads completed!', 'success');
+          loadJobStatus();
+          break;
+
+        case 'job_cancelled':
+          showToast('Upload cancelled.', 'info');
+          loadJobStatus();
+          break;
+
+        case 'error':
+          showToast(event.message, 'error');
+          loadJobStatus();
+          break;
+      }
+    }
+
+    function handleUploadProgress(event) {
+      const progressBar = document.getElementById(`progress-bar-${event.fileId}`);
+      const progressBytes = document.getElementById(`progress-bytes-${event.fileId}`);
+      const speedEl = document.getElementById(`speed-${event.fileId}`);
+      const etaEl = document.getElementById(`eta-${event.fileId}`);
+
+      if (progressBar) progressBar.style.width = `${event.percentage}%`;
+      if (progressBytes) progressBytes.textContent = `${formatBytes(event.uploadedBytes)} / ${formatBytes(event.totalBytes)}`;
+      if (speedEl && event.speedMBps) speedEl.textContent = `⚡ ${event.speedMBps} MB/s`;
+      if (etaEl && event.etaSeconds) etaEl.textContent = `${event.etaSeconds}s left`;
+    }
+
+    downloadCsvBtn.addEventListener('click', () => {
+      if (!currentState || !currentState.files || currentState.files.length === 0) {
+        showToast('No videos available to download.', 'info');
+        return;
+      }
+
+      let csv = 'Sr No,Lecture Name,Batch,Subject,File Size,Date,Status,YouTube Embed URL,Playlist URL\n';
+      const plUrl = currentState.playlistUrl || '';
+      currentState.files.forEach((f, idx) => {
+        const title = (f.customTitle || f.name || '').replace(/"/g, '""');
+        const batch = (f.batch || '').replace(/"/g, '""');
+        const subject = (f.subject || '').replace(/"/g, '""');
+        const size = formatBytes(f.size || f.totalBytes);
+        const date = f.createdTime ? new Date(f.createdTime).toLocaleDateString('en-GB') : '';
+        const status = f.status || 'queued';
+        const embedUrl = f.videoId ? `https://www.youtube.com/embed/${f.videoId}` : '';
+        csv += `${idx + 1},"${title}","${batch}","${subject}","${size}","${date}","${status}","${embedUrl}","${plUrl}"\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `video_upload_embed_report_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast('Embed links report downloaded!', 'success');
+    });
+
+    startButton.addEventListener('click', async (e) => {
+      e.preventDefault();
+      const folderInputVal = folderInput.value.trim();
+      const playlistNameVal = playlistNameInput ? playlistNameInput.value.trim() : '';
+      const startDateVal = startDateInput ? startDateInput.value : '';
+      const endDateVal = endDateInput ? endDateInput.value : '';
+
+      if (!folderInputVal) {
+        showToast('Please enter a Google Drive folder link or ID', 'error');
+        folderInput.focus();
+        return;
+      }
+
+      startButton.disabled = true;
+      buttonText.textContent = 'Starting Pipeline...';
+      document.getElementById('startIcon').classList.add('animate-spin');
+
+      try {
+        const response = await fetch('/api/process', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            folderInput: folderInputVal,
+            playlistName: playlistNameVal,
+            startDate: startDateVal,
+            endDate: endDateVal
+          })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || 'Failed to start process');
+        }
+
+        showToast('Pipeline started! Scanning selected date range...', 'success');
+        loadJobStatus();
+      } catch (err) {
+        showToast(err.message, 'error');
+        loadJobStatus();
+      }
+    });
+
+    cancelJobBtn.addEventListener('click', async () => {
+      if (!confirm('Are you sure you want to cancel the active upload pipeline?')) return;
+      try {
+        const res = await fetch('/api/cancel', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          showToast('Job cancelled.', 'info');
+        }
+      } catch (e) {
+        showToast('Failed to cancel job', 'error');
+      }
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      // Default to Today's date
+      setDatePreset('today');
+      // Keep inputs clean & empty
+      folderInput.value = '';
+      if (playlistNameInput) playlistNameInput.value = '';
+
+      checkUrlParams();
+      checkAuthStatus();
+      updateFilterPillsUI();
+      loadJobStatus();
+      initSSE();
+    });
+  </script>
+</body>
+</html>

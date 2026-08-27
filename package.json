@@ -1,0 +1,26 @@
+{
+  "name": "drive-to-youtube-uploader",
+  "version": "1.0.0",
+  "description": "Automated pipeline to stream videos from Google Drive to YouTube as Unlisted with real-time SSE progress tracking",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "get-token": "node get-refresh-token.js"
+  },
+  "keywords": [
+    "google-drive",
+    "youtube-api",
+    "video-stream",
+    "sse",
+    "unlisted"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "googleapis": "^144.0.0"
+  }
+}

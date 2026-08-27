@@ -1,0 +1,59 @@
+{
+  "id": "job_1724754593000",
+  "folderIds": [
+    "1S_jZU6xwtEc3nN4vkTXd8j0cGD9iYh2B"
+  ],
+  "folderInput": "",
+  "playlistTitle": "27-LNE51MP 2026",
+  "playlistId": null,
+  "playlistUrl": null,
+  "status": "idle",
+  "startedAt": "2026-08-27T10:03:13.000Z",
+  "finishedAt": "2026-08-27T10:04:42.000Z",
+  "files": [
+    {
+      "id": "1uP3rR_rUqJc4kL0M6N_DriveVideo01",
+      "name": "27-LNE51MP 2026 - Physics Lecture 01",
+      "originalName": "27-LNE51MP 2026 - Physics Lecture 01.mp4",
+      "customTitle": "27-LNE51MP 2026 - Physics Lecture 01",
+      "batch": "27-LNE51MP 2026",
+      "subject": "Physics",
+      "size": 310567800,
+      "totalBytes": 310567800,
+      "uploadedBytes": 310567800,
+      "percentage": 100,
+      "speedMBps": 6.8,
+      "etaSeconds": 0,
+      "status": "completed",
+      "videoId": "jCVFc_Kydo4",
+      "youtubeUrl": "https://www.youtube.com/watch?v=jCVFc_Kydo4",
+      "embedUrl": "https://www.youtube.com/embed/jCVFc_Kydo4",
+      "thumbnailUrl": "https://img.youtube.com/vi/jCVFc_Kydo4/mqdefault.jpg",
+      "studioUrl": "https://studio.youtube.com/video/jCVFc_Kydo4/edit",
+      "createdTime": "2026-08-27T10:00:00.000Z"
+    }
+  ],
+  "logs": [
+    {
+      "timestamp": "2026-08-27T10:03:13.000Z",
+      "message": "Scanned Drive Folder: 1 lecture video found.",
+      "level": "info"
+    },
+    {
+      "timestamp": "2026-08-27T10:04:42.000Z",
+      "message": "Stream completed 100%: 27-LNE51MP 2026 - Physics Lecture 01 (ID: jCVFc_Kydo4)",
+      "level": "success"
+    },
+    {
+      "timestamp": "2026-08-27T11:33:39.320Z",
+      "message": "✔ Updated live YouTube video title to: \"27-LNE51MP 2026 - Physics Lecture 01\"",
+      "level": "success"
+    }
+  ],
+  "stats": {
+    "total": 1,
+    "pending": 0,
+    "completed": 1,
+    "failed": 0
+  }
+}
