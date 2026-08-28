@@ -4,8 +4,27 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Drive → YouTube Cloud Video Portal</title>
+  <!-- Instant Theme Initializer (Prevents any theme flicker on load) -->
+  <script>
+    (function() {
+      try {
+        const saved = localStorage.getItem('om_theme');
+        const isDark = saved ? saved === 'dark' : true;
+        if (isDark) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      } catch (e) {}
+    })();
+  </script>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class'
+    };
+  </script>
   <!-- Google Identity Services for OAuth -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -14,28 +33,11 @@
   
   <style>
     :root {
-      /* Exact officemobile.vercel.app dark brutalist palette */
-      --bg-main: #141210;
-      --bg-card: #191715;
-      --bg-subcard: #201D1A;
-      --bg-header: #141210;
-      --border-main: #2C2926;
-      --border-subtle: #24211E;
-      --text-main: #FAF7F2;
-      --text-muted: #8C857E;
-      --text-subtle: #68615A;
-      --btn-primary-bg: #EDE8DE;
-      --btn-primary-text: #141210;
-      --btn-secondary-bg: #201D1A;
-      --btn-secondary-text: #FAF7F2;
-      --accent-orange: #EA580C;
-    }
-
-    html:not(.dark) {
+      /* Exact officemobile.vercel.app Light Palette */
       --bg-main: #EDEAE5;
       --bg-card: #F6F4F0;
       --bg-subcard: #FFFFFF;
-      --bg-header: #EDEAE5;
+      --bg-header: rgba(237, 234, 229, 0.95);
       --border-main: #D6D3CD;
       --border-subtle: #E5E1DB;
       --text-main: #1B1B1B;
@@ -45,12 +47,40 @@
       --btn-primary-text: #FFFFFF;
       --btn-secondary-bg: #FFFFFF;
       --btn-secondary-text: #1B1B1B;
+      --btn-secondary-border: #D6D3CD;
+      --btn-secondary-hover: #F0EDE8;
+      --selection-bg: #1B1B1B;
+      --selection-text: #FFFFFF;
+      --accent-orange: #EA580C;
+    }
+
+    html.dark {
+      /* Exact officemobile.vercel.app Dark Brutalist Palette */
+      --bg-main: #141210;
+      --bg-card: #191715;
+      --bg-subcard: #1E1C19;
+      --bg-header: rgba(20, 18, 16, 0.95);
+      --border-main: #2C2926;
+      --border-subtle: #24211E;
+      --text-main: #FAF7F2;
+      --text-muted: #8C857E;
+      --text-subtle: #68615A;
+      --btn-primary-bg: #EDE8DE;
+      --btn-primary-text: #141210;
+      --btn-secondary-bg: #1E1C19;
+      --btn-secondary-text: #FAF7F2;
+      --btn-secondary-border: #2C2926;
+      --btn-secondary-hover: #282420;
+      --selection-bg: #EDE8DE;
+      --selection-text: #141210;
+      --accent-orange: #EA580C;
     }
     
     body { 
       font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
       background-color: var(--bg-main);
       color: var(--text-main);
+      transition: background-color 0.2s ease, color 0.15s ease;
     }
     
     .font-serif-editorial {
@@ -63,9 +93,9 @@
     
     /* Clean Minimal Scrollbar */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: #191715; }
-    ::-webkit-scrollbar-thumb { background: #383430; }
-    ::-webkit-scrollbar-thumb:hover { background: #524C46; }
+    ::-webkit-scrollbar-track { background: var(--bg-main); }
+    ::-webkit-scrollbar-thumb { background: var(--border-main); }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
     
     .om-border {
       border: 1px solid var(--border-main);
@@ -97,32 +127,57 @@
     }
   </style>
 </head>
-<body class="min-h-full flex flex-col bg-[#141210] text-[#FAF7F2] selection:bg-[#EDE8DE] selection:text-[#141210]">
+<body class="min-h-full flex flex-col selection:bg-[var(--selection-bg)] selection:text-[var(--selection-text)]">
 
   <!-- 1. Minimal Flat Editorial Header -->
-  <header class="w-full border-b border-[#2C2926] px-6 py-3 bg-[#141210]/95 backdrop-blur-xs sticky top-0 z-40">
+  <header class="w-full border-b border-[var(--border-main)] px-6 py-3 bg-[var(--bg-header)] backdrop-blur-xs sticky top-0 z-40">
     <div class="max-w-[1400px] mx-auto flex items-center justify-between">
       
       <!-- Brand Logo -->
       <div class="flex items-center gap-2.5">
-        <div class="w-7 h-7 bg-[#EDE8DE] text-[#141210] flex items-center justify-center font-bold text-xs shadow-xs">
+        <div class="w-7 h-7 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] flex items-center justify-center font-bold text-xs shadow-xs">
           <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
             <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/>
           </svg>
         </div>
-        <div class="text-[17px] tracking-tight font-medium text-[#FAF7F2]">
-          Drive <span class="font-serif-editorial italic font-normal text-xl text-[#EDE8DE]">to YouTube</span>
+        <div class="text-[17px] tracking-tight font-medium text-[var(--text-main)]">
+          Drive <span class="font-serif-editorial italic font-normal text-xl text-[var(--btn-primary-bg)]">to YouTube</span>
         </div>
       </div>
 
-      <!-- Right Header Actions (Sync YouTube, Google Auth, Verify, SSE) -->
+      <!-- Right Header Actions (Theme Switcher, Sync YouTube, Google Auth, Verify, SSE) -->
       <div class="flex items-center gap-2 font-mono-code text-xs">
+
+        <!-- Unique Editorial Segmented Theme Switch (Light / Dark) -->
+        <div class="flex items-center p-0.5 border border-[var(--border-main)] bg-[var(--bg-subcard)] text-[11px] font-mono-code select-none h-8 mr-1 shadow-2xs" id="headerThemeToggle">
+          <button
+            type="button"
+            id="themeBtnLight"
+            onclick="setAppTheme('light')"
+            class="flex items-center gap-1 px-2.5 h-full transition-all cursor-pointer text-[var(--text-muted)] hover:text-[var(--text-main)]"
+            title="Switch to Light Editorial Theme (Shortcut: D)"
+          >
+            <span class="text-xs">☀️</span>
+            <span class="font-bold uppercase tracking-wider text-[10px] hidden sm:inline">Light</span>
+          </button>
+          
+          <button
+            type="button"
+            id="themeBtnDark"
+            onclick="setAppTheme('dark')"
+            class="flex items-center gap-1 px-2.5 h-full transition-all cursor-pointer bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] font-bold shadow-xs"
+            title="Switch to Dark Editorial Theme (Shortcut: D)"
+          >
+            <span class="text-xs">🌙</span>
+            <span class="font-bold uppercase tracking-wider text-[10px] hidden sm:inline">Dark</span>
+          </button>
+        </div>
         
         <!-- Top Sync YouTube Button -->
         <button
           type="button"
           onclick="syncYouTubeUploads()"
-          class="flex items-center gap-1.5 px-3 h-8 border border-[#2C2926] bg-[#1E1C19] hover:bg-[#282420] text-[#FAF7F2] font-semibold transition-all text-[11px] uppercase tracking-wider cursor-pointer"
+          class="flex items-center gap-1.5 px-3 h-8 border border-[var(--border-main)] bg-[var(--btn-secondary-bg)] hover:bg-[var(--btn-secondary-hover)] text-[var(--text-main)] font-semibold transition-all text-[11px] uppercase tracking-wider cursor-pointer"
           title="Sync live videos from your YouTube channel"
         >
           <svg class="w-3.5 h-3.5 text-rose-500" viewBox="0 0 24 24" fill="currentColor">
@@ -136,7 +191,7 @@
           type="button"
           id="navAuthBtn"
           onclick="handleConnectClick()"
-          class="flex items-center gap-1.5 px-3 h-8 border border-[#2C2926] bg-[#1E1C19] hover:bg-[#282420] text-[#FAF7F2] font-semibold transition-all cursor-pointer text-[11px] uppercase tracking-wider"
+          class="flex items-center gap-1.5 px-3 h-8 border border-[var(--border-main)] bg-[var(--btn-secondary-bg)] hover:bg-[var(--btn-secondary-hover)] text-[var(--text-main)] font-semibold transition-all cursor-pointer text-[11px] uppercase tracking-wider"
           title="Google Account is not connected. Click to connect."
         >
           <span class="w-2 h-2 rounded-full bg-rose-500 inline-block"></span>
@@ -147,7 +202,7 @@
         <button
           type="button"
           onclick="openManualUploadModal()"
-          class="flex items-center gap-1.5 px-3 h-8 bg-[#EDE8DE] hover:bg-white text-[#141210] font-bold transition-all text-[11px] uppercase tracking-wider cursor-pointer shadow-xs"
+          class="flex items-center gap-1.5 px-3 h-8 bg-[var(--btn-primary-bg)] hover:opacity-90 text-[var(--btn-primary-text)] font-bold transition-all text-[11px] uppercase tracking-wider cursor-pointer shadow-xs"
           title="Directly upload a video file from your computer / device to YouTube"
         >
           <span>+ Manual Upload</span>
@@ -165,14 +220,14 @@
           href="https://www.youtube.com/verify"
           target="_blank"
           rel="noopener noreferrer"
-          class="hidden sm:flex items-center gap-1 px-3 h-8 border border-[#2C2926] bg-[#1E1C19] hover:bg-[#282420] text-[#8C857E] hover:text-[#FAF7F2] font-semibold transition-all text-[11px] uppercase tracking-wider"
+          class="hidden sm:flex items-center gap-1 px-3 h-8 border border-[var(--border-main)] bg-[var(--btn-secondary-bg)] hover:bg-[var(--btn-secondary-hover)] text-[var(--text-muted)] hover:text-[var(--text-main)] font-semibold transition-all text-[11px] uppercase tracking-wider"
           title="Verify YouTube Channel for >15 min uploads"
         >
           <span>Verify (&gt;15 min) ↗</span>
         </a>
 
         <!-- SSE Status -->
-        <div id="connectionBadge" class="flex items-center gap-1.5 px-2.5 h-8 border border-[#2C2926] bg-[#1E1C19] text-emerald-400 text-[11px] font-semibold">
+        <div id="connectionBadge" class="flex items-center gap-1.5 px-2.5 h-8 border border-[var(--border-main)] bg-[var(--btn-secondary-bg)] text-emerald-600 dark:text-emerald-400 text-[11px] font-semibold">
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
           <span id="sseStatusText" class="font-mono-code">Live</span>
         </div>
@@ -236,7 +291,7 @@
         <button
           type="button"
           onclick="dismissQuotaBanner()"
-          class="h-8 px-2.5 bg-[#1E1C19] text-[#FAF7F2] border border-[#2C2926] text-[11px] font-semibold cursor-pointer"
+          class="h-8 px-2.5 bg-[var(--bg-card)] text-[var(--text-main)] border border-[var(--border-main)] text-[11px] font-semibold cursor-pointer"
         >
           Dismiss
         </button>
@@ -248,14 +303,14 @@
       
       <!-- Editorial Title & Tagline -->
       <div class="space-y-1">
-        <div class="font-mono-code text-[10px] uppercase tracking-widest text-[#8C857E]">
+        <div class="font-mono-code text-[10px] uppercase tracking-widest text-[var(--text-muted)]">
           DIRECT CLOUD PIPELINE • 0 MB LOCAL BANDWIDTH
         </div>
         <div class="flex items-baseline justify-between flex-wrap gap-2">
-          <h2 class="text-3xl md:text-4xl font-serif-editorial text-[#FAF7F2] tracking-tight leading-tight">
-            Your Drive Videos, Now in Your <span class="italic font-normal text-[#EDE8DE]">Channel.</span>
+          <h2 class="text-3xl md:text-4xl font-serif-editorial text-[var(--text-main)] tracking-tight leading-tight">
+            Your Drive Videos, Now in Your <span class="italic font-normal text-[var(--btn-primary-bg)]">Channel.</span>
           </h2>
-          <span class="font-mono-code text-xs text-[#8C857E]">
+          <span class="font-mono-code text-xs text-[var(--text-muted)]">
             // scan subfolders, preview &amp; select videos, unlisted 1080p stream
           </span>
         </div>
@@ -263,7 +318,7 @@
 
       <!-- Drive URL Underline Input -->
       <div class="space-y-1">
-        <label class="block font-mono-code text-[10px] font-bold uppercase tracking-widest text-[#8C857E]">
+        <label class="block font-mono-code text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
           GOOGLE DRIVE FOLDER URL
         </label>
         <div class="relative flex items-center">
@@ -271,12 +326,12 @@
             type="text"
             id="folderInput"
             placeholder="https://drive.google.com/drive/folders/..."
-            class="w-full py-2.5 pr-10 om-input font-mono-code text-sm placeholder:text-[#68615A]"
+            class="w-full py-2.5 pr-10 om-input font-mono-code text-sm placeholder:text-[var(--text-subtle)]"
           />
           <button
             type="button"
             onclick="pasteFromClipboard()"
-            class="absolute right-1 text-[#8C857E] hover:text-[#FAF7F2] transition-colors cursor-pointer p-1"
+            class="absolute right-1 text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors cursor-pointer p-1"
             title="Paste from clipboard"
           >
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -284,7 +339,7 @@
             </svg>
           </button>
         </div>
-        <p class="font-mono-code text-[10px] text-[#68615A] pt-0.5">
+        <p class="font-mono-code text-[10px] text-[var(--text-subtle)] pt-0.5">
           paste any google drive folder link or id • recursive scan • duplicate protection
         </p>
       </div>
@@ -294,28 +349,28 @@
         
         <!-- Playlist Name (Col 3) -->
         <div class="md:col-span-3 space-y-1">
-          <label class="block font-mono-code text-[10px] font-bold uppercase tracking-wider text-[#8C857E]">
+          <label class="block font-mono-code text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
             PLAYLIST NAME <span class="font-normal lowercase">(optional)</span>
           </label>
           <input
             type="text"
             id="playlistNameInput"
             placeholder="e.g. 27-LNE51MP 2026"
-            class="w-full h-9 px-2.5 om-box-input font-mono-code text-xs text-[#FAF7F2] placeholder:text-[#68615A]"
+            class="w-full h-9 px-2.5 om-box-input font-mono-code text-xs text-[var(--text-main)] placeholder:text-[var(--text-subtle)]"
           />
         </div>
 
         <!-- Visibility & Release (Col 3) -->
         <div class="md:col-span-3 space-y-1">
           <div class="flex items-center justify-between font-mono-code text-[10px]">
-            <label class="font-bold uppercase tracking-wider text-[#8C857E]">VISIBILITY &amp; RELEASE</label>
-            <span class="text-emerald-400 font-bold text-[9px]" id="privacyStatusBadge">Unlisted</span>
+            <label class="font-bold uppercase tracking-wider text-[var(--text-muted)]">VISIBILITY &amp; RELEASE</label>
+            <span class="text-emerald-500 font-bold text-[9px]" id="privacyStatusBadge">Unlisted</span>
           </div>
           <div class="flex items-center gap-1">
             <select
               id="videoPrivacySelect"
               onchange="handlePrivacySelectChange()"
-              class="flex-1 h-9 px-2 om-box-input font-mono-code text-xs text-[#FAF7F2] bg-[#201D1A] cursor-pointer"
+              class="flex-1 h-9 px-2 om-box-input font-mono-code text-xs text-[var(--text-main)] bg-[var(--bg-subcard)] cursor-pointer"
             >
               <option value="unlisted" selected>Unlisted (Default)</option>
               <option value="private">Private</option>
@@ -325,7 +380,7 @@
             <input
               type="datetime-local"
               id="scheduledReleaseTimeInput"
-              class="hidden flex-1 h-9 px-1.5 om-box-input font-mono-code text-[11px] text-[#FAF7F2] bg-[#201D1A]"
+              class="hidden flex-1 h-9 px-1.5 om-box-input font-mono-code text-[11px] text-[var(--text-main)] bg-[var(--bg-subcard)]"
               title="Select future date & time to release video"
             />
           </div>
@@ -334,28 +389,28 @@
         <!-- Scan Date Filter Presets (Col 3) -->
         <div class="md:col-span-3 space-y-1">
           <div class="flex items-center justify-between font-mono-code text-[10px]">
-            <label class="font-bold uppercase tracking-wider text-[#8C857E]">SCAN DATE FILTER</label>
+            <label class="font-bold uppercase tracking-wider text-[var(--text-muted)]">SCAN DATE FILTER</label>
             <div class="flex items-center gap-1 text-[10px]">
-              <button type="button" onclick="setDatePreset('all')" class="text-orange-400 hover:underline font-bold cursor-pointer">All</button>
-              <span class="text-[#383430]">|</span>
-              <button type="button" onclick="setDatePreset('today')" class="text-[#8C857E] hover:text-[#FAF7F2] cursor-pointer">Today</button>
-              <span class="text-[#383430]">|</span>
-              <button type="button" onclick="setDatePreset('yesterday')" class="text-[#8C857E] hover:text-[#FAF7F2] cursor-pointer">Yest</button>
-              <span class="text-[#383430]">|</span>
-              <button type="button" onclick="setDatePreset('clear')" class="text-rose-400 hover:underline cursor-pointer">Clear</button>
+              <button type="button" onclick="setDatePreset('all')" class="text-orange-500 hover:underline font-bold cursor-pointer">All</button>
+              <span class="text-[var(--border-main)]">|</span>
+              <button type="button" onclick="setDatePreset('today')" class="text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer">Today</button>
+              <span class="text-[var(--border-main)]">|</span>
+              <button type="button" onclick="setDatePreset('yesterday')" class="text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer">Yest</button>
+              <span class="text-[var(--border-main)]">|</span>
+              <button type="button" onclick="setDatePreset('clear')" class="text-rose-500 hover:underline cursor-pointer">Clear</button>
             </div>
           </div>
           <div class="flex items-center gap-1.5 font-mono-code">
             <input
               type="date"
               id="startDateInput"
-              class="w-1/2 h-9 px-2 om-box-input text-xs text-[#FAF7F2]"
+              class="w-1/2 h-9 px-2 om-box-input text-xs text-[var(--text-main)]"
             />
-            <span class="text-[#8C857E] text-xs">-</span>
+            <span class="text-[var(--text-muted)] text-xs">-</span>
             <input
               type="date"
               id="endDateInput"
-              class="w-1/2 h-9 px-2 om-box-input text-xs text-[#FAF7F2]"
+              class="w-1/2 h-9 px-2 om-box-input text-xs text-[var(--text-main)]"
             />
           </div>
         </div>
@@ -368,7 +423,7 @@
             type="button"
             id="scanPreviewBtn"
             onclick="openScanReviewModal()"
-            class="flex-1 h-9 bg-[#EDE8DE] hover:bg-white text-[#141210] font-mono-code text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+            class="flex-1 h-9 bg-[var(--btn-primary-bg)] hover:opacity-90 text-[var(--btn-primary-text)] font-mono-code text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
             title="Scan folder to select specific videos before uploading"
           >
             <span>⚡ SCAN &amp; SELECT →</span>
@@ -379,7 +434,7 @@
             type="button"
             id="startButton"
             onclick="startProcessing()"
-            class="h-9 px-3.5 bg-[#1E1C19] hover:bg-[#282420] text-[#FAF7F2] border border-[#2C2926] font-mono-code text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center cursor-pointer"
+            class="h-9 px-3.5 bg-[var(--btn-secondary-bg)] hover:bg-[var(--btn-secondary-hover)] text-[var(--text-main)] border border-[var(--border-main)] font-mono-code text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center cursor-pointer"
             title="Directly upload entire folder"
           >
             <span id="buttonText">UPLOAD ALL</span>
@@ -397,7 +452,7 @@
       </div>
     </div>
 
-    <hr class="border-t border-[#2C2926] my-5" />
+    <hr class="border-t border-[var(--border-main)] my-5" />
 
     <!-- Hidden radio for processingMode compatibility -->
     <input type="radio" name="processingMode" value="youtube" checked class="hidden" />
@@ -408,49 +463,49 @@
       <!-- Section Header with Date Range Filter -->
       <div class="flex items-center justify-between flex-wrap gap-3">
         <div class="space-y-0.5">
-          <div class="font-mono-code text-[10px] uppercase tracking-widest text-[#8C857E]">LIBRARY</div>
-          <h3 class="text-xl font-bold font-serif-editorial text-[#FAF7F2]">Uploaded videos &amp; stream queue</h3>
+          <div class="font-mono-code text-[10px] uppercase tracking-widest text-[var(--text-muted)]">LIBRARY</div>
+          <h3 class="text-xl font-bold font-serif-editorial text-[var(--text-main)]">Uploaded videos &amp; stream queue</h3>
         </div>
 
         <!-- Date Range Filter -->
         <div class="flex items-center gap-2">
-          <span class="text-xs font-semibold text-[#8C857E] whitespace-nowrap font-mono-code">Pick date range:</span>
+          <span class="text-xs font-semibold text-[var(--text-muted)] whitespace-nowrap font-mono-code">Pick date range:</span>
           
           <div class="relative" id="calendarWrapper">
             <button
               type="button"
               id="dateRangeInputBtn"
               onclick="toggleCalendarPopover(event)"
-              class="flex items-center gap-2 px-3 py-1.5 border border-[#2C2926] bg-[#1E1C19] hover:bg-[#282420] text-xs font-semibold text-[#FAF7F2] transition-all cursor-pointer focus:outline-none"
+              class="flex items-center gap-2 px-3 py-1.5 border border-[var(--border-main)] bg-[var(--bg-subcard)] hover:bg-[var(--btn-secondary-hover)] text-xs font-semibold text-[var(--text-main)] transition-all cursor-pointer focus:outline-none"
               title="Click to pick custom date range"
             >
-              <svg class="w-3.5 h-3.5 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg class="w-3.5 h-3.5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
               </svg>
-              <span id="dateRangeInputText" class="font-bold text-[#FAF7F2]">All Dates</span>
-              <svg class="w-3 h-3 text-[#8C857E]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <span id="dateRangeInputText" class="font-bold text-[var(--text-main)]">All Dates</span>
+              <svg class="w-3 h-3 text-[var(--text-muted)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
               </svg>
             </button>
 
             <!-- Calendar Popover dropdown -->
-            <div id="calendarPopover" class="hidden absolute right-0 top-10 z-50 bg-[#191715] border border-[#2C2926] shadow-2xl p-4 w-[290px] select-none text-[#FAF7F2]">
-              <div class="flex items-center justify-between pb-2 mb-2 border-b border-[#2C2926] font-mono-code">
-                <button type="button" onclick="navigateMonth(-1)" class="w-6 h-6 hover:bg-[#24211E] flex items-center justify-center font-bold text-xs cursor-pointer">‹</button>
-                <span id="calendarMonthYearLabel" class="text-xs font-bold text-[#FAF7F2]">August 2026</span>
-                <button type="button" onclick="navigateMonth(1)" class="w-6 h-6 hover:bg-[#24211E] flex items-center justify-center font-bold text-xs cursor-pointer">›</button>
+            <div id="calendarPopover" class="hidden absolute right-0 top-10 z-50 bg-[var(--bg-card)] border border-[var(--border-main)] shadow-2xl p-4 w-[290px] select-none text-[var(--text-main)]">
+              <div class="flex items-center justify-between pb-2 mb-2 border-b border-[var(--border-main)] font-mono-code">
+                <button type="button" onclick="navigateMonth(-1)" class="w-6 h-6 hover:bg-[var(--btn-secondary-hover)] flex items-center justify-center font-bold text-xs cursor-pointer">‹</button>
+                <span id="calendarMonthYearLabel" class="text-xs font-bold text-[var(--text-main)]">August 2026</span>
+                <button type="button" onclick="navigateMonth(1)" class="w-6 h-6 hover:bg-[var(--btn-secondary-hover)] flex items-center justify-center font-bold text-xs cursor-pointer">›</button>
               </div>
-              <div class="grid grid-cols-7 text-center text-[10px] font-mono-code font-bold text-[#8C857E] mb-1">
-                <span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span class="text-orange-400">Sa</span><span class="text-orange-400">Su</span>
+              <div class="grid grid-cols-7 text-center text-[10px] font-mono-code font-bold text-[var(--text-muted)] mb-1">
+                <span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span class="text-orange-500">Sa</span><span class="text-orange-500">Su</span>
               </div>
               <div id="calendarDaysGrid" class="grid grid-cols-7 gap-1 text-center font-mono-code text-xs"></div>
-              <div class="pt-2.5 mt-2.5 border-t border-[#2C2926] flex items-center justify-between font-mono-code text-[11px]">
+              <div class="pt-2.5 mt-2.5 border-t border-[var(--border-main)] flex items-center justify-between font-mono-code text-[11px]">
                 <div class="flex items-center gap-1">
-                  <button type="button" onclick="applyPresetRange('today')" class="px-1.5 py-0.5 bg-[#1E1C19] hover:bg-[#EDE8DE] hover:text-[#141210] border border-[#2C2926] cursor-pointer">Today</button>
-                  <button type="button" onclick="applyPresetRange('yesterday')" class="px-1.5 py-0.5 bg-[#1E1C19] hover:bg-[#EDE8DE] hover:text-[#141210] border border-[#2C2926] cursor-pointer">Yest</button>
-                  <button type="button" onclick="applyPresetRange('last7')" class="px-1.5 py-0.5 bg-[#1E1C19] hover:bg-[#EDE8DE] hover:text-[#141210] border border-[#2C2926] cursor-pointer">7D</button>
+                  <button type="button" onclick="applyPresetRange('today')" class="px-1.5 py-0.5 bg-[var(--bg-subcard)] hover:bg-[var(--btn-primary-bg)] hover:text-[var(--btn-primary-text)] border border-[var(--border-main)] cursor-pointer">Today</button>
+                  <button type="button" onclick="applyPresetRange('yesterday')" class="px-1.5 py-0.5 bg-[var(--bg-subcard)] hover:bg-[var(--btn-primary-bg)] hover:text-[var(--btn-primary-text)] border border-[var(--border-main)] cursor-pointer">Yest</button>
+                  <button type="button" onclick="applyPresetRange('last7')" class="px-1.5 py-0.5 bg-[var(--bg-subcard)] hover:bg-[var(--btn-primary-bg)] hover:text-[var(--btn-primary-text)] border border-[var(--border-main)] cursor-pointer">7D</button>
                 </div>
-                <button type="button" onclick="applyPresetRange('all')" class="text-orange-400 hover:underline font-bold cursor-pointer">All</button>
+                <button type="button" onclick="applyPresetRange('all')" class="text-orange-500 hover:underline font-bold cursor-pointer">All</button>
               </div>
             </div>
           </div>
@@ -458,13 +513,13 @@
       </div>
 
       <!-- Stats Filter Bar (Total, Uploaded, In Progress, Source Tabs) -->
-      <div class="flex items-center justify-between gap-2 flex-wrap font-mono-code text-xs border border-[#2C2926] bg-[#191715] p-2">
+      <div class="flex items-center justify-between gap-2 flex-wrap font-mono-code text-xs border border-[var(--border-main)] bg-[var(--bg-card)] p-2">
         <div class="flex items-center gap-2 overflow-x-auto">
           <button
             type="button"
             id="filterPillAll"
             onclick="setTableFilter('all')"
-            class="px-2.5 py-1 bg-[#EDE8DE] text-[#141210] font-bold text-[11px] uppercase tracking-wider cursor-pointer"
+            class="px-2.5 py-1 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] font-bold text-[11px] uppercase tracking-wider cursor-pointer"
           >
             Total (<span id="metricTotal">0</span>)
           </button>
@@ -473,7 +528,7 @@
             type="button"
             id="filterPillCompleted"
             onclick="setTableFilter('completed')"
-            class="px-2.5 py-1 bg-[#1E1C19] border border-[#2C2926] text-emerald-400 font-semibold text-[11px] uppercase tracking-wider hover:bg-[#282420] cursor-pointer"
+            class="px-2.5 py-1 bg-[var(--bg-subcard)] border border-[var(--border-main)] text-emerald-600 dark:text-emerald-400 font-semibold text-[11px] uppercase tracking-wider hover:bg-[var(--btn-secondary-hover)] cursor-pointer"
           >
             Uploaded (<span id="metricUploaded">0</span>)
           </button>
@@ -482,7 +537,7 @@
             type="button"
             id="filterPillPending"
             onclick="setTableFilter('pending')"
-            class="px-2.5 py-1 bg-[#1E1C19] border border-[#2C2926] text-orange-400 font-semibold text-[11px] uppercase tracking-wider hover:bg-[#282420] cursor-pointer"
+            class="px-2.5 py-1 bg-[var(--bg-subcard)] border border-[var(--border-main)] text-orange-600 dark:text-orange-400 font-semibold text-[11px] uppercase tracking-wider hover:bg-[var(--btn-secondary-hover)] cursor-pointer"
           >
             In Progress (<span id="metricPending">0</span>)
           </button>
@@ -491,7 +546,7 @@
             type="button"
             id="filterPillFailed"
             onclick="setTableFilter('failed')"
-            class="hidden px-2.5 py-1 bg-[#1E1C19] border border-rose-800 text-rose-400 font-semibold text-[11px] uppercase tracking-wider hover:bg-rose-950/40 cursor-pointer"
+            class="hidden px-2.5 py-1 bg-[var(--bg-subcard)] border border-rose-400 dark:border-rose-800 text-rose-600 dark:text-rose-400 font-semibold text-[11px] uppercase tracking-wider hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer"
           >
             Failed (<span id="metricFailed">0</span>)
           </button>
@@ -501,24 +556,24 @@
             href="#"
             target="_blank"
             rel="noopener noreferrer"
-            class="hidden items-center px-2.5 py-1 bg-[#1E1C19] border border-[#2C2926] text-[#FAF7F2] font-bold text-[11px] uppercase tracking-wider hover:bg-[#EDE8DE] hover:text-[#141210] transition-colors"
+            class="hidden items-center px-2.5 py-1 bg-[var(--bg-subcard)] border border-[var(--border-main)] text-[var(--text-main)] font-bold text-[11px] uppercase tracking-wider hover:bg-[var(--btn-primary-bg)] hover:text-[var(--btn-primary-text)] transition-colors"
           >
-            <span>Playlist: <span id="playlistPillTitle" class="underline">View</span> ↗</span>
+            Playlist ↗
           </a>
         </div>
 
         <div class="flex items-center gap-2">
           <!-- Segmented Source Filters -->
-          <div class="flex items-center border border-[#2C2926] bg-[#141210] p-0.5 text-[10px] font-mono-code font-bold uppercase">
-            <button type="button" id="sourceFilterAll" onclick="setSourceFilter('all')" class="px-2 py-0.5 bg-[#EDE8DE] text-[#141210]">All (<span id="sourceCountAll">0</span>)</button>
-            <button type="button" id="sourceFilterYouTube" onclick="setSourceFilter('youtube')" class="px-2 py-0.5 text-[#8C857E] hover:text-[#FAF7F2]">YouTube (<span id="sourceCountYouTube">0</span>)</button>
-            <button type="button" id="sourceFilterDrive" onclick="setSourceFilter('drive')" class="px-2 py-0.5 text-[#8C857E] hover:text-[#FAF7F2]">Drive (<span id="sourceCountDrive">0</span>)</button>
+          <div class="flex items-center border border-[var(--border-main)] bg-[var(--bg-card)] p-0.5 text-[10px] font-mono-code font-bold uppercase">
+            <button type="button" id="sourceFilterAll" onclick="setSourceFilter('all')" class="px-2 py-0.5 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)]">All (<span id="sourceCountAll">0</span>)</button>
+            <button type="button" id="sourceFilterYouTube" onclick="setSourceFilter('youtube')" class="px-2 py-0.5 text-[var(--text-muted)] hover:text-[var(--text-main)]">YouTube (<span id="sourceCountYouTube">0</span>)</button>
+            <button type="button" id="sourceFilterDrive" onclick="setSourceFilter('drive')" class="px-2 py-0.5 text-[var(--text-muted)] hover:text-[var(--text-main)]">Drive (<span id="sourceCountDrive">0</span>)</button>
           </div>
 
           <button
             type="button"
             onclick="copyAllVideoLinks()"
-            class="px-2.5 py-1 bg-[#1E1C19] border border-[#2C2926] text-[#FAF7F2] text-[10px] font-bold uppercase tracking-wider hover:bg-[#282420] cursor-pointer"
+            class="px-2.5 py-1 bg-[var(--bg-subcard)] border border-[var(--border-main)] text-[var(--text-main)] text-[10px] font-bold uppercase tracking-wider hover:bg-[var(--btn-secondary-hover)] cursor-pointer"
             title="Copy list of all video links"
           >
             Copy Links
@@ -527,7 +582,7 @@
           <button
             type="button"
             onclick="copyNotionMarkdownTable()"
-            class="px-2.5 py-1 bg-[#1E1C19] border border-[#2C2926] text-[#FAF7F2] text-[10px] font-bold uppercase tracking-wider hover:bg-[#282420] cursor-pointer flex items-center gap-1"
+            class="px-2.5 py-1 bg-[var(--bg-subcard)] border border-[var(--border-main)] text-[var(--text-main)] text-[10px] font-bold uppercase tracking-wider hover:bg-[var(--btn-secondary-hover)] cursor-pointer flex items-center gap-1"
             title="Copy formatted Markdown table ready to paste directly into Notion"
           >
             <span>📝 Notion</span>
@@ -536,7 +591,7 @@
           <button
             type="button"
             id="downloadCsvBtn"
-            class="px-2.5 py-1 bg-[#1E1C19] border border-[#2C2926] text-[#FAF7F2] text-[10px] font-bold uppercase tracking-wider hover:bg-[#282420] cursor-pointer"
+            class="px-2.5 py-1 bg-[var(--bg-subcard)] border border-[var(--border-main)] text-[var(--text-main)] text-[10px] font-bold uppercase tracking-wider hover:bg-[var(--btn-secondary-hover)] cursor-pointer"
             title="Download full CSV report for Google Sheets & Excel"
           >
             📊 Sheets / CSV
@@ -551,25 +606,25 @@
           id="tableSearchInput"
           placeholder="search videos by title, batch, or subject..."
           oninput="handleTableSearch()"
-          class="w-full py-1.5 font-mono-code text-xs text-[#FAF7F2] bg-transparent border-b border-[#2C2926] placeholder:text-[#68615A] focus:outline-none focus:border-b-2 focus:border-[#EDE8DE]"
+          class="w-full py-1.5 font-mono-code text-xs text-[var(--text-main)] bg-transparent border-b border-[var(--border-main)] placeholder:text-[var(--text-subtle)] focus:outline-none focus:border-b-2 focus:border-[var(--btn-primary-bg)]"
         />
       </div>
 
       <!-- Main Video Data Table (Flat, Sharp Borders) -->
-      <div class="border border-[#2C2926] bg-[#161412] overflow-hidden">
+      <div class="border border-[var(--border-main)] bg-[var(--bg-card)] overflow-hidden">
         <table class="w-full text-left border-collapse text-xs">
           <thead>
-            <tr class="border-b border-[#2C2926] bg-[#1C1A18] font-mono-code text-[10px] font-bold uppercase tracking-wider text-[#8C857E]">
-              <th class="py-2.5 px-3 w-10 text-center border-r border-[#2C2926]">#</th>
-              <th class="py-2.5 px-4 border-r border-[#2C2926]">TITLE &amp; BATCH</th>
-              <th class="py-2.5 px-3 w-28 text-center border-r border-[#2C2926]">DATE</th>
-              <th class="py-2.5 px-3 w-24 text-center border-r border-[#2C2926]">FORMAT</th>
-              <th class="py-2.5 px-4 w-72 border-r border-[#2C2926]">STATUS</th>
+            <tr class="border-b border-[var(--border-main)] bg-[var(--bg-subcard)] font-mono-code text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+              <th class="py-2.5 px-3 w-10 text-center border-r border-[var(--border-main)]">#</th>
+              <th class="py-2.5 px-4 border-r border-[var(--border-main)]">TITLE &amp; BATCH</th>
+              <th class="py-2.5 px-3 w-28 text-center border-r border-[var(--border-main)]">DATE</th>
+              <th class="py-2.5 px-3 w-24 text-center border-r border-[var(--border-main)]">FORMAT</th>
+              <th class="py-2.5 px-4 w-72 border-r border-[var(--border-main)]">STATUS</th>
               <th class="py-2.5 px-4 w-44 text-center">ACTIONS</th>
             </tr>
           </thead>
-          <tbody id="trackingTableBody" class="divide-y divide-[#24211E]">
-            <tr id="emptyRow" class="text-[#68615A]">
+          <tbody id="trackingTableBody" class="divide-y divide-[var(--border-main)]">
+            <tr id="emptyRow" class="text-[var(--text-muted)]">
               <td colspan="6" class="py-14 text-center font-mono-code text-xs">
                 no videos in queue. paste a google drive folder link above and click scan &amp; select.
               </td>
@@ -578,8 +633,8 @@
         </table>
 
         <!-- Table Pagination Bar (15 items per page) -->
-        <div id="tablePaginationContainer" class="hidden items-center justify-between px-4 py-2.5 border-t border-[#2C2926] bg-[#1C1A18] font-mono-code text-[11px] select-none">
-          <div class="text-[#8C857E]" id="paginationInfoText">
+        <div id="tablePaginationContainer" class="hidden items-center justify-between px-4 py-2.5 border-t border-[var(--border-main)] bg-[var(--bg-subcard)] font-mono-code text-[11px] select-none">
+          <div class="text-[var(--text-muted)]" id="paginationInfoText">
             Showing 1–15 of 16 videos
           </div>
 
@@ -588,7 +643,7 @@
               type="button"
               id="prevPageBtn"
               onclick="changeTablePage(-1)"
-              class="h-6 px-2.5 bg-[#1E1C19] hover:bg-[#282420] text-[#FAF7F2] border border-[#2C2926] text-[10px] font-bold uppercase disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+              class="h-6 px-2.5 bg-[var(--bg-card)] hover:bg-[var(--btn-secondary-hover)] text-[var(--text-main)] border border-[var(--border-main)] text-[10px] font-bold uppercase disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
             >
               ← Prev
             </button>
@@ -599,7 +654,7 @@
               type="button"
               id="nextPageBtn"
               onclick="changeTablePage(1)"
-              class="h-6 px-2.5 bg-[#1E1C19] hover:bg-[#282420] text-[#FAF7F2] border border-[#2C2926] text-[10px] font-bold uppercase disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+              class="h-6 px-2.5 bg-[var(--bg-card)] hover:bg-[var(--btn-secondary-hover)] text-[var(--text-main)] border border-[var(--border-main)] text-[10px] font-bold uppercase disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
             >
               Next →
             </button>
@@ -611,7 +666,7 @@
       <button
         type="button"
         onclick="clearCompletedVideos()"
-        class="w-full py-2.5 border border-[#2C2926] hover:border-[#EDE8DE] bg-[#191715] hover:bg-[#201D1A] text-[#8C857E] hover:text-[#FAF7F2] font-mono-code text-[11px] font-bold uppercase tracking-widest transition-all cursor-pointer text-center"
+        class="w-full py-2.5 border border-[var(--border-main)] hover:border-[var(--btn-primary-bg)] bg-[var(--bg-card)] hover:bg-[var(--bg-subcard)] text-[var(--text-muted)] hover:text-[var(--text-main)] font-mono-code text-[11px] font-bold uppercase tracking-widest transition-all cursor-pointer text-center"
       >
         CLEAR ALL
       </button>
@@ -620,59 +675,59 @@
 
   <!-- 4. Scan & File Review Selection Modal (Select Files & Check Duplicates) -->
   <div id="scanReviewModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs p-4">
-    <div class="bg-[#191715] border border-[#2C2926] max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden font-mono-code text-xs text-[#FAF7F2]">
+    <div class="bg-[var(--bg-card)] border border-[var(--border-main)] max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden font-mono-code text-xs text-[var(--text-main)]">
       
       <!-- Modal Header -->
-      <div class="flex items-center justify-between px-5 py-3 border-b border-[#2C2926] bg-[#161412] shrink-0">
+      <div class="flex items-center justify-between px-5 py-3 border-b border-[var(--border-main)] bg-[var(--bg-subcard)] shrink-0">
         <div>
           <div class="flex items-center gap-2">
-            <h3 class="text-sm font-bold uppercase tracking-wider text-[#FAF7F2]" id="scanModalTitle">Scan &amp; Select Videos</h3>
-            <span id="scanModalCountBadge" class="px-2 py-0.2 bg-[#EDE8DE] text-[#141210] text-[10px] font-bold">0 found</span>
+            <h3 class="text-sm font-bold uppercase tracking-wider text-[var(--text-main)]" id="scanModalTitle">Scan &amp; Select Videos</h3>
+            <span id="scanModalCountBadge" class="px-2 py-0.2 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] text-[10px] font-bold">0 found</span>
           </div>
-          <p class="text-[10px] text-[#8C857E] mt-0.5" id="scanModalSubtitle">Review discovered videos, edit titles, and select what to upload</p>
+          <p class="text-[10px] text-[var(--text-muted)] mt-0.5" id="scanModalSubtitle">Review discovered videos, edit titles, and select what to upload</p>
         </div>
-        <button type="button" onclick="closeScanReviewModal()" class="text-[#8C857E] hover:text-[#FAF7F2] text-xl font-bold cursor-pointer">&times;</button>
+        <button type="button" onclick="closeScanReviewModal()" class="text-[var(--text-muted)] hover:text-[var(--text-main)] text-xl font-bold cursor-pointer">&times;</button>
       </div>
 
       <!-- Selection & Duplicate Filter Controls Bar -->
-      <div class="px-5 py-2.5 bg-[#1E1C19] border-b border-[#2C2926] flex items-center justify-between flex-wrap gap-2 text-[11px] shrink-0">
+      <div class="px-5 py-2.5 bg-[var(--bg-subcard)] border-b border-[var(--border-main)] flex items-center justify-between flex-wrap gap-2 text-[11px] shrink-0">
         <div class="flex items-center gap-2">
-          <button type="button" onclick="selectAllScanFiles(true)" class="px-2 py-1 bg-[#161412] border border-[#2C2926] text-[#FAF7F2] font-bold uppercase hover:bg-[#282420] cursor-pointer">
+          <button type="button" onclick="selectAllScanFiles(true)" class="px-2 py-1 bg-[var(--bg-card)] border border-[var(--border-main)] text-[var(--text-main)] font-bold uppercase hover:bg-[var(--btn-secondary-hover)] cursor-pointer">
             Select All
           </button>
-          <button type="button" onclick="selectAllScanFiles(false)" class="px-2 py-1 bg-[#161412] border border-[#2C2926] text-[#FAF7F2] font-bold uppercase hover:bg-[#282420] cursor-pointer">
+          <button type="button" onclick="selectAllScanFiles(false)" class="px-2 py-1 bg-[var(--bg-card)] border border-[var(--border-main)] text-[var(--text-main)] font-bold uppercase hover:bg-[var(--btn-secondary-hover)] cursor-pointer">
             Deselect All
           </button>
-          <button type="button" onclick="deselectDuplicateScanFiles()" class="px-2 py-1 bg-[#161412] border border-amber-700/60 text-amber-300 font-bold uppercase hover:bg-amber-950/40 cursor-pointer" title="Uncheck all files that were already uploaded">
+          <button type="button" onclick="deselectDuplicateScanFiles()" class="px-2 py-1 bg-[var(--bg-card)] border border-amber-500/60 text-amber-600 dark:text-amber-300 font-bold uppercase hover:bg-amber-100 dark:hover:bg-amber-950/40 cursor-pointer" title="Uncheck all files that were already uploaded">
             Deselect Duplicates
           </button>
-          <button type="button" onclick="bulkGenerateSmartThumbnails()" class="px-2.5 py-1 bg-amber-950/40 border border-amber-600/60 text-amber-300 font-bold uppercase hover:bg-amber-950/70 cursor-pointer flex items-center gap-1" title="Generate customized branded HD thumbnails for all scanned videos in 1 click">
+          <button type="button" onclick="bulkGenerateSmartThumbnails()" class="px-2.5 py-1 bg-amber-500/10 border border-amber-500/60 text-amber-700 dark:text-amber-300 font-bold uppercase hover:bg-amber-500/20 cursor-pointer flex items-center gap-1" title="Generate customized branded HD thumbnails for all scanned videos in 1 click">
             <span>⚡ Smart Thumbnails for ALL</span>
           </button>
         </div>
 
         <div class="flex items-center gap-2">
-          <span class="font-bold text-[#FAF7F2]" id="scanSelectedSummary">0 / 0 Selected</span>
+          <span class="font-bold text-[var(--text-main)]" id="scanSelectedSummary">0 / 0 Selected</span>
         </div>
       </div>
 
       <!-- Files List Table Container -->
       <div class="overflow-y-auto flex-1 p-4">
-        <div class="border border-[#2C2926] bg-[#161412] overflow-hidden">
+        <div class="border border-[var(--border-main)] bg-[var(--bg-card)] overflow-hidden">
           <table class="w-full text-left border-collapse text-xs">
             <thead>
-              <tr class="border-b border-[#2C2926] bg-[#1C1A18] text-[10px] font-bold uppercase tracking-wider text-[#8C857E]">
-                <th class="py-2 px-3 w-8 text-center border-r border-[#2C2926]">
+              <tr class="border-b border-[var(--border-main)] bg-[var(--bg-subcard)] text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+                <th class="py-2 px-3 w-8 text-center border-r border-[var(--border-main)]">
                   <input type="checkbox" id="scanSelectAllCheckbox" onchange="toggleSelectAllCheckbox(this)" checked class="cursor-pointer accent-orange-500" />
                 </th>
-                <th class="py-2 px-3 w-8 text-center border-r border-[#2C2926]">#</th>
-                <th class="py-2 px-4 border-r border-[#2C2926]">VIDEO TITLE (CLICK TO EDIT)</th>
-                <th class="py-2 px-3 w-24 text-center border-r border-[#2C2926]">SIZE</th>
-                <th class="py-2 px-3 w-28 text-center border-r border-[#2C2926]">DATE</th>
+                <th class="py-2 px-3 w-8 text-center border-r border-[var(--border-main)]">#</th>
+                <th class="py-2 px-4 border-r border-[var(--border-main)]">VIDEO TITLE (CLICK TO EDIT)</th>
+                <th class="py-2 px-3 w-24 text-center border-r border-[var(--border-main)]">SIZE</th>
+                <th class="py-2 px-3 w-28 text-center border-r border-[var(--border-main)]">DATE</th>
                 <th class="py-2 px-3 w-36 text-center">DUPLICATE CHECK</th>
               </tr>
             </thead>
-            <tbody id="scanReviewTableBody" class="divide-y divide-[#24211E]">
+            <tbody id="scanReviewTableBody" class="divide-y divide-[var(--border-subtle)]">
               <!-- Dynamically populated rows -->
             </tbody>
           </table>
@@ -680,11 +735,11 @@
       </div>
 
       <!-- Modal Footer -->
-      <div class="px-5 py-3 border-t border-[#2C2926] bg-[#161412] flex items-center justify-between shrink-0">
+      <div class="px-5 py-3 border-t border-[var(--border-main)] bg-[var(--bg-subcard)] flex items-center justify-between shrink-0">
         <button
           type="button"
           onclick="closeScanReviewModal()"
-          class="px-3 py-1.5 bg-[#1E1C19] border border-[#2C2926] text-[#8C857E] hover:text-[#FAF7F2] text-xs font-semibold uppercase cursor-pointer"
+          class="px-3 py-1.5 bg-[var(--bg-card)] border border-[var(--border-main)] text-[var(--text-muted)] hover:text-[var(--text-main)] text-xs font-semibold uppercase cursor-pointer"
         >
           Cancel
         </button>
@@ -693,7 +748,7 @@
           type="button"
           id="startSelectedUploadBtn"
           onclick="startSelectedUpload()"
-          class="px-5 py-2 bg-[#EDE8DE] hover:bg-white text-[#141210] text-xs font-bold uppercase tracking-widest cursor-pointer flex items-center gap-1.5"
+          class="px-5 py-2 bg-[var(--btn-primary-bg)] hover:opacity-90 text-[var(--btn-primary-text)] text-xs font-bold uppercase tracking-widest cursor-pointer flex items-center gap-1.5"
         >
           <span>START UPLOAD SELECTED (0) →</span>
         </button>
@@ -703,34 +758,34 @@
 
   <!-- 5. Fixed Video Player Modal -->
   <div id="videoModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-xs p-4">
-    <div class="bg-[#191715] border border-[#2C2926] max-w-4xl w-full overflow-hidden shadow-2xl flex flex-col text-[#FAF7F2]">
+    <div class="bg-[var(--bg-card)] border border-[var(--border-main)] max-w-4xl w-full overflow-hidden shadow-2xl flex flex-col text-[var(--text-main)]">
       <!-- Modal Header -->
-      <div class="flex items-center justify-between px-5 py-3 border-b border-[#2C2926] bg-[#161412] font-mono-code">
+      <div class="flex items-center justify-between px-5 py-3 border-b border-[var(--border-main)] bg-[var(--bg-subcard)] font-mono-code">
         <div class="space-y-0.5 overflow-hidden pr-3">
           <div class="flex items-center gap-2">
-            <span id="modalSourceBadge" class="inline-flex items-center px-1.5 py-0.2 text-[10px] font-bold bg-rose-950/50 text-rose-300 border border-rose-800 uppercase">
+            <span id="modalSourceBadge" class="inline-flex items-center px-1.5 py-0.2 text-[10px] font-bold bg-rose-500/20 text-rose-600 dark:text-rose-300 border border-rose-400 dark:border-rose-800 uppercase">
               YouTube
             </span>
-            <span id="modalBatchTag" class="inline-flex items-center px-1.5 py-0.2 text-[10px] font-bold bg-[#1E1C19] text-[#FAF7F2] border border-[#2C2926] uppercase">Batch</span>
-            <span id="modalSubjectTag" class="inline-flex items-center px-1.5 py-0.2 text-[10px] font-semibold bg-[#1E1C19] text-[#8C857E] border border-[#2C2926]">Subject</span>
+            <span id="modalBatchTag" class="inline-flex items-center px-1.5 py-0.2 text-[10px] font-bold bg-[var(--bg-card)] text-[var(--text-main)] border border-[var(--border-main)] uppercase">Batch</span>
+            <span id="modalSubjectTag" class="inline-flex items-center px-1.5 py-0.2 text-[10px] font-semibold bg-[var(--bg-card)] text-[var(--text-muted)] border border-[var(--border-main)]">Subject</span>
           </div>
-          <h3 id="modalVideoTitle" class="text-sm font-bold font-serif-editorial text-[#FAF7F2] truncate">Lecture Preview</h3>
+          <h3 id="modalVideoTitle" class="text-sm font-bold font-serif-editorial text-[var(--text-main)] truncate">Lecture Preview</h3>
         </div>
 
         <div class="flex items-center gap-2 shrink-0 text-xs">
           <button
             type="button"
             onclick="openEditModalFromPlayer()"
-            class="px-2.5 py-1 bg-[#1E1C19] hover:bg-[#282420] text-[#FAF7F2] border border-[#2C2926] text-[11px] font-bold uppercase tracking-wider cursor-pointer"
+            class="px-2.5 py-1 bg-[var(--btn-secondary-bg)] hover:bg-[var(--btn-secondary-hover)] text-[var(--text-main)] border border-[var(--border-main)] text-[11px] font-bold uppercase tracking-wider cursor-pointer"
           >
             Edit
           </button>
 
-          <a id="modalYtLink" href="#" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 bg-[#EDE8DE] hover:bg-white text-[#141210] text-[11px] font-bold uppercase tracking-wider cursor-pointer">
+          <a id="modalYtLink" href="#" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 bg-[var(--btn-primary-bg)] hover:opacity-90 text-[var(--btn-primary-text)] text-[11px] font-bold uppercase tracking-wider cursor-pointer">
             Open ↗
           </a>
 
-          <button onclick="closeVideoModal()" class="w-7 h-7 hover:bg-[#282420] text-[#FAF7F2] flex items-center justify-center cursor-pointer text-lg font-bold">
+          <button onclick="closeVideoModal()" class="w-7 h-7 hover:bg-[var(--btn-secondary-hover)] text-[var(--text-main)] flex items-center justify-center cursor-pointer text-lg font-bold">
             &times;
           </button>
         </div>
@@ -745,7 +800,7 @@
           
           <!-- Perfectly Centered Play Button -->
           <div class="relative flex flex-col items-center justify-center gap-2.5">
-            <div class="w-16 h-16 bg-[#EDE8DE] text-[#141210] shadow-2xl flex items-center justify-center transform group-hover:scale-110 transition-all duration-200">
+            <div class="w-16 h-16 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] shadow-2xl flex items-center justify-center transform group-hover:scale-110 transition-all duration-200">
               <svg class="w-8 h-8 ml-1 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
             </div>
             <span class="text-white font-mono-code text-[10px] font-bold uppercase tracking-wider bg-black/80 backdrop-blur-xs px-3 py-1 border border-white/20 shadow-md">Click to Play Video</span>
@@ -767,13 +822,13 @@
 
   <!-- 6. Video Details & Thumbnail Studio Modal -->
   <div id="editVideoModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs p-4">
-    <div class="bg-[#191715] border border-[#2C2926] max-w-xl w-full p-5 shadow-2xl space-y-4 text-[#FAF7F2]">
-      <div class="flex items-center justify-between border-b border-[#2C2926] pb-2.5 font-mono-code">
+    <div class="bg-[var(--bg-card)] border border-[var(--border-main)] max-w-xl w-full p-5 shadow-2xl space-y-4 text-[var(--text-main)]">
+      <div class="flex items-center justify-between border-b border-[var(--border-main)] pb-2.5 font-mono-code">
         <div>
-          <h3 class="text-sm font-bold uppercase tracking-wider text-[#FAF7F2]">Edit Video &amp; Thumbnail</h3>
-          <p class="text-[10px] text-[#8C857E]">Update title, batch tags, and 16:9 thumbnail</p>
+          <h3 class="text-sm font-bold uppercase tracking-wider text-[var(--text-main)]">Edit Video &amp; Thumbnail</h3>
+          <p class="text-[10px] text-[var(--text-muted)]">Update title, batch tags, and 16:9 thumbnail</p>
         </div>
-        <button type="button" onclick="closeEditModal()" class="text-[#8C857E] hover:text-[#FAF7F2] text-lg font-bold cursor-pointer">&times;</button>
+        <button type="button" onclick="closeEditModal()" class="text-[var(--text-muted)] hover:text-[var(--text-main)] text-lg font-bold cursor-pointer">&times;</button>
       </div>
 
       <input type="hidden" id="editModalFileId" value="" />
@@ -781,11 +836,11 @@
 
       <!-- Video Title Input -->
       <div class="space-y-1 font-mono-code">
-        <label class="block text-[11px] font-bold uppercase tracking-wider text-[#8C857E]">Video Title:</label>
+        <label class="block text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Video Title:</label>
         <input
           type="text"
           id="editModalTitleInput"
-          class="w-full h-8 px-2.5 om-box-input text-xs text-[#FAF7F2]"
+          class="w-full h-8 px-2.5 om-box-input text-xs text-[var(--text-main)]"
           placeholder="Enter video title..."
         />
       </div>
@@ -793,33 +848,33 @@
       <!-- Batch & Subject Row -->
       <div class="grid grid-cols-2 gap-3 font-mono-code">
         <div class="space-y-1">
-          <label class="block text-[10px] font-bold uppercase tracking-wider text-[#8C857E]">Batch Name:</label>
+          <label class="block text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Batch Name:</label>
           <input
             type="text"
             id="editModalBatchInput"
-            class="w-full h-8 px-2.5 om-box-input text-xs text-[#FAF7F2]"
+            class="w-full h-8 px-2.5 om-box-input text-xs text-[var(--text-main)]"
             placeholder="e.g. 27-LNE51MP"
           />
         </div>
         <div class="space-y-1">
-          <label class="block text-[10px] font-bold uppercase tracking-wider text-[#8C857E]">Subject:</label>
+          <label class="block text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Subject:</label>
           <input
             type="text"
             id="editModalSubjectInput"
-            class="w-full h-8 px-2.5 om-box-input text-xs text-[#FAF7F2]"
+            class="w-full h-8 px-2.5 om-box-input text-xs text-[var(--text-main)]"
             placeholder="e.g. Physics"
           />
         </div>
       </div>
 
       <!-- Thumbnail Studio Box -->
-      <div class="p-3 bg-[#161412] border border-[#2C2926] space-y-2.5 font-mono-code">
+      <div class="p-3 bg-[var(--bg-subcard)] border border-[var(--border-main)] space-y-2.5 font-mono-code">
         <div class="flex items-center justify-between">
-          <label class="text-[11px] font-bold uppercase tracking-wider text-[#FAF7F2]">16:9 Thumbnail</label>
+          <label class="text-[11px] font-bold uppercase tracking-wider text-[var(--text-main)]">16:9 Thumbnail</label>
           <button
             type="button"
             onclick="generateSmartThumbnail()"
-            class="px-2 py-0.5 bg-[#EDE8DE] hover:bg-white text-[#141210] text-[10px] font-bold uppercase tracking-wider cursor-pointer"
+            class="px-2 py-0.5 bg-[var(--btn-primary-bg)] hover:opacity-90 text-[var(--btn-primary-text)] text-[10px] font-bold uppercase tracking-wider cursor-pointer"
           >
             ⚡ Auto Thumbnail
           </button>
@@ -827,29 +882,29 @@
 
         <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
           <div class="sm:col-span-5">
-            <div class="relative aspect-video w-full border border-[#2C2926] overflow-hidden bg-black">
+            <div class="relative aspect-video w-full border border-[var(--border-main)] overflow-hidden bg-black">
               <img id="editModalThumbPreview" src="https://placehold.co/640x360/1c1917/ffffff?text=Preview" alt="Thumbnail Preview" class="w-full h-full object-cover" />
             </div>
           </div>
           <div class="sm:col-span-7 space-y-2 text-xs">
             <div>
-              <span class="text-[10px] font-bold text-[#8C857E] uppercase block mb-1">Option A: Upload Image</span>
+              <span class="text-[10px] font-bold text-[var(--text-muted)] uppercase block mb-1">Option A: Upload Image</span>
               <button
                 type="button"
                 onclick="document.getElementById('thumbnailFileInput').click()"
-                class="w-full h-7.5 px-2 bg-[#1E1C19] hover:bg-[#282420] text-[#FAF7F2] border border-[#2C2926] text-[11px] font-semibold flex items-center justify-center gap-1 cursor-pointer"
+                class="w-full h-7.5 px-2 bg-[var(--bg-card)] hover:bg-[var(--btn-secondary-hover)] text-[var(--text-main)] border border-[var(--border-main)] text-[11px] font-semibold flex items-center justify-center gap-1 cursor-pointer"
               >
                 Choose Image File (PNG/JPG)
               </button>
             </div>
             <div>
-              <span class="text-[10px] font-bold text-[#8C857E] uppercase block mb-1">Option B: Image URL</span>
+              <span class="text-[10px] font-bold text-[var(--text-muted)] uppercase block mb-1">Option B: Image URL</span>
               <input
                 type="text"
                 id="editModalThumbUrlInput"
                 oninput="handleCustomThumbUrlInput()"
                 placeholder="https://..."
-                class="w-full h-7.5 px-2 text-xs om-box-input text-[#FAF7F2]"
+                class="w-full h-7.5 px-2 text-xs om-box-input text-[var(--text-main)]"
               />
             </div>
           </div>
@@ -857,11 +912,11 @@
       </div>
 
       <!-- Action Buttons -->
-      <div class="flex items-center justify-between pt-2 border-t border-[#2C2926] font-mono-code">
+      <div class="flex items-center justify-between pt-2 border-t border-[var(--border-main)] font-mono-code">
         <button
           type="button"
           onclick="deleteCurrentVideoFromEditModal()"
-          class="px-2.5 py-1 text-xs text-rose-400 hover:bg-rose-950/40 border border-rose-800 font-bold uppercase tracking-wider cursor-pointer"
+          class="px-2.5 py-1 text-xs text-rose-500 hover:bg-rose-500/10 border border-rose-500/40 font-bold uppercase tracking-wider cursor-pointer"
         >
           Delete
         </button>
@@ -870,14 +925,14 @@
           <button
             type="button"
             onclick="closeEditModal()"
-            class="px-3 py-1 bg-[#1E1C19] border border-[#2C2926] text-[#FAF7F2] text-xs font-semibold cursor-pointer"
+            class="px-3 py-1 bg-[var(--bg-card)] border border-[var(--border-main)] text-[var(--text-main)] text-xs font-semibold cursor-pointer"
           >
             Cancel
           </button>
           <button
             type="button"
             onclick="saveVideoEditModal()"
-            class="px-3.5 py-1 bg-[#EDE8DE] hover:bg-white text-[#141210] text-xs font-bold uppercase tracking-wider cursor-pointer"
+            class="px-3.5 py-1 bg-[var(--btn-primary-bg)] hover:opacity-90 text-[var(--btn-primary-text)] text-xs font-bold uppercase tracking-wider cursor-pointer"
           >
             Save &amp; Apply
           </button>
@@ -888,108 +943,108 @@
 
   <!-- Google Auth & API Keys Modal — Guided Setup Wizard -->
   <div id="authConfigModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs p-4 overflow-y-auto">
-    <div class="bg-[#191715] border border-[#2C2926] max-w-xl w-full shadow-2xl font-mono-code my-4 text-[#FAF7F2]">
+    <div class="bg-[var(--bg-card)] border border-[var(--border-main)] max-w-xl w-full shadow-2xl font-mono-code my-4 text-[var(--text-main)]">
 
       <!-- Modal Header -->
-      <div class="flex items-center justify-between border-b border-[#2C2926] px-5 py-3 bg-[#161412]">
+      <div class="flex items-center justify-between border-b border-[var(--border-main)] px-5 py-3 bg-[var(--bg-subcard)]">
         <div>
-          <h3 class="text-sm font-bold uppercase tracking-wider text-[#FAF7F2]">Connect Google Account</h3>
-          <p class="text-[10px] text-[#8C857E]">Upload videos from Drive to YouTube — your account, your quota</p>
+          <h3 class="text-sm font-bold uppercase tracking-wider text-[var(--text-main)]">Connect Google Account</h3>
+          <p class="text-[10px] text-[var(--text-muted)]">Upload videos from Drive to YouTube — your account, your quota</p>
         </div>
-        <button type="button" onclick="closeAuthModal()" class="text-[#8C857E] hover:text-[#FAF7F2] text-lg font-bold cursor-pointer">&times;</button>
+        <button type="button" onclick="closeAuthModal()" class="text-[var(--text-muted)] hover:text-[var(--text-main)] text-lg font-bold cursor-pointer">&times;</button>
       </div>
 
       <!-- LANDING VIEW: Choose Path -->
       <div id="authLanding" class="p-5 space-y-3">
 
         <!-- Already Have Client ID — Quick Connect -->
-        <div class="p-4 bg-[#1E1C19] border-2 border-[#2C2926] hover:bg-[#282420] cursor-pointer transition-colors" onclick="showAuthQuickConnect()">
+        <div class="p-4 bg-[var(--bg-subcard)] border-2 border-[var(--border-main)] hover:bg-[var(--btn-secondary-hover)] cursor-pointer transition-colors" onclick="showAuthQuickConnect()">
           <div class="flex items-center justify-between">
             <div>
-              <div class="font-bold text-[#FAF7F2] text-xs uppercase tracking-wide">🚀 Quick Connect</div>
-              <p class="text-[10px] text-[#8C857E] mt-0.5">I already have a Google OAuth Client ID</p>
+              <div class="font-bold text-[var(--text-main)] text-xs uppercase tracking-wide">🚀 Quick Connect</div>
+              <p class="text-[10px] text-[var(--text-muted)] mt-0.5">I already have a Google OAuth Client ID</p>
             </div>
-            <span class="text-lg text-[#8C857E]">→</span>
+            <span class="text-lg text-[var(--text-muted)]">→</span>
           </div>
         </div>
 
         <!-- Setup From Scratch — Guided Wizard -->
-        <div class="p-4 bg-[#261E14] border-2 border-amber-600/60 hover:bg-[#332717] cursor-pointer transition-colors" onclick="showSetupWizard(1)">
+        <div class="p-4 bg-amber-500/10 border-2 border-amber-500/60 hover:bg-amber-500/20 cursor-pointer transition-colors" onclick="showSetupWizard(1)">
           <div class="flex items-center justify-between">
             <div>
-              <div class="font-bold text-[#FAF7F2] text-xs uppercase tracking-wide">⚡ Setup Your Own API <span class="text-[9px] font-bold bg-amber-900/80 text-amber-200 px-1.5 py-0.5 ml-1.5">FREE • 5 MIN</span></div>
-              <p class="text-[10px] text-amber-300/80 mt-0.5">Get your own 10,000 daily quota — step-by-step guided setup</p>
+              <div class="font-bold text-[var(--text-main)] text-xs uppercase tracking-wide">⚡ Setup Your Own API <span class="text-[9px] font-bold bg-amber-500/20 text-amber-700 dark:text-amber-200 px-1.5 py-0.5 ml-1.5">FREE • 5 MIN</span></div>
+              <p class="text-[10px] text-amber-700 dark:text-amber-300 mt-0.5">Get your own 10,000 daily quota — step-by-step guided setup</p>
             </div>
-            <span class="text-lg text-amber-300">→</span>
+            <span class="text-lg text-amber-600 dark:text-amber-300">→</span>
           </div>
         </div>
 
         <!-- Description & Tags Presets -->
-        <div class="p-3 bg-[#161412] border border-[#2C2926] text-xs space-y-2">
-          <div class="flex items-center justify-between font-bold text-[#FAF7F2] uppercase text-[10px]">
+        <div class="p-3 bg-[var(--bg-subcard)] border border-[var(--border-main)] text-xs space-y-2">
+          <div class="flex items-center justify-between font-bold text-[var(--text-main)] uppercase text-[10px]">
             <span>🏷️ Description &amp; Tags Template</span>
-            <span class="text-[#8C857E] font-normal lowercase">auto-added to uploads</span>
+            <span class="text-[var(--text-muted)] font-normal lowercase">auto-added to uploads</span>
           </div>
           <div class="space-y-1.5">
             <textarea
               id="presetDescFooterInput"
               rows="2"
               placeholder="Default description footer (e.g. 📌 Telegram: https://t.me/pw_updates | 📚 App Notes)"
-              class="w-full p-2 text-xs border border-[#2C2926] bg-[#201D1A] text-[#FAF7F2] focus:outline-none focus:border-[#EDE8DE]"
+              class="w-full p-2 text-xs border border-[var(--border-main)] bg-[var(--bg-card)] text-[var(--text-main)] focus:outline-none focus:border-[var(--btn-primary-bg)]"
               onchange="saveMetadataPresets()"
             ></textarea>
             <input
               type="text"
               id="presetTagsInput"
               placeholder="Default custom tags (comma separated, e.g. PW, JEE 2026, Physics, NEET)"
-              class="w-full p-2 text-xs border border-[#2C2926] bg-[#201D1A] text-[#FAF7F2] focus:outline-none focus:border-[#EDE8DE]"
+              class="w-full p-2 text-xs border border-[var(--border-main)] bg-[var(--bg-card)] text-[var(--text-main)] focus:outline-none focus:border-[var(--btn-primary-bg)]"
               onchange="saveMetadataPresets()"
             />
           </div>
         </div>
 
         <!-- Direct Token -->
-        <div class="p-3 bg-emerald-950/30 border border-emerald-800 text-xs space-y-2">
-          <div class="flex items-center justify-between font-bold text-emerald-300 uppercase text-[10px]">
+        <div class="p-3 bg-emerald-500/10 border border-emerald-500/40 text-xs space-y-2">
+          <div class="flex items-center justify-between font-bold text-emerald-700 dark:text-emerald-300 uppercase text-[10px]">
             <span>Advanced: Direct Bearer Token</span>
-            <span class="bg-emerald-900/80 px-1.5 py-0.2 text-[9px]">Dev Only</span>
+            <span class="bg-emerald-500/20 px-1.5 py-0.2 text-[9px]">Dev Only</span>
           </div>
           <div class="flex gap-2">
-            <input type="password" id="directAccessTokenInput" placeholder="Paste Google Access Token (ya29...)" class="flex-1 p-2 text-xs border border-emerald-700 bg-[#161412] text-[#FAF7F2] focus:outline-none" />
+            <input type="password" id="directAccessTokenInput" placeholder="Paste Google Access Token (ya29...)" class="flex-1 p-2 text-xs border border-emerald-500/40 bg-[var(--bg-subcard)] text-[var(--text-main)] focus:outline-none" />
             <button type="button" onclick="saveDirectToken()" class="px-3 py-2 bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs uppercase tracking-wider cursor-pointer whitespace-nowrap">Connect</button>
           </div>
         </div>
 
         <!-- Disconnect -->
-        <div class="flex items-center justify-between pt-2 border-t border-[#2C2926]">
-          <button type="button" onclick="logoutGoogle()" class="text-xs text-rose-400 hover:underline font-bold uppercase cursor-pointer">Disconnect</button>
-          <button type="button" onclick="closeAuthModal()" class="px-3 py-1 bg-[#EDE8DE] text-[#141210] font-bold text-xs uppercase cursor-pointer">Close</button>
+        <div class="flex items-center justify-between pt-2 border-t border-[var(--border-main)]">
+          <button type="button" onclick="logoutGoogle()" class="text-xs text-rose-500 hover:underline font-bold uppercase cursor-pointer">Disconnect</button>
+          <button type="button" onclick="closeAuthModal()" class="px-3 py-1 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] font-bold text-xs uppercase cursor-pointer">Close</button>
         </div>
       </div>
 
       <!-- QUICK CONNECT VIEW (Already Has Client ID) -->
       <div id="authQuickConnect" class="p-5 space-y-3 hidden">
-        <button type="button" onclick="showAuthLanding()" class="text-[10px] text-[#8C857E] hover:text-[#FAF7F2] font-bold uppercase cursor-pointer">← Back</button>
+        <button type="button" onclick="showAuthLanding()" class="text-[10px] text-[var(--text-muted)] hover:text-[var(--text-main)] font-bold uppercase cursor-pointer">← Back</button>
 
-        <div class="p-3 bg-[#161412] border border-[#2C2926] text-xs space-y-2">
-          <div class="flex items-center justify-between font-bold text-[#FAF7F2] uppercase text-[10px]">
+        <div class="p-3 bg-[var(--bg-subcard)] border border-[var(--border-main)] text-xs space-y-2">
+          <div class="flex items-center justify-between font-bold text-[var(--text-main)] uppercase text-[10px]">
             <span>Paste Your OAuth Client ID</span>
-            <span id="keyCountText" class="text-[#8C857E]">0 key(s)</span>
+            <span id="keyCountText" class="text-[var(--text-muted)]">0 key(s)</span>
           </div>
 
-          <div class="p-2 bg-[#1E1C19] border border-[#2C2926] text-[10px] space-y-1">
+          <div class="p-2 bg-[var(--bg-card)] border border-[var(--border-main)] text-[10px] space-y-1">
             <div class="flex items-center justify-between font-bold">
               <span>Your Authorized Origin (add this in Google Console):</span>
-              <button type="button" onclick="copyOriginUrl()" class="px-1.5 py-0.5 bg-[#2C2926] text-[#FAF7F2] border border-[#383430] text-[9px] uppercase cursor-pointer">Copy</button>
+              <button type="button" onclick="copyOriginUrl()" class="px-1.5 py-0.5 bg-[var(--bg-subcard)] text-[var(--text-main)] border border-[var(--border-main)] text-[9px] uppercase cursor-pointer">Copy</button>
             </div>
-            <div class="text-[10px] truncate font-bold text-orange-400" id="originUrlDisplay">https://...</div>
+            <div class="text-[10px] truncate font-bold text-orange-500" id="originUrlDisplay">https://...</div>
           </div>
 
-          <textarea id="clientIdsList" rows="2" placeholder="Paste your OAuth Client ID here (e.g. 123456789-abc.apps.googleusercontent.com)" class="w-full p-2 text-xs border border-[#2C2926] bg-[#201D1A] text-[#FAF7F2] focus:outline-none focus:border-[#EDE8DE]"></textarea>
+          <textarea id="clientIdsList" rows="2" placeholder="Paste your OAuth Client ID here (e.g. 123456789-abc.apps.googleusercontent.com)" class="w-full p-2 text-xs border border-[var(--border-main)] bg-[var(--bg-card)] text-[var(--text-main)] focus:outline-none focus:border-[var(--btn-primary-bg)]"></textarea>
 
           <div class="flex items-center justify-between pt-1">
-            <button type="button" onclick="saveClientIds()" class="px-3 py-1 bg-[#1E1C19] border border-[#2C2926] text-[#FAF7F2] text-xs font-bold uppercase cursor-pointer">Save</button>
-            <button type="button" onclick="saveAndAuthorize()" class="px-4 py-1.5 bg-[#EDE8DE] hover:bg-white text-[#141210] font-bold text-xs uppercase tracking-wider cursor-pointer">Save & Sign In →</button>
+            <button type="button" onclick="saveClientIds()" class="px-3 py-1 bg-[var(--bg-subcard)] border border-[var(--border-main)] text-[var(--text-main)] text-xs font-bold uppercase cursor-pointer">Save</button>
+            <button type="button" onclick="saveAndAuthorize()" class="px-4 py-1.5 bg-[var(--btn-primary-bg)] hover:opacity-90 text-[var(--btn-primary-text)] font-bold text-xs uppercase tracking-wider cursor-pointer">Save & Sign In →</button>
           </div>
         </div>
       </div>
@@ -999,197 +1054,197 @@
 
         <!-- Progress Bar -->
         <div class="px-5 pt-4 pb-2">
-          <button type="button" onclick="showAuthLanding()" class="text-[10px] text-[#8C857E] hover:text-[#FAF7F2] font-bold uppercase cursor-pointer mb-2">← Back to Options</button>
+          <button type="button" onclick="showAuthLanding()" class="text-[10px] text-[var(--text-muted)] hover:text-[var(--text-main)] font-bold uppercase cursor-pointer mb-2">← Back to Options</button>
           <div class="flex items-center gap-1">
-            <div id="wizStep1Bar" class="flex-1 h-1.5 bg-[#EDE8DE] transition-colors"></div>
-            <div id="wizStep2Bar" class="flex-1 h-1.5 bg-[#2C2926] transition-colors"></div>
-            <div id="wizStep3Bar" class="flex-1 h-1.5 bg-[#2C2926] transition-colors"></div>
-            <div id="wizStep4Bar" class="flex-1 h-1.5 bg-[#2C2926] transition-colors"></div>
-            <div id="wizStep5Bar" class="flex-1 h-1.5 bg-[#2C2926] transition-colors"></div>
+            <div id="wizStep1Bar" class="flex-1 h-1.5 bg-[var(--btn-primary-bg)] transition-colors"></div>
+            <div id="wizStep2Bar" class="flex-1 h-1.5 bg-[var(--border-main)] transition-colors"></div>
+            <div id="wizStep3Bar" class="flex-1 h-1.5 bg-[var(--border-main)] transition-colors"></div>
+            <div id="wizStep4Bar" class="flex-1 h-1.5 bg-[var(--border-main)] transition-colors"></div>
+            <div id="wizStep5Bar" class="flex-1 h-1.5 bg-[var(--border-main)] transition-colors"></div>
           </div>
-          <div class="text-[10px] text-[#8C857E] mt-1 font-bold uppercase" id="wizStepLabel">Step 1 of 5</div>
+          <div class="text-[10px] text-[var(--text-muted)] mt-1 font-bold uppercase" id="wizStepLabel">Step 1 of 5</div>
         </div>
 
         <!-- STEP 1: Create Google Cloud Project -->
         <div id="wizardStep1" class="px-5 pb-5 space-y-3">
           <div>
-            <h4 class="text-xs font-bold text-[#FAF7F2] uppercase">Step 1 — Create a Google Cloud Project</h4>
-            <p class="text-[10px] text-[#8C857E] mt-0.5">This is a one-time setup. Takes 30 seconds.</p>
+            <h4 class="text-xs font-bold text-[var(--text-main)] uppercase">Step 1 — Create a Google Cloud Project</h4>
+            <p class="text-[10px] text-[var(--text-muted)] mt-0.5">This is a one-time setup. Takes 30 seconds.</p>
           </div>
 
-          <div class="space-y-2 text-[11px] text-[#FAF7F2]">
-            <div class="flex items-start gap-2 p-2 bg-[#161412] border border-[#2C2926]">
-              <span class="font-bold text-orange-400 shrink-0">1.</span>
+          <div class="space-y-2 text-[11px] text-[var(--text-main)]">
+            <div class="flex items-start gap-2 p-2 bg-[var(--bg-subcard)] border border-[var(--border-main)]">
+              <span class="font-bold text-orange-500 shrink-0">1.</span>
               <span>Click the button below to open Google Cloud Console</span>
             </div>
-            <div class="flex items-start gap-2 p-2 bg-[#161412] border border-[#2C2926]">
-              <span class="font-bold text-orange-400 shrink-0">2.</span>
+            <div class="flex items-start gap-2 p-2 bg-[var(--bg-subcard)] border border-[var(--border-main)]">
+              <span class="font-bold text-orange-500 shrink-0">2.</span>
               <span>Sign in with your Google account (if not already)</span>
             </div>
-            <div class="flex items-start gap-2 p-2 bg-[#161412] border border-[#2C2926]">
-              <span class="font-bold text-orange-400 shrink-0">3.</span>
+            <div class="flex items-start gap-2 p-2 bg-[var(--bg-subcard)] border border-[var(--border-main)]">
+              <span class="font-bold text-orange-500 shrink-0">3.</span>
               <span>Click <b>"Select a project"</b> (top bar) → <b>"New Project"</b></span>
             </div>
-            <div class="flex items-start gap-2 p-2 bg-[#161412] border border-[#2C2926]">
-              <span class="font-bold text-orange-400 shrink-0">4.</span>
+            <div class="flex items-start gap-2 p-2 bg-[var(--bg-subcard)] border border-[var(--border-main)]">
+              <span class="font-bold text-orange-500 shrink-0">4.</span>
               <span>Enter any name (e.g. <b>"My YouTube Uploader"</b>) → Click <b>"Create"</b></span>
             </div>
-            <div class="flex items-start gap-2 p-2 bg-[#161412] border border-[#2C2926]">
-              <span class="font-bold text-orange-400 shrink-0">5.</span>
+            <div class="flex items-start gap-2 p-2 bg-[var(--bg-subcard)] border border-[var(--border-main)]">
+              <span class="font-bold text-orange-500 shrink-0">5.</span>
               <span>Wait 5 seconds for the project to be created, then select it from the top bar</span>
             </div>
           </div>
 
-          <a href="https://console.cloud.google.com/projectcreate" target="_blank" rel="noopener" class="block w-full text-center px-4 py-2.5 bg-[#1E1C19] border-2 border-[#2C2926] text-[#FAF7F2] text-xs font-bold uppercase tracking-wider hover:bg-[#282420] cursor-pointer">
+          <a href="https://console.cloud.google.com/projectcreate" target="_blank" rel="noopener" class="block w-full text-center px-4 py-2.5 bg-[var(--bg-subcard)] border-2 border-[var(--border-main)] text-[var(--text-main)] text-xs font-bold uppercase tracking-wider hover:bg-[var(--btn-secondary-hover)] cursor-pointer">
             Open Google Cloud Console ↗
           </a>
 
           <div class="flex justify-end pt-1">
-            <button type="button" onclick="showSetupWizard(2)" class="px-5 py-1.5 bg-[#EDE8DE] text-[#141210] font-bold text-xs uppercase cursor-pointer">Done → Next Step</button>
+            <button type="button" onclick="showSetupWizard(2)" class="px-5 py-1.5 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] font-bold text-xs uppercase cursor-pointer">Done → Next Step</button>
           </div>
         </div>
 
         <!-- STEP 2: Enable APIs -->
         <div id="wizardStep2" class="px-5 pb-5 space-y-3 hidden">
           <div>
-            <h4 class="text-xs font-bold text-[#FAF7F2] uppercase">Step 2 — Enable YouTube & Drive APIs</h4>
-            <p class="text-[10px] text-[#8C857E] mt-0.5">Turn on the APIs your project needs. Click both links below.</p>
+            <h4 class="text-xs font-bold text-[var(--text-main)] uppercase">Step 2 — Enable YouTube & Drive APIs</h4>
+            <p class="text-[10px] text-[var(--text-muted)] mt-0.5">Turn on the APIs your project needs. Click both links below.</p>
           </div>
 
-          <div class="space-y-2 text-[11px] text-[#FAF7F2]">
-            <div class="flex items-start gap-2 p-2 bg-[#161412] border border-[#2C2926]">
-              <span class="font-bold text-orange-400 shrink-0">1.</span>
+          <div class="space-y-2 text-[11px] text-[var(--text-main)]">
+            <div class="flex items-start gap-2 p-2 bg-[var(--bg-subcard)] border border-[var(--border-main)]">
+              <span class="font-bold text-orange-500 shrink-0">1.</span>
               <span>Click each link below → Click the blue <b>"Enable"</b> button on the page</span>
             </div>
           </div>
 
           <div class="space-y-2">
-            <a href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" rel="noopener" class="flex items-center justify-between p-2.5 bg-[#161412] border-2 border-[#2C2926] hover:bg-[#1E1C19] cursor-pointer text-xs font-bold text-[#FAF7F2] uppercase">
+            <a href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" rel="noopener" class="flex items-center justify-between p-2.5 bg-[var(--bg-subcard)] border-2 border-[var(--border-main)] hover:bg-[var(--btn-secondary-hover)] cursor-pointer text-xs font-bold text-[var(--text-main)] uppercase">
               <span>① Enable YouTube Data API v3 ↗</span>
-              <span class="text-orange-400">Required</span>
+              <span class="text-orange-500">Required</span>
             </a>
-            <a href="https://console.cloud.google.com/apis/library/drive.googleapis.com" target="_blank" rel="noopener" class="flex items-center justify-between p-2.5 bg-[#161412] border-2 border-[#2C2926] hover:bg-[#1E1C19] cursor-pointer text-xs font-bold text-[#FAF7F2] uppercase">
+            <a href="https://console.cloud.google.com/apis/library/drive.googleapis.com" target="_blank" rel="noopener" class="flex items-center justify-between p-2.5 bg-[var(--bg-subcard)] border-2 border-[var(--border-main)] hover:bg-[var(--btn-secondary-hover)] cursor-pointer text-xs font-bold text-[var(--text-main)] uppercase">
               <span>② Enable Google Drive API ↗</span>
-              <span class="text-orange-400">Required</span>
+              <span class="text-orange-500">Required</span>
             </a>
           </div>
 
           <div class="flex justify-between pt-1">
-            <button type="button" onclick="showSetupWizard(1)" class="px-4 py-1.5 bg-[#1E1C19] border border-[#2C2926] text-[#FAF7F2] text-xs font-bold uppercase cursor-pointer">← Back</button>
-            <button type="button" onclick="showSetupWizard(3)" class="px-5 py-1.5 bg-[#EDE8DE] text-[#141210] font-bold text-xs uppercase cursor-pointer">Done → Next Step</button>
+            <button type="button" onclick="showSetupWizard(1)" class="px-4 py-1.5 bg-[var(--bg-subcard)] border border-[var(--border-main)] text-[var(--text-main)] text-xs font-bold uppercase cursor-pointer">← Back</button>
+            <button type="button" onclick="showSetupWizard(3)" class="px-5 py-1.5 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] font-bold text-xs uppercase cursor-pointer">Done → Next Step</button>
           </div>
         </div>
 
         <!-- STEP 3: OAuth Consent Screen -->
         <div id="wizardStep3" class="px-5 pb-5 space-y-3 hidden">
           <div>
-            <h4 class="text-xs font-bold text-[#FAF7F2] uppercase">Step 3 — Configure OAuth Consent Screen</h4>
-            <p class="text-[10px] text-[#8C857E] mt-0.5">Tell Google what your app does. Simple form, 1 minute.</p>
+            <h4 class="text-xs font-bold text-[var(--text-main)] uppercase">Step 3 — Configure OAuth Consent Screen</h4>
+            <p class="text-[10px] text-[var(--text-muted)] mt-0.5">Tell Google what your app does. Simple form, 1 minute.</p>
           </div>
 
-          <div class="space-y-2 text-[11px] text-[#FAF7F2]">
-            <div class="flex items-start gap-2 p-2 bg-[#161412] border border-[#2C2926]">
-              <span class="font-bold text-orange-400 shrink-0">1.</span>
+          <div class="space-y-2 text-[11px] text-[var(--text-main)]">
+            <div class="flex items-start gap-2 p-2 bg-[var(--bg-subcard)] border border-[var(--border-main)]">
+              <span class="font-bold text-orange-500 shrink-0">1.</span>
               <span>Click button below to open OAuth Consent Screen</span>
             </div>
-            <div class="flex items-start gap-2 p-2 bg-[#161412] border border-[#2C2926]">
-              <span class="font-bold text-orange-400 shrink-0">2.</span>
+            <div class="flex items-start gap-2 p-2 bg-[var(--bg-subcard)] border border-[var(--border-main)]">
+              <span class="font-bold text-orange-500 shrink-0">2.</span>
               <span>Select <b>"External"</b> → Click <b>"Create"</b></span>
             </div>
-            <div class="flex items-start gap-2 p-2 bg-[#161412] border border-[#2C2926]">
-              <span class="font-bold text-orange-400 shrink-0">3.</span>
+            <div class="flex items-start gap-2 p-2 bg-[var(--bg-subcard)] border border-[var(--border-main)]">
+              <span class="font-bold text-orange-500 shrink-0">3.</span>
               <span>Fill in: <b>App Name</b> (anything) and <b>User Support Email</b> (your email)</span>
             </div>
-            <div class="flex items-start gap-2 p-2 bg-[#161412] border border-[#2C2926]">
-              <span class="font-bold text-orange-400 shrink-0">4.</span>
+            <div class="flex items-start gap-2 p-2 bg-[var(--bg-subcard)] border border-[var(--border-main)]">
+              <span class="font-bold text-orange-500 shrink-0">4.</span>
               <span>Scroll to bottom → Add your email in <b>"Developer contact"</b> → Click <b>"Save and Continue"</b></span>
             </div>
-            <div class="flex items-start gap-2 p-2 bg-[#161412] border border-[#2C2926]">
-              <span class="font-bold text-orange-400 shrink-0">5.</span>
+            <div class="flex items-start gap-2 p-2 bg-[var(--bg-subcard)] border border-[var(--border-main)]">
+              <span class="font-bold text-orange-500 shrink-0">5.</span>
               <span>On the Scopes page → Just click <b>"Save and Continue"</b> (skip it)</span>
             </div>
-            <div class="flex items-start gap-2 p-2 bg-[#161412] border border-[#2C2926]">
-              <span class="font-bold text-orange-400 shrink-0">6.</span>
+            <div class="flex items-start gap-2 p-2 bg-[var(--bg-subcard)] border border-[var(--border-main)]">
+              <span class="font-bold text-orange-500 shrink-0">6.</span>
               <span>On the Test Users page → Click <b>"Add Users"</b> → Add <b>your own Gmail</b> → Click <b>"Save and Continue"</b></span>
             </div>
           </div>
 
-          <a href="https://console.cloud.google.com/apis/credentials/consent" target="_blank" rel="noopener" class="block w-full text-center px-4 py-2.5 bg-[#1E1C19] border-2 border-[#2C2926] text-[#FAF7F2] text-xs font-bold uppercase tracking-wider hover:bg-[#282420] cursor-pointer">
+          <a href="https://console.cloud.google.com/apis/credentials/consent" target="_blank" rel="noopener" class="block w-full text-center px-4 py-2.5 bg-[var(--bg-subcard)] border-2 border-[var(--border-main)] text-[var(--text-main)] text-xs font-bold uppercase tracking-wider hover:bg-[var(--btn-secondary-hover)] cursor-pointer">
             Open OAuth Consent Screen ↗
           </a>
 
           <div class="flex justify-between pt-1">
-            <button type="button" onclick="showSetupWizard(2)" class="px-4 py-1.5 bg-[#1E1C19] border border-[#2C2926] text-[#FAF7F2] text-xs font-bold uppercase cursor-pointer">← Back</button>
-            <button type="button" onclick="showSetupWizard(4)" class="px-5 py-1.5 bg-[#EDE8DE] text-[#141210] font-bold text-xs uppercase cursor-pointer">Done → Next Step</button>
+            <button type="button" onclick="showSetupWizard(2)" class="px-4 py-1.5 bg-[var(--bg-subcard)] border border-[var(--border-main)] text-[var(--text-main)] text-xs font-bold uppercase cursor-pointer">← Back</button>
+            <button type="button" onclick="showSetupWizard(4)" class="px-5 py-1.5 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] font-bold text-xs uppercase cursor-pointer">Done → Next Step</button>
           </div>
         </div>
 
         <!-- STEP 4: Create OAuth Client ID -->
         <div id="wizardStep4" class="px-5 pb-5 space-y-3 hidden">
           <div>
-            <h4 class="text-xs font-bold text-[#FAF7F2] uppercase">Step 4 — Create OAuth Client ID</h4>
-            <p class="text-[10px] text-[#8C857E] mt-0.5">This generates the key your app needs. Almost done!</p>
+            <h4 class="text-xs font-bold text-[var(--text-main)] uppercase">Step 4 — Create OAuth Client ID</h4>
+            <p class="text-[10px] text-[var(--text-muted)] mt-0.5">This generates the key your app needs. Almost done!</p>
           </div>
 
-          <div class="space-y-2 text-[11px] text-[#FAF7F2]">
-            <div class="flex items-start gap-2 p-2 bg-[#161412] border border-[#2C2926]">
-              <span class="font-bold text-orange-400 shrink-0">1.</span>
+          <div class="space-y-2 text-[11px] text-[var(--text-main)]">
+            <div class="flex items-start gap-2 p-2 bg-[var(--bg-subcard)] border border-[var(--border-main)]">
+              <span class="font-bold text-orange-500 shrink-0">1.</span>
               <span>Click button below to open Credentials page</span>
             </div>
-            <div class="flex items-start gap-2 p-2 bg-[#161412] border border-[#2C2926]">
-              <span class="font-bold text-orange-400 shrink-0">2.</span>
+            <div class="flex items-start gap-2 p-2 bg-[var(--bg-subcard)] border border-[var(--border-main)]">
+              <span class="font-bold text-orange-500 shrink-0">2.</span>
               <span>Click <b>"+ Create Credentials"</b> → Choose <b>"OAuth client ID"</b></span>
             </div>
-            <div class="flex items-start gap-2 p-2 bg-[#161412] border border-[#2C2926]">
-              <span class="font-bold text-orange-400 shrink-0">3.</span>
+            <div class="flex items-start gap-2 p-2 bg-[var(--bg-subcard)] border border-[var(--border-main)]">
+              <span class="font-bold text-orange-500 shrink-0">3.</span>
               <span>Application type: <b>"Web application"</b></span>
             </div>
-            <div class="flex items-start gap-2 p-2 bg-[#261E14] border-2 border-amber-600/60">
-              <span class="font-bold text-orange-400 shrink-0">4.</span>
+            <div class="flex items-start gap-2 p-2 bg-amber-500/10 border-2 border-amber-500/60">
+              <span class="font-bold text-orange-500 shrink-0">4.</span>
               <span>Under <b>"Authorized JavaScript origins"</b> → Click <b>"+ Add URI"</b> → Paste this exact URL:</span>
             </div>
           </div>
 
-          <div class="flex items-center gap-2 p-2.5 bg-[#141210] border border-[#2C2926]">
-            <code class="flex-1 text-xs text-orange-400 font-bold truncate" id="wizOriginUrl">http://localhost:3000</code>
-            <button type="button" onclick="copyWizOriginUrl()" class="px-2 py-1 bg-[#EDE8DE] text-[#141210] text-[10px] font-bold uppercase cursor-pointer shrink-0">Copy</button>
+          <div class="flex items-center gap-2 p-2.5 bg-[var(--bg-card)] border border-[var(--border-main)]">
+            <code class="flex-1 text-xs text-orange-500 font-bold truncate" id="wizOriginUrl">http://localhost:3000</code>
+            <button type="button" onclick="copyWizOriginUrl()" class="px-2 py-1 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] text-[10px] font-bold uppercase cursor-pointer shrink-0">Copy</button>
           </div>
 
-          <div class="space-y-2 text-[11px] text-[#FAF7F2]">
-            <div class="flex items-start gap-2 p-2 bg-[#161412] border border-[#2C2926]">
-              <span class="font-bold text-orange-400 shrink-0">5.</span>
+          <div class="space-y-2 text-[11px] text-[var(--text-main)]">
+            <div class="flex items-start gap-2 p-2 bg-[var(--bg-subcard)] border border-[var(--border-main)]">
+              <span class="font-bold text-orange-500 shrink-0">5.</span>
               <span>Click <b>"Create"</b> → A popup will show your <b>Client ID</b> — copy it!</span>
             </div>
           </div>
 
-          <a href="https://console.cloud.google.com/apis/credentials/oauthclient" target="_blank" rel="noopener" class="block w-full text-center px-4 py-2.5 bg-[#1E1C19] border-2 border-[#2C2926] text-[#FAF7F2] text-xs font-bold uppercase tracking-wider hover:bg-[#282420] cursor-pointer">
+          <a href="https://console.cloud.google.com/apis/credentials/oauthclient" target="_blank" rel="noopener" class="block w-full text-center px-4 py-2.5 bg-[var(--bg-subcard)] border-2 border-[var(--border-main)] text-[var(--text-main)] text-xs font-bold uppercase tracking-wider hover:bg-[var(--btn-secondary-hover)] cursor-pointer">
             Open Credentials Page ↗
           </a>
 
           <div class="flex justify-between pt-1">
-            <button type="button" onclick="showSetupWizard(3)" class="px-4 py-1.5 bg-[#1E1C19] border border-[#2C2926] text-[#FAF7F2] text-xs font-bold uppercase cursor-pointer">← Back</button>
-            <button type="button" onclick="showSetupWizard(5)" class="px-5 py-1.5 bg-[#EDE8DE] text-[#141210] font-bold text-xs uppercase cursor-pointer">I Copied It → Final Step</button>
+            <button type="button" onclick="showSetupWizard(3)" class="px-4 py-1.5 bg-[var(--bg-subcard)] border border-[var(--border-main)] text-[var(--text-main)] text-xs font-bold uppercase cursor-pointer">← Back</button>
+            <button type="button" onclick="showSetupWizard(5)" class="px-5 py-1.5 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] font-bold text-xs uppercase cursor-pointer">I Copied It → Final Step</button>
           </div>
         </div>
 
         <!-- STEP 5: Paste Client ID & Connect -->
         <div id="wizardStep5" class="px-5 pb-5 space-y-3 hidden">
           <div>
-            <h4 class="text-xs font-bold text-[#FAF7F2] uppercase">Step 5 — Paste Client ID & Connect! 🎉</h4>
-            <p class="text-[10px] text-[#8C857E] mt-0.5">You're done! Paste the Client ID you just copied.</p>
+            <h4 class="text-xs font-bold text-[var(--text-main)] uppercase">Step 5 — Paste Client ID & Connect! 🎉</h4>
+            <p class="text-[10px] text-[var(--text-muted)] mt-0.5">You're done! Paste the Client ID you just copied.</p>
           </div>
 
-          <div class="p-3 bg-emerald-950/30 border-2 border-emerald-600/60 space-y-2">
-            <label class="block text-[10px] font-bold text-emerald-300 uppercase">Your OAuth Client ID</label>
-            <textarea id="wizClientIdInput" rows="2" placeholder="Paste your Client ID here (e.g. 123456789-abcdef.apps.googleusercontent.com)" class="w-full p-2.5 text-xs border-2 border-emerald-700 bg-[#161412] text-[#FAF7F2] focus:outline-none focus:border-emerald-500 font-bold"></textarea>
+          <div class="p-3 bg-emerald-500/10 border-2 border-emerald-500/60 space-y-2">
+            <label class="block text-[10px] font-bold text-emerald-700 dark:text-emerald-300 uppercase">Your OAuth Client ID</label>
+            <textarea id="wizClientIdInput" rows="2" placeholder="Paste your Client ID here (e.g. 123456789-abcdef.apps.googleusercontent.com)" class="w-full p-2.5 text-xs border-2 border-emerald-500 bg-[var(--bg-subcard)] text-[var(--text-main)] focus:outline-none font-bold"></textarea>
           </div>
 
-          <div class="p-2.5 bg-[#261E14] border border-amber-700/60 text-[10px] text-amber-200">
+          <div class="p-2.5 bg-amber-500/10 border border-amber-500/60 text-[10px] text-amber-800 dark:text-amber-200">
             <span class="font-bold">✦ What happens next:</span> Your Client ID connects to <b>your own</b> Google Cloud project. All API quota (10,000 units/day) is yours alone. No one else shares it!
           </div>
 
           <div class="flex justify-between pt-1">
-            <button type="button" onclick="showSetupWizard(4)" class="px-4 py-1.5 bg-[#1E1C19] border border-[#2C2926] text-[#FAF7F2] text-xs font-bold uppercase cursor-pointer">← Back</button>
+            <button type="button" onclick="showSetupWizard(4)" class="px-4 py-1.5 bg-[var(--bg-subcard)] border border-[var(--border-main)] text-[var(--text-main)] text-xs font-bold uppercase cursor-pointer">← Back</button>
             <button type="button" onclick="wizardFinishAndConnect()" class="px-6 py-2 bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold uppercase tracking-wider cursor-pointer">✔ Connect & Sign In</button>
           </div>
         </div>
@@ -1201,29 +1256,29 @@
 
   <!-- 6. Manual Direct Video Upload Studio Modal -->
   <div id="manualUploadModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs p-4 overflow-y-auto">
-    <div class="bg-[#191715] border-2 border-[#2C2926] max-w-2xl w-full shadow-2xl font-mono-code my-4 flex flex-col text-[#FAF7F2]">
+    <div class="bg-[var(--bg-card)] border-2 border-[var(--border-main)] max-w-2xl w-full shadow-2xl font-mono-code my-4 flex flex-col text-[var(--text-main)]">
       <!-- Header -->
-      <div class="flex items-center justify-between border-b border-[#2C2926] px-5 py-3 bg-[#161412]">
+      <div class="flex items-center justify-between border-b border-[var(--border-main)] px-5 py-3 bg-[var(--bg-subcard)]">
         <div>
-          <h3 class="text-sm font-bold uppercase tracking-wider text-[#FAF7F2]">Direct Device Upload Studio</h3>
-          <p class="text-[10px] text-[#8C857E]">Upload local video directly to YouTube with instant thumbnail &amp; title controls</p>
+          <h3 class="text-sm font-bold uppercase tracking-wider text-[var(--text-main)]">Direct Device Upload Studio</h3>
+          <p class="text-[10px] text-[var(--text-muted)]">Upload local video directly to YouTube with instant thumbnail &amp; title controls</p>
         </div>
-        <button type="button" onclick="closeManualUploadModal()" class="text-[#8C857E] hover:text-[#FAF7F2] text-lg font-bold cursor-pointer">&times;</button>
+        <button type="button" onclick="closeManualUploadModal()" class="text-[var(--text-muted)] hover:text-[var(--text-main)] text-lg font-bold cursor-pointer">&times;</button>
       </div>
 
       <!-- Body -->
       <div class="p-5 space-y-4 max-h-[80vh] overflow-y-auto">
         
         <!-- Video File Selector / Drag & Drop Dropzone -->
-        <div id="manualDropzone" onclick="document.getElementById('manualVideoFileInput').click()" class="border-2 border-dashed border-[#2C2926] hover:border-orange-500 bg-[#161412] hover:bg-[#1E1C19] p-6 text-center cursor-pointer transition-colors space-y-2 select-none">
+        <div id="manualDropzone" onclick="document.getElementById('manualVideoFileInput').click()" class="border-2 border-dashed border-[var(--border-main)] hover:border-orange-500 bg-[var(--bg-subcard)] hover:bg-[var(--btn-secondary-hover)] p-6 text-center cursor-pointer transition-colors space-y-2 select-none">
           <input type="file" id="manualVideoFileInput" class="hidden" accept="video/mp4, video/mkv, video/x-matroska, video/webm, video/quicktime, video/avi" onchange="handleManualFileSelected(event)" />
           <div class="text-3xl">🎬</div>
-          <div class="font-bold text-xs uppercase tracking-wide text-[#FAF7F2]" id="manualFileDropPrompt">Click or Drag &amp; Drop a Video File Here</div>
-          <p class="text-[10px] text-[#8C857E]">Supports MP4, MKV, WebM, MOV, AVI (no size limits)</p>
+          <div class="font-bold text-xs uppercase tracking-wide text-[var(--text-main)]" id="manualFileDropPrompt">Click or Drag &amp; Drop a Video File Here</div>
+          <p class="text-[10px] text-[var(--text-muted)]">Supports MP4, MKV, WebM, MOV, AVI (no size limits)</p>
         </div>
 
         <!-- Local Video Player Preview (Hidden until file selected) -->
-        <div id="manualLocalPlayerContainer" class="hidden space-y-2 border border-[#2C2926] bg-black p-2">
+        <div id="manualLocalPlayerContainer" class="hidden space-y-2 border border-[var(--border-main)] bg-black p-2">
           <div class="flex items-center justify-between text-white text-[10px] px-1 font-bold">
             <span class="text-emerald-400">▶ LOCAL VIDEO PREVIEW</span>
             <span id="manualLocalFileInfo" class="text-stone-400">0 MB</span>
@@ -1232,36 +1287,36 @@
         </div>
 
         <!-- Metadata Controls Grid -->
-        <div class="space-y-3 bg-[#161412] p-4 border border-[#2C2926]">
+        <div class="space-y-3 bg-[var(--bg-subcard)] p-4 border border-[var(--border-main)]">
           <!-- Title Input -->
           <div class="space-y-1">
-            <label class="block text-[10px] font-bold uppercase tracking-wider text-[#8C857E]">YouTube Video Title</label>
+            <label class="block text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">YouTube Video Title</label>
             <input
               type="text"
               id="manualTitleInput"
               placeholder="Enter YouTube Video Title..."
-              class="w-full h-8 px-2.5 om-box-input text-xs font-bold text-[#FAF7F2]"
+              class="w-full h-8 px-2.5 om-box-input text-xs font-bold text-[var(--text-main)]"
             />
           </div>
 
           <!-- 2-Col: Batch & Subject -->
           <div class="grid grid-cols-2 gap-2.5">
             <div class="space-y-1">
-              <label class="block text-[10px] font-bold uppercase tracking-wider text-[#8C857E]">Batch Name</label>
+              <label class="block text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Batch Name</label>
               <input
                 type="text"
                 id="manualBatchInput"
                 placeholder="e.g. 27-AJ251NP 2026"
-                class="w-full h-8 px-2 om-box-input text-xs text-[#FAF7F2]"
+                class="w-full h-8 px-2 om-box-input text-xs text-[var(--text-main)]"
               />
             </div>
             <div class="space-y-1">
-              <label class="block text-[10px] font-bold uppercase tracking-wider text-[#8C857E]">Subject / Lecture</label>
+              <label class="block text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Subject / Lecture</label>
               <input
                 type="text"
                 id="manualSubjectInput"
                 placeholder="e.g. PHYSICS"
-                class="w-full h-8 px-2 om-box-input text-xs text-[#FAF7F2]"
+                class="w-full h-8 px-2 om-box-input text-xs text-[var(--text-main)]"
               />
             </div>
           </div>
@@ -1269,19 +1324,19 @@
           <!-- 2-Col: Playlist & Visibility -->
           <div class="grid grid-cols-2 gap-2.5">
             <div class="space-y-1">
-              <label class="block text-[10px] font-bold uppercase tracking-wider text-[#8C857E]">Playlist (optional)</label>
+              <label class="block text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Playlist (optional)</label>
               <input
                 type="text"
                 id="manualPlaylistInput"
                 placeholder="e.g. Physics 2026"
-                class="w-full h-8 px-2 om-box-input text-xs text-[#FAF7F2]"
+                class="w-full h-8 px-2 om-box-input text-xs text-[var(--text-main)]"
               />
             </div>
             <div class="space-y-1">
-              <label class="block text-[10px] font-bold uppercase tracking-wider text-[#8C857E]">Visibility &amp; Release</label>
+              <label class="block text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Visibility &amp; Release</label>
               <select
                 id="manualPrivacySelect"
-                class="w-full h-8 px-2 om-box-input text-xs bg-[#201D1A] text-[#FAF7F2] cursor-pointer"
+                class="w-full h-8 px-2 om-box-input text-xs bg-[var(--bg-card)] text-[var(--text-main)] cursor-pointer"
               >
                 <option value="unlisted" selected>Unlisted (Default)</option>
                 <option value="private">Private</option>
@@ -1292,16 +1347,16 @@
         </div>
 
         <!-- Instant Thumbnail Studio Section -->
-        <div class="bg-[#161412] p-4 border border-[#2C2926] space-y-3">
+        <div class="bg-[var(--bg-subcard)] p-4 border border-[var(--border-main)] space-y-3">
           <div class="flex items-center justify-between">
-            <label class="block text-[10px] font-bold uppercase tracking-wider text-[#FAF7F2]">Instant Thumbnail Studio</label>
-            <button type="button" onclick="generateManualSmartThumb()" class="px-2 py-0.5 bg-amber-950/40 border border-amber-600/60 text-amber-300 font-bold uppercase text-[10px] hover:bg-amber-950/70 cursor-pointer">
+            <label class="block text-[10px] font-bold uppercase tracking-wider text-[var(--text-main)]">Instant Thumbnail Studio</label>
+            <button type="button" onclick="generateManualSmartThumb()" class="px-2 py-0.5 bg-amber-500/10 border border-amber-500/60 text-amber-700 dark:text-amber-300 font-bold uppercase text-[10px] hover:bg-amber-500/20 cursor-pointer">
               ⚡ 1-Click Smart Canvas
             </button>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
-            <div class="md:col-span-5 aspect-video bg-black border border-[#2C2926] overflow-hidden flex items-center justify-center">
+            <div class="md:col-span-5 aspect-video bg-black border border-[var(--border-main)] overflow-hidden flex items-center justify-center">
               <img id="manualThumbPreview" src="https://placehold.co/1280x720/1c1917/ffffff?text=Thumbnail+Preview" alt="Thumbnail Preview" class="w-full h-full object-cover" />
             </div>
             <div class="md:col-span-7 space-y-2 text-xs">
@@ -1311,11 +1366,11 @@
                   id="manualThumbUrlInput"
                   placeholder="Paste Drive image link or web URL..."
                   oninput="handleManualThumbUrlInput()"
-                  class="w-full h-7 px-2 om-box-input text-[11px] text-[#FAF7F2]"
+                  class="w-full h-7 px-2 om-box-input text-[11px] text-[var(--text-main)]"
                 />
               </div>
               <div class="flex items-center gap-2">
-                <button type="button" onclick="document.getElementById('manualThumbFileInput').click()" class="px-2.5 py-1 bg-[#1E1C19] border border-[#2C2926] text-[#FAF7F2] hover:bg-[#282420] text-[10px] font-bold uppercase cursor-pointer">
+                <button type="button" onclick="document.getElementById('manualThumbFileInput').click()" class="px-2.5 py-1 bg-[var(--bg-card)] border border-[var(--border-main)] text-[var(--text-main)] hover:bg-[var(--btn-secondary-hover)] text-[10px] font-bold uppercase cursor-pointer">
                   Choose Image File...
                 </button>
                 <input type="file" id="manualThumbFileInput" class="hidden" accept="image/png, image/jpeg, image/webp" onchange="handleManualThumbFileSelected(event)" />
@@ -1325,18 +1380,18 @@
         </div>
 
         <!-- Real-time Manual Upload Progress Bar -->
-        <div id="manualUploadProgressContainer" class="hidden bg-[#161412] text-[#FAF7F2] p-3.5 space-y-2 border-2 border-orange-500 font-mono-code text-xs">
+        <div id="manualUploadProgressContainer" class="hidden bg-[var(--bg-card)] text-[var(--text-main)] p-3.5 space-y-2 border-2 border-orange-500 font-mono-code text-xs">
           <div class="flex items-center justify-between font-bold">
             <div class="flex items-center gap-2">
               <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span class="text-orange-400 uppercase tracking-wider" id="manualProgressLabel">UPLOADING DIRECTLY TO YOUTUBE...</span>
+              <span class="text-orange-500 uppercase tracking-wider" id="manualProgressLabel">UPLOADING DIRECTLY TO YOUTUBE...</span>
             </div>
-            <span id="manualProgressPercent" class="text-emerald-400 text-sm">0%</span>
+            <span id="manualProgressPercent" class="text-emerald-500 text-sm">0%</span>
           </div>
-          <div class="w-full bg-[#2C2926] h-2 overflow-hidden">
+          <div class="w-full bg-[var(--border-main)] h-2 overflow-hidden">
             <div id="manualProgressBarFill" class="bg-gradient-to-r from-orange-500 to-emerald-400 h-full transition-all duration-150" style="width: 0%"></div>
           </div>
-          <div class="flex items-center justify-between text-[10px] text-[#8C857E]">
+          <div class="flex items-center justify-between text-[10px] text-[var(--text-muted)]">
             <span id="manualProgressBytes">0 MB / 0 MB</span>
             <span id="manualProgressSpeed">⚡ 0 MB/s</span>
             <span id="manualProgressEta">--</span>
@@ -1346,11 +1401,11 @@
       </div>
 
       <!-- Modal Footer -->
-      <div class="px-5 py-3 border-t border-[#2C2926] bg-[#161412] flex items-center justify-between shrink-0">
+      <div class="px-5 py-3 border-t border-[var(--border-main)] bg-[var(--bg-subcard)] flex items-center justify-between shrink-0">
         <button
           type="button"
           onclick="closeManualUploadModal()"
-          class="px-3 py-1.5 bg-[#1E1C19] border border-[#2C2926] text-[#8C857E] hover:text-[#FAF7F2] text-xs font-semibold uppercase cursor-pointer"
+          class="px-3 py-1.5 bg-[var(--bg-card)] border border-[var(--border-main)] text-[var(--text-muted)] hover:text-[var(--text-main)] text-xs font-semibold uppercase cursor-pointer"
         >
           Cancel
         </button>
@@ -1359,7 +1414,7 @@
           type="button"
           id="startManualUploadBtn"
           onclick="startManualDirectUpload()"
-          class="px-6 py-2 bg-[#EDE8DE] hover:bg-white text-[#141210] text-xs font-bold uppercase tracking-widest cursor-pointer flex items-center gap-1.5"
+          class="px-6 py-2 bg-[var(--btn-primary-bg)] hover:opacity-90 text-[var(--btn-primary-text)] text-xs font-bold uppercase tracking-widest cursor-pointer flex items-center gap-1.5"
         >
           <span>START DIRECT UPLOAD ➔</span>
         </button>
@@ -1666,19 +1721,19 @@
       let classes = 'h-7 flex items-center justify-center text-xs font-semibold cursor-pointer transition-all relative ';
 
       if (isStart && isEnd) {
-        classes += 'bg-[#EDE8DE] text-[#141210] font-bold z-10';
+        classes += 'bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] font-bold z-10';
       } else if (isStart) {
-        classes += end ? 'bg-[#EDE8DE] text-[#141210] font-bold z-10' : 'bg-[#EDE8DE] text-[#141210] font-bold z-10';
+        classes += 'bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] font-bold z-10';
       } else if (isEnd) {
-        classes += 'bg-[#EDE8DE] text-[#141210] font-bold z-10';
+        classes += 'bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] font-bold z-10';
       } else if (isInRange) {
-        classes += 'bg-[#2C2926] text-[#FAF7F2] font-semibold';
+        classes += 'bg-[var(--border-main)] text-[var(--text-main)] font-semibold';
       } else if (isOtherMonth) {
-        classes += 'text-[#4D4740] hover:text-[#8C857E] hover:bg-[#201D1A]';
+        classes += 'text-[var(--text-subtle)] hover:text-[var(--text-muted)] hover:bg-[var(--btn-secondary-hover)]';
       } else if (isWeekend) {
-        classes += 'text-rose-400 hover:bg-[#201D1A]';
+        classes += 'text-orange-500 hover:bg-[var(--btn-secondary-hover)]';
       } else {
-        classes += 'text-[#FAF7F2] hover:bg-[#201D1A]';
+        classes += 'text-[var(--text-main)] hover:bg-[var(--btn-secondary-hover)]';
       }
 
       btn.className = classes;
@@ -1772,19 +1827,19 @@
 
     function updateFilterPillsUI() {
       if (!filterPillAll) return;
-      filterPillAll.className = "px-2.5 py-1 bg-[#1E1C19] border border-[#2C2926] text-[#FAF7F2] font-semibold text-[11px] uppercase tracking-wider hover:bg-[#282420] cursor-pointer";
-      filterPillCompleted.className = "px-2.5 py-1 bg-[#1E1C19] border border-[#2C2926] text-emerald-400 font-semibold text-[11px] uppercase tracking-wider hover:bg-[#282420] cursor-pointer";
-      filterPillPending.className = "px-2.5 py-1 bg-[#1E1C19] border border-[#2C2926] text-orange-400 font-semibold text-[11px] uppercase tracking-wider hover:bg-[#282420] cursor-pointer";
-      filterPillFailed.className = "px-2.5 py-1 bg-[#1E1C19] border border-rose-800 text-rose-400 font-semibold text-[11px] uppercase tracking-wider hover:bg-rose-950/40 cursor-pointer";
+      filterPillAll.className = "px-2.5 py-1 bg-[var(--bg-subcard)] border border-[var(--border-main)] text-[var(--text-main)] font-semibold text-[11px] uppercase tracking-wider hover:bg-[var(--btn-secondary-hover)] cursor-pointer";
+      filterPillCompleted.className = "px-2.5 py-1 bg-[var(--bg-subcard)] border border-[var(--border-main)] text-emerald-600 dark:text-emerald-400 font-semibold text-[11px] uppercase tracking-wider hover:bg-[var(--btn-secondary-hover)] cursor-pointer";
+      filterPillPending.className = "px-2.5 py-1 bg-[var(--bg-subcard)] border border-[var(--border-main)] text-orange-600 dark:text-orange-400 font-semibold text-[11px] uppercase tracking-wider hover:bg-[var(--btn-secondary-hover)] cursor-pointer";
+      filterPillFailed.className = "px-2.5 py-1 bg-[var(--bg-subcard)] border border-rose-400 dark:border-rose-800 text-rose-600 dark:text-rose-400 font-semibold text-[11px] uppercase tracking-wider hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer";
 
       if (currentFilter === 'all') {
-        filterPillAll.className = "px-2.5 py-1 bg-[#EDE8DE] text-[#141210] font-bold text-[11px] uppercase tracking-wider cursor-pointer";
+        filterPillAll.className = "px-2.5 py-1 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] font-bold text-[11px] uppercase tracking-wider cursor-pointer";
       } else if (currentFilter === 'completed') {
-        filterPillCompleted.className = "px-2.5 py-1 bg-emerald-700 text-white font-bold text-[11px] uppercase tracking-wider cursor-pointer";
+        filterPillCompleted.className = "px-2.5 py-1 bg-emerald-600 dark:bg-emerald-700 text-white font-bold text-[11px] uppercase tracking-wider cursor-pointer";
       } else if (currentFilter === 'pending') {
-        filterPillPending.className = "px-2.5 py-1 bg-orange-700 text-white font-bold text-[11px] uppercase tracking-wider cursor-pointer";
+        filterPillPending.className = "px-2.5 py-1 bg-orange-600 dark:bg-orange-700 text-white font-bold text-[11px] uppercase tracking-wider cursor-pointer";
       } else if (currentFilter === 'failed') {
-        filterPillFailed.className = "px-2.5 py-1 bg-rose-700 text-white font-bold text-[11px] uppercase tracking-wider cursor-pointer";
+        filterPillFailed.className = "px-2.5 py-1 bg-rose-600 dark:bg-rose-700 text-white font-bold text-[11px] uppercase tracking-wider cursor-pointer";
       }
     }
 
@@ -2261,7 +2316,7 @@
       scannedFilesList.forEach((file, idx) => {
         const tr = document.createElement('tr');
         tr.id = `scan-row-${file.id}`;
-        tr.className = 'hover:bg-[#1E1C19] transition-colors text-[#FAF7F2] border-b border-[#2C2926]';
+        tr.className = 'hover:bg-[var(--btn-secondary-hover)] transition-colors text-[var(--text-main)] border-b border-[var(--border-main)]';
 
         const isChecked = !file.isDuplicate;
         if (isChecked) selectedCount++;
@@ -2272,14 +2327,14 @@
         if (file.isDuplicate) {
           duplicateBadgeHtml = `
             <div class="space-y-1">
-              <span class="inline-flex items-center gap-1 px-1.5 py-0.2 text-[10px] font-bold bg-amber-950/40 text-amber-300 border border-amber-700/60">
+              <span class="inline-flex items-center gap-1 px-1.5 py-0.2 text-[10px] font-bold bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/40">
                 <span>⚠️ Duplicate</span>
               </span>
             </div>
           `;
         } else {
           duplicateBadgeHtml = `
-            <span class="inline-flex items-center gap-1 px-1.5 py-0.2 text-[10px] font-bold bg-emerald-950/40 text-emerald-300 border border-emerald-700/60">
+            <span class="inline-flex items-center gap-1 px-1.5 py-0.2 text-[10px] font-bold bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/40">
               <span>✔ Ready</span>
             </span>
           `;
@@ -2287,44 +2342,44 @@
 
         const hasCustomThumb = window.bulkThumbnailsMap && window.bulkThumbnailsMap[file.id];
         const thumbBadge = hasCustomThumb 
-          ? `<div class="mt-1"><span class="inline-flex items-center gap-1 px-1.5 py-0.2 text-[9px] font-bold bg-purple-950/40 text-purple-300 border border-purple-700/60">🖼️ Branded Thumb</span></div>` 
+          ? `<div class="mt-1"><span class="inline-flex items-center gap-1 px-1.5 py-0.2 text-[9px] font-bold bg-purple-500/20 text-purple-700 dark:text-purple-300 border border-purple-500/40">🖼️ Branded Thumb</span></div>` 
           : '';
 
         const fileDate = file.createdTime ? formatDateToDMY(new Date(file.createdTime)) : formatDateToDMY(new Date());
 
         tr.innerHTML = `
-          <td class="py-2.5 px-3 text-center border-r border-[#2C2926]">
+          <td class="py-2.5 px-3 text-center border-r border-[var(--border-main)]">
             <input type="checkbox" id="scan-chk-${file.id}" value="${file.id}" ${isChecked ? 'checked' : ''} onchange="updateScanSelectedSummary()" class="cursor-pointer scan-file-checkbox accent-orange-500" />
           </td>
-          <td class="py-2.5 px-3 text-center text-[#68615A] border-r border-[#2C2926] text-[11px]">${idx + 1}</td>
-          <td class="py-2.5 px-4 border-r border-[#2C2926]">
+          <td class="py-2.5 px-3 text-center text-[var(--text-subtle)] border-r border-[var(--border-main)] text-[11px]">${idx + 1}</td>
+          <td class="py-2.5 px-4 border-r border-[var(--border-main)]">
             <div class="space-y-1">
               <div class="flex items-center justify-between gap-2">
                 <div id="scan-title-container-${file.id}" class="flex items-center gap-2 group flex-1">
-                  <span id="scan-title-disp-${file.id}" class="font-bold text-[#FAF7F2] text-xs leading-snug cursor-pointer hover:text-orange-400 transition-colors" onclick="startInlineTitleEdit('${file.id}')" title="Click to edit title directly">
+                  <span id="scan-title-disp-${file.id}" class="font-bold text-[var(--text-main)] text-xs leading-snug cursor-pointer hover:text-orange-500 transition-colors" onclick="startInlineTitleEdit('${file.id}')" title="Click to edit title directly">
                     ${escapeHtml(currentTitle)}
                   </span>
-                  <button type="button" onclick="startInlineTitleEdit('${file.id}')" class="text-[#8C857E] hover:text-[#FAF7F2] cursor-pointer text-xs" title="Edit Title">
+                  <button type="button" onclick="startInlineTitleEdit('${file.id}')" class="text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer text-xs" title="Edit Title">
                     ✏️
                   </button>
                 </div>
-                <button type="button" onclick="previewScanFile('${file.id}')" class="h-6 px-2 bg-[#1E1C19] hover:bg-[#282420] border border-[#2C2926] text-[#FAF7F2] text-[10px] font-bold uppercase rounded-none cursor-pointer shrink-0 flex items-center gap-1" title="Watch / Preview Video">
+                <button type="button" onclick="previewScanFile('${file.id}')" class="h-6 px-2 bg-[var(--bg-card)] hover:bg-[var(--btn-secondary-hover)] border border-[var(--border-main)] text-[var(--text-main)] text-[10px] font-bold uppercase rounded-none cursor-pointer shrink-0 flex items-center gap-1" title="Watch / Preview Video">
                   <span>▶ Play</span>
                 </button>
               </div>
-              <div class="flex items-center gap-2 text-[9px] text-[#8C857E]">
-                <span class="font-bold uppercase text-[#FAF7F2] bg-[#24211E] px-1 py-0.2">${escapeHtml(file.batch || 'Batch')}</span>
+              <div class="flex items-center gap-2 text-[9px] text-[var(--text-muted)]">
+                <span class="font-bold uppercase text-[var(--text-main)] bg-[var(--bg-subcard)] border border-[var(--border-main)] px-1 py-0.2">${escapeHtml(file.batch || 'Batch')}</span>
                 <span>•</span>
-                <span class="font-semibold text-stone-300">${escapeHtml(file.subject || 'Lecture')}</span>
+                <span class="font-semibold">${escapeHtml(file.subject || 'Lecture')}</span>
                 <span>•</span>
                 <span>${escapeHtml(file.name)}</span>
               </div>
             </div>
           </td>
-          <td class="py-2.5 px-3 text-center font-mono-code border-r border-[#2C2926] text-[11px] text-[#8C857E] whitespace-nowrap">
+          <td class="py-2.5 px-3 text-center font-mono-code border-r border-[var(--border-main)] text-[11px] text-[var(--text-muted)] whitespace-nowrap">
             ${formatBytes(file.size)}
           </td>
-          <td class="py-2.5 px-3 text-center font-mono-code border-r border-[#2C2926] text-[11px] text-[#8C857E] whitespace-nowrap">
+          <td class="py-2.5 px-3 text-center font-mono-code border-r border-[var(--border-main)] text-[11px] text-[var(--text-muted)] whitespace-nowrap">
             ${fileDate}
           </td>
           <td class="py-2.5 px-3 text-center" id="scan-dup-cell-${file.id}">
@@ -3044,16 +3099,16 @@
       const ytBtn = document.getElementById('sourceFilterYouTube');
       const driveBtn = document.getElementById('sourceFilterDrive');
 
-      if (allBtn) allBtn.className = 'px-2 py-0.5 text-[#8C857E] hover:text-[#FAF7F2]';
-      if (ytBtn) ytBtn.className = 'px-2 py-0.5 text-[#8C857E] hover:text-[#FAF7F2]';
-      if (driveBtn) driveBtn.className = 'px-2 py-0.5 text-[#8C857E] hover:text-[#FAF7F2]';
+      if (allBtn) allBtn.className = 'px-2 py-0.5 text-[var(--text-muted)] hover:text-[var(--text-main)]';
+      if (ytBtn) ytBtn.className = 'px-2 py-0.5 text-[var(--text-muted)] hover:text-[var(--text-main)]';
+      if (driveBtn) driveBtn.className = 'px-2 py-0.5 text-[var(--text-muted)] hover:text-[var(--text-main)]';
 
       if (source === 'all' && allBtn) {
-        allBtn.className = 'px-2 py-0.5 bg-[#EDE8DE] text-[#141210] font-bold';
+        allBtn.className = 'px-2 py-0.5 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] font-bold';
       } else if (source === 'youtube' && ytBtn) {
-        ytBtn.className = 'px-2 py-0.5 bg-[#EDE8DE] text-[#141210] font-bold';
+        ytBtn.className = 'px-2 py-0.5 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] font-bold';
       } else if (source === 'drive' && driveBtn) {
-        driveBtn.className = 'px-2 py-0.5 bg-[#EDE8DE] text-[#141210] font-bold';
+        driveBtn.className = 'px-2 py-0.5 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] font-bold';
       }
 
       renderFilteredTable();
@@ -3575,7 +3630,7 @@
               if (totalPages > 7 && Math.abs(p - tableCurrentPage) > 2 && p !== 1 && p !== totalPages) {
                 if (p === 2 || p === totalPages - 1) {
                   const dots = document.createElement('span');
-                  dots.className = 'px-1 text-[#8C857E]';
+                  dots.className = 'px-1 text-[var(--text-muted)]';
                   dots.textContent = '...';
                   paginationPageNumbers.appendChild(dots);
                 }
@@ -3584,8 +3639,8 @@
               const pageBtn = document.createElement('button');
               pageBtn.type = 'button';
               pageBtn.className = p === tableCurrentPage 
-                ? 'h-6 min-w-[24px] px-1.5 bg-[#EDE8DE] text-[#141210] font-bold text-[10px] cursor-default' 
-                : 'h-6 min-w-[24px] px-1.5 bg-[#1E1C19] hover:bg-[#282420] border border-[#2C2926] text-[#FAF7F2] font-bold text-[10px] cursor-pointer';
+                ? 'h-6 min-w-[24px] px-1.5 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] font-bold text-[10px] cursor-default' 
+                : 'h-6 min-w-[24px] px-1.5 bg-[var(--bg-subcard)] hover:bg-[var(--btn-secondary-hover)] border border-[var(--border-main)] text-[var(--text-main)] font-bold text-[10px] cursor-pointer';
               pageBtn.textContent = p;
               pageBtn.onclick = () => goToTablePage(p);
               paginationPageNumbers.appendChild(pageBtn);
@@ -3601,7 +3656,7 @@
       pageFiles.forEach((file, index) => {
         const row = document.createElement('tr');
         row.id = `file-row-${file.id}`;
-        row.className = 'hover:bg-[#1E1C19] transition-colors text-[#FAF7F2] border-b border-[#2C2926]';
+        row.className = 'hover:bg-[var(--btn-secondary-hover)] transition-colors text-[var(--text-main)] border-b border-[var(--border-main)]';
 
         const displayTitle = file.customTitle || file.name || file.originalName || 'Lecture Video';
         const extMatch = (file.originalName || file.name || '').match(/\.([0-9a-z]+)$/i);
@@ -3613,11 +3668,11 @@
         const embedLabel = isYt ? 'YouTube Embed Link' : 'Drive Embed Link';
 
         const sourceBadgeHtml = isYt ? `
-          <span class="inline-flex items-center px-1.5 py-0.2 text-[10px] font-bold font-mono-code bg-rose-950/50 text-rose-300 border border-rose-800 uppercase">
+          <span class="inline-flex items-center px-1.5 py-0.2 text-[10px] font-bold font-mono-code bg-rose-500/20 text-rose-600 dark:text-rose-300 border border-rose-400 dark:border-rose-800 uppercase">
             YouTube
           </span>
         ` : `
-          <span class="inline-flex items-center px-1.5 py-0.2 text-[10px] font-bold font-mono-code bg-[#1E1C19] text-[#D6D3CD] border border-[#2C2926] uppercase">
+          <span class="inline-flex items-center px-1.5 py-0.2 text-[10px] font-bold font-mono-code bg-[var(--bg-card)] text-[var(--text-muted)] border border-[var(--border-main)] uppercase">
             Drive
           </span>
         `;
@@ -3627,12 +3682,12 @@
           const thumb = file.thumbnailUrl || (isYt && ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : 'https://placehold.co/120x68/1c1917/ffffff?text=Preview');
           statusHtml = `
             <div class="flex items-center gap-2.5">
-              <button onclick="openVideoModal('${file.id || ytId}')" class="relative group w-14 h-8 border border-[#2C2926] overflow-hidden shrink-0 bg-black cursor-pointer" title="Preview">
+              <button onclick="openVideoModal('${file.id || ytId}')" class="relative group w-14 h-8 border border-[var(--border-main)] overflow-hidden shrink-0 bg-black cursor-pointer" title="Preview">
                 <img src="${thumb}" alt="Preview" class="w-full h-full object-cover group-hover:scale-105 transition-transform" onerror="this.src='https://placehold.co/120x68/1c1917/ffffff?text=Preview'"/>
               </button>
               <div class="space-y-0.5 font-mono-code">
-                <span class="inline-flex items-center gap-1 px-1.5 py-0.2 text-[10px] font-bold bg-emerald-950/40 text-emerald-300 border border-emerald-700/60">
-                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                <span class="inline-flex items-center gap-1 px-1.5 py-0.2 text-[10px] font-bold bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/40">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                   <span>100% READY</span>
                 </span>
               </div>
@@ -3643,14 +3698,14 @@
           const etaText = file.etaSeconds ? `${file.etaSeconds}s` : '';
           statusHtml = `
             <div class="space-y-1 max-w-[220px] font-mono-code">
-              <div class="flex items-center justify-between text-[10px] font-bold text-orange-400">
+              <div class="flex items-center justify-between text-[10px] font-bold text-orange-500">
                 <span>Uploading ${file.percentage || 0}%</span>
-                <span class="text-[#8C857E]" id="progress-bytes-${file.id}">${formatBytes(file.uploadedBytes || 0)}</span>
+                <span class="text-[var(--text-muted)]" id="progress-bytes-${file.id}">${formatBytes(file.uploadedBytes || 0)}</span>
               </div>
-              <div class="w-full bg-[#2C2926] h-1.5 overflow-hidden">
+              <div class="w-full bg-[var(--border-main)] h-1.5 overflow-hidden">
                 <div id="progress-bar-${file.id}" class="bg-gradient-to-r from-orange-500 to-emerald-400 h-full transition-all" style="width: ${file.percentage || 0}%"></div>
               </div>
-              <div class="flex items-center justify-between text-[9px] text-[#8C857E]">
+              <div class="flex items-center justify-between text-[9px] text-[var(--text-muted)]">
                 <span id="speed-${file.id}">⚡ ${speedText}</span>
                 <span id="eta-${file.id}">${etaText}</span>
               </div>
@@ -3660,19 +3715,19 @@
           statusHtml = `
             <div class="space-y-1 font-mono-code">
               <div class="flex items-center gap-1">
-                <span class="px-1.5 py-0.2 text-[9px] font-bold bg-rose-950/40 text-rose-300 border border-rose-800 uppercase">Failed</span>
-                <button onclick="convertToDrive('${file.id}')" class="px-1.5 py-0.2 text-[9px] font-bold bg-[#1E1C19] text-[#FAF7F2] border border-[#2C2926] hover:bg-[#282420] cursor-pointer">
+                <span class="px-1.5 py-0.2 text-[9px] font-bold bg-rose-500/20 text-rose-600 dark:text-rose-300 border border-rose-400 dark:border-rose-800 uppercase">Failed</span>
+                <button onclick="convertToDrive('${file.id}')" class="px-1.5 py-0.2 text-[9px] font-bold bg-[var(--bg-subcard)] text-[var(--text-main)] border border-[var(--border-main)] hover:bg-[var(--btn-secondary-hover)] cursor-pointer">
                   ▶ Drive
                 </button>
               </div>
-              <div class="text-[9px] text-rose-400 truncate max-w-[180px]">${escapeHtml(file.error || 'Upload error')}</div>
+              <div class="text-[9px] text-rose-500 truncate max-w-[180px]">${escapeHtml(file.error || 'Upload error')}</div>
             </div>
           `;
         } else {
           statusHtml = `
             <div class="flex items-center gap-1 font-mono-code">
-              <span class="px-1.5 py-0.2 text-[9px] font-medium bg-[#1E1C19] text-[#8C857E] border border-[#2C2926]">Queued</span>
-              <button onclick="convertToDrive('${file.id}')" class="px-1.5 py-0.2 text-[9px] font-semibold bg-[#1E1C19] text-[#FAF7F2] border border-[#2C2926] hover:bg-[#282420] cursor-pointer">
+              <span class="px-1.5 py-0.2 text-[9px] font-medium bg-[var(--bg-card)] text-[var(--text-muted)] border border-[var(--border-main)]">Queued</span>
+              <button onclick="convertToDrive('${file.id}')" class="px-1.5 py-0.2 text-[9px] font-semibold bg-[var(--bg-subcard)] text-[var(--text-main)] border border-[var(--border-main)] hover:bg-[var(--btn-secondary-hover)] cursor-pointer">
                 ▶ Drive
               </button>
             </div>
@@ -3681,16 +3736,16 @@
 
         const actionHtml = `
           <div class="flex items-center justify-center gap-1 font-mono-code text-[10px]">
-            <button onclick="openVideoModal('${file.id || ytId}')" class="h-6 px-1.5 bg-[#1E1C19] hover:bg-[#282420] text-[#FAF7F2] border border-[#2C2926] uppercase font-bold cursor-pointer" title="Preview">
+            <button onclick="openVideoModal('${file.id || ytId}')" class="h-6 px-1.5 bg-[var(--bg-card)] hover:bg-[var(--btn-secondary-hover)] text-[var(--text-main)] border border-[var(--border-main)] uppercase font-bold cursor-pointer" title="Preview">
               Open
             </button>
-            <button onclick="copyToClipboard('${embedLink}', '${embedLabel}')" class="h-6 px-1.5 bg-[#1E1C19] hover:bg-[#282420] text-[#FAF7F2] border border-[#2C2926] uppercase font-bold cursor-pointer" title="Copy Embed Link">
+            <button onclick="copyToClipboard('${embedLink}', '${embedLabel}')" class="h-6 px-1.5 bg-[var(--bg-card)] hover:bg-[var(--btn-secondary-hover)] text-[var(--text-main)] border border-[var(--border-main)] uppercase font-bold cursor-pointer" title="Copy Embed Link">
               Copy
             </button>
-            <button onclick="openEditModal('${file.id || ytId}')" class="h-6 px-1.5 bg-[#1E1C19] hover:bg-[#282420] text-[#FAF7F2] border border-[#2C2926] uppercase font-bold cursor-pointer" title="Edit">
+            <button onclick="openEditModal('${file.id || ytId}')" class="h-6 px-1.5 bg-[var(--bg-card)] hover:bg-[var(--btn-secondary-hover)] text-[var(--text-main)] border border-[var(--border-main)] uppercase font-bold cursor-pointer" title="Edit">
               Edit
             </button>
-            <button onclick="deleteVideo('${file.id || ytId}')" class="h-6 px-1.5 bg-[#1E1C19] hover:bg-rose-950/50 text-rose-400 border border-rose-900/60 font-bold cursor-pointer" title="Delete">
+            <button onclick="deleteVideo('${file.id || ytId}')" class="h-6 px-1.5 bg-[var(--bg-card)] hover:bg-rose-500/20 text-rose-500 border border-rose-400 dark:border-rose-900/60 font-bold cursor-pointer" title="Delete">
               ×
             </button>
           </div>
@@ -3698,17 +3753,17 @@
 
         const dt = formatFileDateTime(file);
         const rawBytes = file.totalBytes || file.size || 0;
-        const byteSizeBadge = rawBytes > 0 ? `<span class="text-[9px] text-[#8C857E] block">${formatBytes(rawBytes)}</span>` : '';
+        const byteSizeBadge = rawBytes > 0 ? `<span class="text-[9px] text-[var(--text-muted)] block">${formatBytes(rawBytes)}</span>` : '';
 
         row.innerHTML = `
-          <td class="py-2 px-3 text-center font-mono-code text-[#68615A] border-r border-[#2C2926] text-[11px]">${startIndex + index + 1}</td>
-          <td class="py-2 px-4 border-r border-[#2C2926]">
+          <td class="py-2 px-3 text-center font-mono-code text-[var(--text-subtle)] border-r border-[var(--border-main)] text-[11px]">${startIndex + index + 1}</td>
+          <td class="py-2 px-4 border-r border-[var(--border-main)]">
             <div id="title-text-${file.id}" class="space-y-0.5">
-              <div class="font-bold text-[#FAF7F2] text-xs leading-snug cursor-pointer hover:text-orange-400 transition-colors" onclick="openVideoModal('${file.id || ytId}')">
+              <div class="font-bold text-[var(--text-main)] text-xs leading-snug cursor-pointer hover:text-orange-500 transition-colors" onclick="openVideoModal('${file.id || ytId}')">
                 ${escapeHtml(displayTitle)}
               </div>
-              <div class="flex items-center gap-1.5 font-mono-code text-[9px] text-[#8C857E]">
-                <button onclick="copyToClipboard('${escapeHtml(displayTitle)}', 'Title')" class="underline hover:text-[#FAF7F2] cursor-pointer">copy title</button>
+              <div class="flex items-center gap-1.5 font-mono-code text-[9px] text-[var(--text-muted)]">
+                <button onclick="copyToClipboard('${escapeHtml(displayTitle)}', 'Title')" class="underline hover:text-[var(--text-main)] cursor-pointer">copy title</button>
                 <span>•</span>
                 <span class="uppercase">${escapeHtml(file.batch || 'Batch')}</span>
                 <span>•</span>
@@ -3716,15 +3771,15 @@
               </div>
             </div>
           </td>
-          <td class="py-2 px-3 text-center font-mono-code border-r border-[#2C2926] whitespace-nowrap">
-            <div class="text-[11px] font-bold text-[#FAF7F2]">${dt.date}</div>
-            ${dt.time ? `<div class="text-[9px] text-[#8C857E] mt-0.5 font-normal tracking-tight">⏱ ${dt.time}</div>` : ''}
+          <td class="py-2 px-3 text-center font-mono-code border-r border-[var(--border-main)] whitespace-nowrap">
+            <div class="text-[11px] font-bold text-[var(--text-main)]">${dt.date}</div>
+            ${dt.time ? `<div class="text-[9px] text-[var(--text-muted)] mt-0.5 font-normal tracking-tight">⏱ ${dt.time}</div>` : ''}
           </td>
-          <td class="py-2 px-3 text-center border-r border-[#2C2926] whitespace-nowrap">
+          <td class="py-2 px-3 text-center border-r border-[var(--border-main)] whitespace-nowrap">
             <div>${sourceBadgeHtml}</div>
             ${byteSizeBadge}
           </td>
-          <td class="py-2 px-4 border-r border-[#2C2926]" id="status-cell-${file.id}">
+          <td class="py-2 px-4 border-r border-[var(--border-main)]" id="status-cell-${file.id}">
             ${statusHtml}
           </td>
           <td class="py-2 px-4 text-center">
@@ -3752,7 +3807,7 @@
       }
 
       if (connectionBadge) {
-        connectionBadge.className = 'flex items-center gap-1.5 px-2.5 h-8 border border-amber-700/60 bg-amber-950/40 text-amber-300 text-[11px] font-semibold font-mono-code';
+        connectionBadge.className = 'flex items-center gap-1.5 px-2.5 h-8 border border-amber-500/60 bg-amber-500/10 text-amber-600 dark:text-amber-300 text-[11px] font-semibold font-mono-code';
         connectionBadge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span><span>SSE...</span>`;
       }
 
@@ -3760,8 +3815,8 @@
 
       eventSource.onopen = () => {
         if (connectionBadge) {
-          connectionBadge.className = 'flex items-center gap-1.5 px-2.5 h-8 border border-[#2C2926] bg-[#191715] text-emerald-400 text-[11px] font-semibold font-mono-code';
-          connectionBadge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block"></span><span>Live</span>`;
+          connectionBadge.className = 'flex items-center gap-1.5 px-2.5 h-8 border border-[var(--border-main)] bg-[var(--bg-subcard)] text-emerald-600 dark:text-emerald-400 text-[11px] font-semibold font-mono-code';
+          connectionBadge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span><span>Live</span>`;
         }
       };
 
@@ -4203,7 +4258,78 @@
       checkAuthStatus();
       connectSSE();
       loadJobStatus();
+      updateThemeControlsUI(document.documentElement.classList.contains('dark'));
+    });
+
+    // Theme Switch Engine (Light & Dark)
+    window.setAppTheme = function(theme) {
+      const isDark = theme === 'dark';
+      if (isDark) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+      try {
+        localStorage.setItem('om_theme', theme);
+      } catch(e) {}
+      updateThemeControlsUI(isDark);
+      showToast(isDark ? '🌙 Dark Mode' : '☀️ Light Mode', 'info');
+    };
+
+    window.toggleAppTheme = function() {
+      const isDark = document.documentElement.classList.contains('dark');
+      window.setAppTheme(isDark ? 'light' : 'dark');
+    };
+
+    function updateThemeControlsUI(isDark) {
+      const btnLight = document.getElementById('themeBtnLight');
+      const btnDark = document.getElementById('themeBtnDark');
+      const floatIcon = document.getElementById('floatingThemeIcon');
+      const floatLabel = document.getElementById('floatingThemeLabel');
+
+      if (btnLight && btnDark) {
+        if (isDark) {
+          btnDark.className = "flex items-center gap-1 px-2.5 h-full transition-all cursor-pointer bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] font-bold shadow-xs";
+          btnLight.className = "flex items-center gap-1 px-2.5 h-full transition-all cursor-pointer text-[var(--text-muted)] hover:text-[var(--text-main)]";
+        } else {
+          btnLight.className = "flex items-center gap-1 px-2.5 h-full transition-all cursor-pointer bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] font-bold shadow-xs";
+          btnDark.className = "flex items-center gap-1 px-2.5 h-full transition-all cursor-pointer text-[var(--text-muted)] hover:text-[var(--text-main)]";
+        }
+      }
+
+      if (floatIcon && floatLabel) {
+        floatIcon.textContent = isDark ? '🌙' : '☀️';
+        floatLabel.textContent = isDark ? 'Dark Mode' : 'Light Mode';
+      }
+    }
+
+    // Global tactile keyboard shortcut: Press 'D' or 'Cmd+D' to toggle theme
+    document.addEventListener('keydown', (e) => {
+      const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+      if (tag === 'input' || tag === 'textarea' || (e.target && e.target.isContentEditable)) {
+        return;
+      }
+      if ((e.key === 'd' || e.key === 'D') && !e.altKey) {
+        if (e.metaKey || e.ctrlKey) {
+          e.preventDefault();
+        }
+        window.toggleAppTheme();
+      }
     });
   </script>
+
+  <!-- Floating Tactile Theme Pill (Bottom-Right Zen Quick-Toggle) -->
+  <div id="floatingThemeDock" class="fixed bottom-5 right-5 z-40 flex items-center font-mono-code text-xs">
+    <button
+      type="button"
+      onclick="toggleAppTheme()"
+      class="flex items-center gap-2 px-3 py-1.5 bg-[var(--bg-card)] hover:bg-[var(--bg-subcard)] text-[var(--text-main)] border border-[var(--border-main)] hover:border-[var(--btn-primary-bg)] shadow-2xl cursor-pointer select-none transition-all hover:scale-105 group"
+      title="Toggle Light / Dark Mode (Shortcut: Press 'D')"
+    >
+      <span id="floatingThemeIcon" class="text-sm transition-transform group-hover:rotate-12">🌙</span>
+      <span id="floatingThemeLabel" class="text-[10px] font-bold uppercase tracking-wider">Dark Mode</span>
+      <kbd class="text-[9px] px-1.5 py-0.5 bg-[var(--bg-main)] text-[var(--text-muted)] border border-[var(--border-main)] font-mono-code font-bold">D</kbd>
+    </button>
+  </div>
 </body>
 </html>
