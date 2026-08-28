@@ -52,6 +52,8 @@
       --selection-bg: #1B1B1B;
       --selection-text: #FFFFFF;
       --accent-orange: #EA580C;
+      /* Exact officemobile 45-degree diagonal linen micro-texture */
+      --bg-pattern: repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(26, 23, 20, 0.035) 0, rgba(26, 23, 20, 0.035) 4px);
     }
 
     html.dark {
@@ -74,11 +76,15 @@
       --selection-bg: #EDE8DE;
       --selection-text: #141210;
       --accent-orange: #EA580C;
+      /* Exact officemobile 45-degree diagonal charcoal micro-texture */
+      --bg-pattern: repeating-linear-gradient(45deg, transparent, transparent 2px, hsla(35, 41%, 92%, 0.035) 0, hsla(35, 41%, 92%, 0.035) 4px);
     }
     
     body { 
       font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
       background-color: var(--bg-main);
+      background-image: var(--bg-pattern);
+      background-attachment: fixed;
       color: var(--text-main);
     }
 
