@@ -919,6 +919,19 @@
     let videoModal, modalIframe, modalVideoTitle, modalBatchTag, modalSubjectTag, modalYtLink;
     let currentModalEmbedLink = '';
 
+    function extractGoogleDriveFileId(input) {
+      if (!input) return null;
+      const str = String(input).trim();
+      if (/^[a-zA-Z0-9_-]{25,50}$/.test(str)) return str;
+      const fileMatch = str.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+      if (fileMatch) return fileMatch[1];
+      const idParam = str.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+      if (idParam) return idParam[1];
+      const lhMatch = str.match(/googleusercontent\.com\/d\/([a-zA-Z0-9_-]+)/);
+      if (lhMatch) return lhMatch[1];
+      return null;
+    }
+
     function formatDateToYMD(d) {
       if (!d || isNaN(d.getTime())) return '';
       const year = d.getFullYear();
@@ -1637,11 +1650,11 @@
           <td class="py-2.5 px-4 border-r border-[#D6D3CD]">
             <div class="space-y-1">
               <div class="flex items-center justify-between gap-2">
-                <div class="flex items-center gap-2 group flex-1">
-                  <span id="scan-title-disp-${file.id}" class="font-bold text-[#1B1B1B] text-xs leading-snug cursor-pointer hover:text-orange-700 transition-colors" onclick="promptRenameFile('${file.id}')" title="Click to rename before uploading">
+                <div id="scan-title-container-${file.id}" class="flex items-center gap-2 group flex-1">
+                  <span id="scan-title-disp-${file.id}" class="font-bold text-[#1B1B1B] text-xs leading-snug cursor-pointer hover:text-orange-700 transition-colors" onclick="startInlineTitleEdit('${file.id}')" title="Click to edit title directly">
                     ${escapeHtml(currentTitle)}
                   </span>
-                  <button type="button" onclick="promptRenameFile('${file.id}')" class="text-[#78716C] hover:text-[#1B1B1B] cursor-pointer text-xs" title="Edit Title">
+                  <button type="button" onclick="startInlineTitleEdit('${file.id}')" class="text-[#78716C] hover:text-[#1B1B1B] cursor-pointer text-xs" title="Edit Title">
                     ✏️
                   </button>
                 </div>
@@ -1664,7 +1677,7 @@
           <td class="py-2.5 px-3 text-center font-mono-code border-r border-[#D6D3CD] text-[11px] text-[#78716C] whitespace-nowrap">
             ${fileDate}
           </td>
-          <td class="py-2.5 px-3 text-center">
+          <td class="py-2.5 px-3 text-center" id="scan-dup-cell-${file.id}">
             ${duplicateBadgeHtml}
           </td>
         `;
@@ -1673,6 +1686,103 @@
       });
 
       updateScanSelectedSummary();
+    }
+
+    window.startInlineTitleEdit = function(fileId) {
+      const container = document.getElementById(`scan-title-container-${fileId}`);
+      if (!container) return;
+
+      const file = scannedFilesList.find(f => f.id === fileId);
+      if (!file) return;
+
+      const currentTitle = customFileTitlesMap[fileId] || file.customTitle || file.name;
+
+      container.innerHTML = `
+        <div class="flex items-center gap-1.5 w-full">
+          <input
+            type="text"
+            id="inline-input-${fileId}"
+            value="${escapeHtml(currentTitle)}"
+            class="flex-1 h-7 px-2 bg-white border-2 border-[#1B1B1B] text-xs font-bold text-[#1B1B1B] outline-none shadow-sm"
+            onkeydown="if(event.key==='Enter'){ saveInlineTitleEdit('${fileId}'); } else if(event.key==='Escape'){ cancelInlineTitleEdit('${fileId}'); }"
+          />
+          <button
+            type="button"
+            onclick="saveInlineTitleEdit('${fileId}')"
+            class="h-7 px-2.5 bg-[#1B1B1B] hover:bg-black text-white text-[11px] font-bold uppercase cursor-pointer shrink-0"
+            title="Save Title"
+          >
+            ✔ Save
+          </button>
+          <button
+            type="button"
+            onclick="cancelInlineTitleEdit('${fileId}')"
+            class="h-7 px-2 bg-stone-200 hover:bg-stone-300 text-stone-700 text-xs font-bold cursor-pointer shrink-0"
+            title="Cancel"
+          >
+            ✕
+          </button>
+        </div>
+      `;
+
+      const input = document.getElementById(`inline-input-${fileId}`);
+      if (input) {
+        input.focus();
+        input.select();
+      }
+    };
+
+    window.saveInlineTitleEdit = function(fileId) {
+      const input = document.getElementById(`inline-input-${fileId}`);
+      if (!input) return;
+
+      const file = scannedFilesList.find(f => f.id === fileId);
+      if (!file) return;
+
+      const newTitle = input.value.trim();
+      if (newTitle) {
+        customFileTitlesMap[fileId] = newTitle;
+        file.customTitle = newTitle;
+        file.isDuplicate = false;
+
+        const chk = document.getElementById(`scan-chk-${fileId}`);
+        if (chk) chk.checked = true;
+
+        const dupCell = document.getElementById(`scan-dup-cell-${fileId}`);
+        if (dupCell) {
+          dupCell.innerHTML = `
+            <span class="inline-flex items-center gap-1 px-1.5 py-0.2 text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+              <span>✔ Edited</span>
+            </span>
+          `;
+        }
+      }
+
+      renderScanRowTitle(fileId);
+      updateScanSelectedSummary();
+    };
+
+    window.cancelInlineTitleEdit = function(fileId) {
+      renderScanRowTitle(fileId);
+    };
+
+    function renderScanRowTitle(fileId) {
+      const container = document.getElementById(`scan-title-container-${fileId}`);
+      if (!container) return;
+
+      const file = scannedFilesList.find(f => f.id === fileId);
+      if (!file) return;
+
+      const currentTitle = customFileTitlesMap[fileId] || file.customTitle || file.name;
+
+      container.innerHTML = `
+        <span id="scan-title-disp-${fileId}" class="font-bold text-[#1B1B1B] text-xs leading-snug cursor-pointer hover:text-orange-700 transition-colors" onclick="startInlineTitleEdit('${fileId}')" title="Click to edit title directly">
+          ${escapeHtml(currentTitle)}
+        </span>
+        <button type="button" onclick="startInlineTitleEdit('${fileId}')" class="text-[#78716C] hover:text-[#1B1B1B] cursor-pointer text-xs" title="Edit Title">
+          ✏️
+        </button>
+      `;
     }
 
     window.previewScanFile = function(fileId) {
@@ -1687,27 +1797,6 @@
         subject: file.subject || 'Lecture',
         createdTime: file.createdTime
       });
-    };
-
-    window.promptRenameFile = function(fileId) {
-      const file = scannedFilesList.find(f => f.id === fileId);
-      if (!file) return;
-
-      const current = customFileTitlesMap[fileId] || file.customTitle || file.name;
-      const newTitle = prompt('Enter customized YouTube title for this video:', current);
-      if (newTitle && newTitle.trim() && newTitle.trim() !== current) {
-        customFileTitlesMap[fileId] = newTitle.trim();
-        file.customTitle = newTitle.trim();
-        file.isDuplicate = false;
-        const disp = document.getElementById(`scan-title-disp-${fileId}`);
-        if (disp) disp.textContent = newTitle.trim();
-        
-        const chk = document.getElementById(`scan-chk-${fileId}`);
-        if (chk) chk.checked = true;
-
-        renderScanReviewTable();
-        showToast('Title updated for upload queue.', 'success');
-      }
     };
 
     window.selectAllScanFiles = function(select) {
@@ -1917,9 +2006,20 @@
     };
 
     window.handleCustomThumbUrlInput = function() {
-      const url = document.getElementById('editModalThumbUrlInput').value.trim();
-      if (url) {
-        document.getElementById('editModalThumbPreview').src = url;
+      const input = document.getElementById('editModalThumbUrlInput');
+      const url = input ? input.value.trim() : '';
+      const preview = document.getElementById('editModalThumbPreview');
+      if (!url || !preview) return;
+
+      const driveId = extractGoogleDriveFileId(url);
+      if (driveId) {
+        preview.src = `/api/drive-image-proxy?id=${driveId}&t=${Date.now()}`;
+        preview.onerror = () => {
+          preview.src = `https://lh3.googleusercontent.com/d/${driveId}=w1280`;
+        };
+        showToast('✔ Google Drive image link detected!', 'success');
+      } else {
+        preview.src = url;
       }
     };
 

@@ -385,6 +385,19 @@ function normalizeUnicodeText(str) {
   return str.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').trim();
 }
 
+function extractGoogleDriveFileId(input) {
+  if (!input) return null;
+  const str = String(input).trim();
+  if (/^[a-zA-Z0-9_-]{25,50}$/.test(str)) return str;
+  const fileMatch = str.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (fileMatch) return fileMatch[1];
+  const idParam = str.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (idParam) return idParam[1];
+  const lhMatch = str.match(/googleusercontent\.com\/d\/([a-zA-Z0-9_-]+)/);
+  if (lhMatch) return lhMatch[1];
+  return null;
+}
+
 /**
  * Helper: Recursive Drive Scanner with Batch & Subject Hierarchy Tracking and Date Range Filtering
  */
@@ -992,14 +1005,29 @@ app.post('/api/edit-video', async (req, res) => {
             mimeType = match ? match[1] : 'image/jpeg';
             const rawData = match ? match[2] : imageBase64;
             buffer = Buffer.from(rawData, 'base64');
-          } else if (thumbnailUrl && (thumbnailUrl.startsWith('http://') || thumbnailUrl.startsWith('https://'))) {
-            try {
-              const imgRes = await axios.get(thumbnailUrl, { responseType: 'arraybuffer', timeout: 8000 });
-              buffer = Buffer.from(imgRes.data);
-              const contentType = imgRes.headers['content-type'];
-              if (contentType) mimeType = contentType.split(';')[0];
-            } catch (dlErr) {
-              console.warn('Could not download image from URL:', dlErr.message);
+          } else if (thumbnailUrl) {
+            const driveFileId = extractGoogleDriveFileId(thumbnailUrl);
+            if (driveFileId) {
+              try {
+                const drive = google.drive({ version: 'v3', auth });
+                const meta = await drive.files.get({ fileId: driveFileId, fields: 'mimeType', supportsAllDrives: true });
+                const imgRes = await drive.files.get({ fileId: driveFileId, alt: 'media', supportsAllDrives: true }, { responseType: 'arraybuffer' });
+                buffer = Buffer.from(imgRes.data);
+                mimeType = meta.data.mimeType || 'image/jpeg';
+              } catch (driveErr) {
+                console.warn('Could not fetch Drive image directly:', driveErr.message);
+              }
+            }
+
+            if (!buffer && (thumbnailUrl.startsWith('http://') || thumbnailUrl.startsWith('https://'))) {
+              try {
+                const imgRes = await axios.get(thumbnailUrl, { responseType: 'arraybuffer', timeout: 8000 });
+                buffer = Buffer.from(imgRes.data);
+                const contentType = imgRes.headers['content-type'];
+                if (contentType) mimeType = contentType.split(';')[0];
+              } catch (dlErr) {
+                console.warn('Could not download image from URL:', dlErr.message);
+              }
             }
           }
 
@@ -1671,6 +1699,31 @@ app.post('/api/thumbnail', async (req, res) => {
   } catch (err) {
     console.error('Thumbnail upload error:', err);
     res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * Proxy Google Drive Images for real-time frontend preview without CORS restrictions
+ */
+app.get('/api/drive-image-proxy', async (req, res) => {
+  const fileId = extractGoogleDriveFileId(req.query.id || req.query.url);
+  if (!fileId) return res.status(400).send('Invalid or missing Google Drive image file ID');
+
+  const auth = getOAuth2Client(req);
+  if (!auth) return res.status(401).send('Google authentication required');
+
+  try {
+    const { google } = require('googleapis');
+    const drive = google.drive({ version: 'v3', auth });
+    const meta = await drive.files.get({ fileId, fields: 'id, name, mimeType', supportsAllDrives: true });
+    const streamRes = await drive.files.get({ fileId, alt: 'media', supportsAllDrives: true }, { responseType: 'stream' });
+
+    res.setHeader('Content-Type', meta.data.mimeType || 'image/jpeg');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    streamRes.data.pipe(res);
+  } catch (err) {
+    console.error('Drive image proxy error:', err.message);
+    res.status(500).send('Could not fetch image: ' + err.message);
   }
 });
 
