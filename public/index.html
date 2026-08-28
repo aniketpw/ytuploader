@@ -6,228 +6,373 @@
   <title>Video Upload Tracker Portal</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Identity Services for OAuth -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
-            mono: ['JetBrains Mono', 'monospace']
-          }
-        }
-      }
-    }
-  </script>
   <style>
-    body {
-      font-family: 'Inter', sans-serif;
-      background-color: #f8fafc;
-      color: #1e293b;
-    }
-    ::-webkit-scrollbar { width: 5px; height: 5px; }
-    ::-webkit-scrollbar-track { background: #f1f5f9; }
-    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    body { font-family: 'Inter', sans-serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
   </style>
 </head>
-<body class="min-h-full flex flex-col antialiased bg-[#f8fafc]">
+<body class="min-h-full flex flex-col bg-[#f8fafc] text-slate-800 antialiased">
 
-  <!-- 1. Top Enterprise Header -->
-  <header class="border-b border-slate-200 bg-white sticky top-0 z-50 shadow-2xs">
-    <div class="max-w-[1550px] mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
+  <!-- 1. Top Enterprise Header Bar -->
+  <header class="sticky top-0 z-40 bg-white border-b border-slate-200 px-6 py-3 shadow-2xs">
+    <div class="max-w-[1600px] mx-auto flex items-center justify-between gap-4">
       <div class="flex items-center gap-3">
-        <div class="w-8 h-8 rounded-lg bg-[#5046e5] flex items-center justify-center text-white shadow-2xs">
-          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+        <div class="w-9 h-9 rounded-lg bg-[#5046e5] text-white flex items-center justify-center shadow-xs">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
             <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/>
           </svg>
         </div>
-        <div class="flex items-center gap-2">
-          <h1 class="text-sm font-bold text-slate-900 tracking-tight">Drive ➔ YouTube Video Portal</h1>
-          <span class="text-[10px] px-2 py-0.5 rounded font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 uppercase tracking-wider">Unlisted Engine</span>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-base font-bold text-slate-900 leading-tight">Drive → YouTube Video Portal</h1>
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-[#5046e5] border border-indigo-200 uppercase tracking-wider">
+              UNLISTED ENGINE
+            </span>
+          </div>
         </div>
       </div>
 
-      <div class="flex items-center gap-2.5">
-        <!-- Auth Status -->
-        <div id="authStatusContainer">
-          <a id="navAuthBtn" href="/auth/google" class="inline-flex items-center gap-1.5 px-3 h-8 rounded text-xs font-semibold bg-[#5046e5] hover:bg-[#4338ca] text-white transition-colors shadow-2xs">
-            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M12.24 10.285V14.4h6.806c-.275 1.765-2.056 5.174-6.806 5.174-4.095 0-7.439-3.389-7.439-7.574s3.345-7.574 7.439-7.574c2.33 0 3.891.989 4.785 1.849l3.254-3.138C18.189 1.186 15.479 0 12.24 0c-6.635 0-12 5.365-12 12s5.365 12 12 12c6.926 0 11.52-4.869 11.52-11.726 0-.788-.085-1.39-.189-1.989H12.24z"/></svg>
-            <span>Connect Google</span>
-          </a>
-          <div id="navConnectedBadge" class="hidden items-center gap-1.5 px-3 h-8 rounded text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-300">
-            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-            <span>Google Connected</span>
-          </div>
+      <div class="flex items-center gap-2">
+        <!-- Google Auth Status & Connect Button -->
+        <button
+          type="button"
+          id="navAuthBtn"
+          onclick="handleConnectClick()"
+          class="flex items-center gap-1.5 px-3 h-8.5 rounded-md text-xs font-semibold bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 shadow-2xs transition-colors cursor-pointer"
+          title="Google Account is not connected. Click to connect."
+        >
+          <span class="w-2 h-2 rounded-full bg-rose-500 inline-block"></span>
+          <span>Not Connected</span>
+          <span class="text-[11px] text-[#5046e5] font-bold ml-1 hover:underline">Connect</span>
+        </button>
+
+        <!-- Connected Badge -->
+        <div id="navConnectedBadge" class="hidden items-center gap-1.5 px-3 h-8.5 rounded-md text-xs font-semibold bg-white text-emerald-700 border border-emerald-300 shadow-2xs">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
+          <span>Connected</span>
+          <button type="button" onclick="openAuthModal()" class="text-xs text-slate-500 hover:text-slate-800 underline ml-1 cursor-pointer font-medium">Settings</button>
         </div>
 
-        <a href="https://www.youtube.com/verify" target="_blank" rel="noopener noreferrer" class="hidden sm:inline-flex items-center gap-1.5 px-3 h-8 rounded text-xs font-medium text-amber-800 bg-amber-50 border border-amber-300 hover:bg-amber-100 transition-colors shadow-2xs" title="Unlock >15min video upload limits">
-          <svg class="w-3.5 h-3.5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+        <!-- Verify Channel Button -->
+        <a
+          href="https://www.youtube.com/verify"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="flex items-center gap-1.5 px-3 h-8.5 rounded-md text-xs font-semibold bg-white hover:bg-amber-50 text-amber-800 border border-amber-300 shadow-2xs transition-colors"
+          title="Verify your YouTube account with phone number to unlock >15 min video uploads"
+        >
+          <span class="w-2 h-2 rounded-full bg-amber-500 inline-block"></span>
           <span>Verify Channel (&gt;15 min)</span>
         </a>
 
-        <div id="connectionBadge" class="flex items-center gap-1.5 px-3 h-8 rounded text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
-          <span class="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
-          <span>Connecting SSE...</span>
+        <!-- SSE Connection Status Badge -->
+        <div id="connectionBadge" class="flex items-center gap-1.5 px-3 h-8.5 rounded-md text-xs font-semibold bg-white text-emerald-700 border border-emerald-300 shadow-2xs">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+          <span id="sseStatusText">Live SSE Connected</span>
         </div>
       </div>
     </div>
   </header>
 
-  <!-- Background Notice Banner -->
-  <div id="bgNoticeBanner" class="hidden bg-indigo-50 border-b border-indigo-200 px-4 py-2 text-indigo-900 text-xs">
-    <div class="max-w-[1550px] mx-auto flex items-center justify-between">
-      <div class="flex items-center gap-2">
-        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-        <span><strong>Background Pipeline Active:</strong> Videos are streaming automatically on the server. Safe to refresh or close tab anytime.</span>
-      </div>
-      <button id="cancelJobBtn" class="px-2.5 py-0.5 rounded bg-rose-100 text-rose-700 border border-rose-300 font-semibold hover:bg-rose-200 text-xs transition-colors cursor-pointer">
-        Cancel Upload
-      </button>
-    </div>
-  </div>
-
   <!-- Main Content Container -->
-  <main class="flex-1 max-w-[1550px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-4">
+  <main class="flex-1 max-w-[1600px] w-full mx-auto px-6 py-4 space-y-4">
 
-    <!-- 2. Metrics Filter Pills Row -->
-    <div class="flex items-center gap-2.5 overflow-x-auto pb-1 text-xs select-none">
-      <span class="font-bold text-slate-800 text-sm whitespace-nowrap mr-1">Videos</span>
-
-      <!-- 1. Total Pill -->
-      <button
-        type="button"
-        id="filterPillAll"
-        onclick="setTableFilter('all')"
-        class="inline-flex items-center h-8 px-4 rounded border border-slate-900 bg-slate-900 text-white font-bold shadow-xs whitespace-nowrap cursor-pointer transition-all"
-        title="Click to view all videos"
-      >
-        Total - <span id="metricTotal" class="ml-1 font-bold">0</span>
+    <!-- Background Notice Banner -->
+    <div id="bgNoticeBanner" class="hidden bg-indigo-50/90 border border-indigo-200 rounded-lg px-4 py-2.5 flex items-center justify-between text-xs text-slate-700 shadow-2xs">
+      <div class="flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-[#5046e5] animate-ping"></span>
+        <span class="font-semibold text-slate-900" id="bgStatusText">Upload task in progress in background...</span>
+      </div>
+      <button type="button" id="cancelJobBtn" onclick="cancelProcessingJob()" class="px-2.5 py-1 rounded bg-white hover:bg-rose-50 border border-rose-200 font-bold text-rose-600 cursor-pointer shadow-2xs transition-colors">
+        Stop Current Task
       </button>
+    </div>
 
-      <!-- 2. Uploaded Pill -->
-      <button
-        type="button"
-        id="filterPillCompleted"
-        onclick="setTableFilter('completed')"
-        class="inline-flex items-center h-8 px-4 rounded border border-emerald-500 bg-white text-emerald-600 font-semibold shadow-2xs whitespace-nowrap cursor-pointer hover:bg-emerald-50 transition-all"
-        title="Click to view uploaded videos only"
-      >
-        Uploaded - <span id="metricUploaded" class="ml-1">0 (0.00%)</span>
-      </button>
+    <!-- 2. Metrics Filter Pills Row & Top Date Range Picker (Matching Screenshot 2) -->
+    <div class="flex items-center justify-between gap-3 flex-wrap pb-1 text-xs select-none">
+      <div class="flex items-center gap-2.5 overflow-x-auto">
+        <span class="font-bold text-slate-800 text-sm whitespace-nowrap mr-1">Videos</span>
 
-      <!-- 3. In Progress Pill -->
-      <button
-        type="button"
-        id="filterPillPending"
-        onclick="setTableFilter('pending')"
-        class="inline-flex items-center h-8 px-4 rounded border border-indigo-400 bg-white text-indigo-600 font-semibold shadow-2xs whitespace-nowrap cursor-pointer hover:bg-indigo-50 transition-all"
-        title="Click to view in-progress videos only"
-      >
-        In Progress - <span id="metricPending" class="ml-1">0 (0.00%)</span>
-      </button>
+        <!-- 1. Total Pill -->
+        <button
+          type="button"
+          id="filterPillAll"
+          onclick="setTableFilter('all')"
+          class="inline-flex items-center h-8 px-4 rounded border border-slate-900 bg-slate-900 text-white font-bold shadow-xs whitespace-nowrap cursor-pointer transition-all"
+          title="Click to view all videos"
+        >
+          Total - <span id="metricTotal" class="ml-1 font-bold">0</span>
+        </button>
 
-      <!-- 4. Playlist Pill Badge -->
-      <a
-        id="playlistPill"
-        href="#"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="hidden items-center h-8 px-3.5 rounded border border-[#5046e5] bg-indigo-50 hover:bg-indigo-100 font-bold text-[#5046e5] shadow-2xs whitespace-nowrap gap-1.5 transition-colors cursor-pointer"
-        title="Click to open full YouTube Playlist"
-      >
-        <svg class="w-3.5 h-3.5 text-[#5046e5]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/></svg>
-        <span>Playlist: <span id="playlistPillTitle" class="underline">View Playlist</span> ↗</span>
-      </a>
+        <!-- 2. Uploaded Pill -->
+        <button
+          type="button"
+          id="filterPillCompleted"
+          onclick="setTableFilter('completed')"
+          class="inline-flex items-center h-8 px-4 rounded border border-emerald-500 bg-white text-emerald-600 font-semibold shadow-2xs whitespace-nowrap cursor-pointer hover:bg-emerald-50 transition-all"
+          title="Click to view uploaded videos only"
+        >
+          Uploaded - <span id="metricUploaded" class="ml-1">0 (0.00%)</span>
+        </button>
 
-      <!-- 5. Failed Pill -->
-      <button
-        type="button"
-        id="filterPillFailed"
-        onclick="setTableFilter('failed')"
-        class="hidden inline-flex items-center h-8 px-4 rounded border border-rose-400 bg-white font-semibold text-rose-600 shadow-2xs whitespace-nowrap cursor-pointer hover:bg-rose-50 transition-all"
-        title="Click to view failed videos only"
-      >
-        Failed - <span id="metricFailed" class="ml-1">0</span>
-      </button>
+        <!-- 3. In Progress Pill -->
+        <button
+          type="button"
+          id="filterPillPending"
+          onclick="setTableFilter('pending')"
+          class="inline-flex items-center h-8 px-4 rounded border border-indigo-400 bg-white text-indigo-600 font-semibold shadow-2xs whitespace-nowrap cursor-pointer hover:bg-indigo-50 transition-all"
+          title="Click to view in-progress videos only"
+        >
+          In Progress - <span id="metricPending" class="ml-1">0 (0.00%)</span>
+        </button>
 
-      <!-- 6. Privacy Pill -->
-      <div class="inline-flex items-center h-8 px-4 rounded border border-slate-300 bg-white font-semibold text-slate-700 shadow-2xs whitespace-nowrap">
-        Privacy - <span class="ml-1 font-bold text-slate-900">Unlisted (100.00%)</span>
+        <!-- 4. Playlist Pill Badge -->
+        <a
+          id="playlistPill"
+          href="#"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="hidden items-center h-8 px-3.5 rounded border border-[#5046e5] bg-indigo-50 hover:bg-indigo-100 font-bold text-[#5046e5] shadow-2xs whitespace-nowrap gap-1.5 transition-colors cursor-pointer"
+          title="Click to open full YouTube Playlist"
+        >
+          <svg class="w-3.5 h-3.5 text-[#5046e5]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/></svg>
+          <span>Playlist: <span id="playlistPillTitle" class="underline">View Playlist</span> ↗</span>
+        </a>
+
+        <!-- 5. Failed Pill -->
+        <button
+          type="button"
+          id="filterPillFailed"
+          onclick="setTableFilter('failed')"
+          class="hidden inline-flex items-center h-8 px-4 rounded border border-rose-400 bg-white font-semibold text-rose-600 shadow-2xs whitespace-nowrap cursor-pointer hover:bg-rose-50 transition-all"
+          title="Click to view failed videos only"
+        >
+          Failed - <span id="metricFailed" class="ml-1">0</span>
+        </button>
+
+        <!-- 6. Privacy Pill -->
+        <div class="inline-flex items-center h-8 px-4 rounded border border-slate-300 bg-white font-semibold text-slate-700 shadow-2xs whitespace-nowrap">
+          Privacy - <span class="ml-1 font-bold text-slate-900">Unlisted (100.00%)</span>
+        </div>
+      </div>
+
+      <!-- Top Interactive Date Range Picker matching Screenshot 2 -->
+      <div class="relative flex items-center gap-2 shrink-0">
+        <span class="text-xs font-semibold text-slate-700 whitespace-nowrap">Pick date range:</span>
+        <div class="relative" id="calendarWrapper">
+          <button
+            type="button"
+            id="dateRangeInputBtn"
+            onclick="toggleCalendarPopover(event)"
+            class="h-8.5 px-3 bg-white border border-slate-300 hover:border-[#0284c7] rounded-md text-xs font-medium text-slate-800 shadow-2xs flex items-center gap-2 cursor-pointer transition-all focus:outline-none focus:ring-2 focus:ring-[#0284c7]/20"
+            title="Click to select custom date range or single date"
+          >
+            <svg class="w-3.5 h-3.5 text-[#0284c7]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            <span id="dateRangeInputText" class="font-semibold text-slate-800">All Dates</span>
+            <svg class="w-3 h-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            </svg>
+          </button>
+
+          <!-- Calendar Popover dropdown matching Image 2 -->
+          <div id="calendarPopover" class="hidden absolute right-0 top-10 z-50 bg-white border border-slate-200 rounded-xl shadow-2xl p-4 w-[300px] select-none text-slate-800">
+            <!-- Calendar Navigation Header -->
+            <div class="flex items-center justify-between pb-3 mb-2 border-b border-slate-100">
+              <button type="button" onclick="navigateMonth(-1)" class="w-7 h-7 rounded hover:bg-slate-100 flex items-center justify-center text-slate-600 font-bold cursor-pointer transition-colors text-sm" title="Previous Month">
+                ‹
+              </button>
+              <span id="calendarMonthYearLabel" class="text-sm font-bold text-slate-900">August 2026</span>
+              <button type="button" onclick="navigateMonth(1)" class="w-7 h-7 rounded hover:bg-slate-100 flex items-center justify-center text-slate-600 font-bold cursor-pointer transition-colors text-sm" title="Next Month">
+                ›
+              </button>
+            </div>
+
+            <!-- Weekday Row (Mo Tu We Th Fr Sa Su) with Weekends in Red -->
+            <div class="grid grid-cols-7 text-center text-[11px] font-semibold text-slate-400 mb-2">
+              <span>Mo</span>
+              <span>Tu</span>
+              <span>We</span>
+              <span>Th</span>
+              <span>Fr</span>
+              <span class="text-rose-500">Sa</span>
+              <span class="text-rose-500">Su</span>
+            </div>
+
+            <!-- Calendar Days 7-column Grid -->
+            <div id="calendarDaysGrid" class="grid grid-cols-7 gap-y-1 text-center text-xs">
+              <!-- Dynamically populated -->
+            </div>
+
+            <!-- Quick Presets and Reset Filter Options -->
+            <div class="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between text-[11px]">
+              <div class="flex items-center gap-1.5">
+                <button type="button" onclick="applyPresetRange('today')" class="px-2 py-0.5 rounded bg-slate-100 hover:bg-sky-50 hover:text-[#0284c7] text-slate-700 font-medium cursor-pointer transition-colors">Today</button>
+                <button type="button" onclick="applyPresetRange('yesterday')" class="px-2 py-0.5 rounded bg-slate-100 hover:bg-sky-50 hover:text-[#0284c7] text-slate-700 font-medium cursor-pointer transition-colors">Yesterday</button>
+                <button type="button" onclick="applyPresetRange('last7')" class="px-2 py-0.5 rounded bg-slate-100 hover:bg-sky-50 hover:text-[#0284c7] text-slate-700 font-medium cursor-pointer transition-colors">7 Days</button>
+              </div>
+              <button type="button" onclick="applyPresetRange('all')" class="text-rose-600 hover:underline font-semibold cursor-pointer">All / Reset</button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- 3. Inputs & Controls Row (Clean & Direct with Interactive Date Range) -->
-    <div class="bg-white p-3.5 rounded-lg border border-slate-200 shadow-2xs">
-      <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-        
-        <!-- Drive Folder Link (Clean on Load) -->
-        <div class="md:col-span-4 flex flex-col">
-          <label class="text-[11px] font-semibold text-slate-700 mb-1.5">Google Drive Folder Link / ID (Recursive subfolders auto-scanned)</label>
+    <!-- Quota Alert Banner (Shown when YouTube daily upload limit is reached) -->
+    <div id="quotaAlertBanner" class="hidden bg-amber-50 border border-amber-300 rounded-xl p-4 shadow-sm flex items-center justify-between flex-wrap gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-full bg-amber-100 border border-amber-300 text-amber-700 flex items-center justify-center shrink-0">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h4 class="text-xs font-bold text-amber-900">YouTube Daily Upload Limit Reached (~10-15 videos/day for channel)</h4>
+            <span class="px-2 py-0.2 bg-amber-200 text-amber-800 rounded-full text-[10px] font-bold uppercase">Queue Paused</span>
+          </div>
+          <p class="text-xs text-amber-700 mt-0.5">YouTube API has paused uploads for today. You can convert all remaining or failed videos into instant <strong>Secure Google Drive Player</strong> embed links without waiting!</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          onclick="convertAllToDrivePlayer()"
+          class="h-8.5 px-3 bg-[#5046e5] hover:bg-[#4338ca] text-white rounded-md text-xs font-bold shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+        >
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+          <span>⚡ Convert Remaining to Drive Player (Instant)</span>
+        </button>
+        <button
+          type="button"
+          onclick="dismissQuotaBanner()"
+          class="h-8.5 px-2.5 bg-white text-slate-700 hover:bg-slate-100 border border-slate-300 rounded-md text-xs font-semibold cursor-pointer"
+        >
+          Dismiss
+        </button>
+      </div>
+    </div>
+
+    <!-- 3. Inputs & Controls Row -->
+    <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs space-y-3.5">
+      
+      <!-- Processing Modes Options -->
+      <div>
+        <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-2">Select Processing Mode:</label>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          
+          <!-- Mode 1: YouTube Upload -->
+          <label id="modeCard-youtube" onclick="selectProcessingMode('youtube')" class="relative flex items-start p-3 rounded-lg border-2 border-[#5046e5] bg-indigo-50/20 shadow-xs cursor-pointer transition-all">
+            <input type="radio" name="processingMode" value="youtube" checked onchange="updateProcessingModeCards()" class="mt-0.5 text-[#5046e5] focus:ring-[#5046e5] cursor-pointer" />
+            <div class="ml-2.5 text-xs">
+              <span class="font-bold text-slate-900 block">Option 1: YouTube Upload</span>
+              <span class="text-slate-500 block mt-0.5">Upload to YouTube Unlisted. Uses your daily 10,000 API quota (approx 6 videos/day).</span>
+            </div>
+          </label>
+
+          <!-- Mode 2: Auto-Queue -->
+          <label id="modeCard-queue" onclick="selectProcessingMode('queue')" class="relative flex items-start p-3 rounded-lg border-2 border-slate-200 bg-white hover:bg-slate-50 cursor-pointer transition-all">
+            <input type="radio" name="processingMode" value="queue" onchange="updateProcessingModeCards()" class="mt-0.5 text-[#5046e5] focus:ring-[#5046e5] cursor-pointer" />
+            <div class="ml-2.5 text-xs">
+              <span class="font-bold text-slate-900 block">Option 2: Smart Auto-Queue</span>
+              <span class="text-slate-500 block mt-0.5">Uploads to YouTube. If quota is reached, it will pause automatically and save progress.</span>
+            </div>
+          </label>
+
+          <!-- Mode 3: Drive Secure Direct Player -->
+          <label id="modeCard-drive_secure" onclick="selectProcessingMode('drive_secure')" class="relative flex items-start p-3 rounded-lg border-2 border-slate-200 bg-white hover:bg-slate-50 cursor-pointer transition-all">
+            <input type="radio" name="processingMode" value="drive_secure" onchange="updateProcessingModeCards()" class="mt-0.5 text-[#5046e5] focus:ring-[#5046e5] cursor-pointer" />
+            <div class="ml-2.5 text-xs">
+              <span class="font-bold text-slate-900 block">Option 3: Secure Drive Player</span>
+              <span class="text-slate-500 block mt-0.5">Bypass YouTube (No quota limit!). Generates a protected Google Drive embed link (downloads disabled).</span>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Main Input Controls Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 items-end">
+        <!-- Drive Link/ID Input (Col 5) -->
+        <div class="lg:col-span-5 space-y-1">
+          <label class="block text-xs font-semibold text-slate-700">
+            Google Drive Folder Link / ID <span class="text-slate-400 font-normal">(Recursive subfolders auto-scanned)</span>
+          </label>
           <div class="relative flex items-center">
             <input
               type="text"
               id="folderInput"
               placeholder="Paste Drive Folder Link (e.g. 27-LNE51MP 2026)..."
-              class="w-full h-9 pl-3 pr-8 text-xs bg-white border border-slate-300 rounded text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#5046e5] focus:ring-1 focus:ring-[#5046e5]"
+              class="w-full h-9 pl-3 pr-9 border border-slate-300 rounded-md text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#5046e5]/20 focus:border-[#5046e5] transition-all bg-white"
             />
-            <button type="button" onclick="pasteFromClipboard()" class="absolute right-2 text-slate-400 hover:text-[#5046e5] p-1 cursor-pointer" title="Paste from clipboard">
-              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+            <button
+              type="button"
+              onclick="pasteFromClipboard()"
+              class="absolute right-2.5 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+              title="Paste from clipboard"
+            >
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
             </button>
           </div>
         </div>
 
-        <!-- Custom Playlist Name (Clean on Load) -->
-        <div class="md:col-span-2 flex flex-col">
-          <label class="text-[11px] font-semibold text-slate-700 mb-1.5">Playlist Name (Optional)</label>
+        <!-- Playlist Name Input (Col 2) -->
+        <div class="lg:col-span-2 space-y-1">
+          <label class="block text-xs font-semibold text-slate-700">
+            Playlist Name <span class="text-slate-400 font-normal">(Optional)</span>
+          </label>
           <input
             type="text"
             id="playlistNameInput"
             placeholder="e.g. 27-LNE51MP"
-            class="w-full h-9 px-3 text-xs bg-white border border-slate-300 rounded text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#5046e5] focus:ring-1 focus:ring-[#5046e5]"
+            class="w-full h-9 px-3 border border-slate-300 rounded-md text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#5046e5]/20 focus:border-[#5046e5] transition-all bg-white"
           />
         </div>
 
-        <!-- Interactive Date Range Selector -->
-        <div class="md:col-span-3 flex flex-col">
-          <div class="flex items-center justify-between mb-1.5">
-            <label class="text-[11px] font-semibold text-slate-700">Filter Date Range</label>
-            <div class="flex items-center gap-1 text-[10px]">
-              <button type="button" onclick="setDatePreset('today')" class="text-[#5046e5] font-semibold hover:underline cursor-pointer">Today</button>
+        <!-- Date Range Filter Picker for Scanning (Col 3) -->
+        <div class="lg:col-span-3 space-y-1">
+          <div class="flex items-center justify-between">
+            <label class="block text-xs font-semibold text-slate-700">Filter Date Range</label>
+            <div class="flex items-center gap-1.5 text-[10px]">
+              <button type="button" onclick="setDatePreset('all')" class="text-[#5046e5] hover:underline font-semibold cursor-pointer">All Time (Default)</button>
+              <span class="text-slate-300">|</span>
+              <button type="button" onclick="setDatePreset('today')" class="text-slate-600 hover:text-[#5046e5] cursor-pointer">Today</button>
               <span class="text-slate-300">|</span>
               <button type="button" onclick="setDatePreset('yesterday')" class="text-slate-600 hover:text-[#5046e5] cursor-pointer">Yesterday</button>
               <span class="text-slate-300">|</span>
-              <button type="button" onclick="setDatePreset('all')" class="text-slate-600 hover:text-[#5046e5] cursor-pointer">All Time</button>
+              <button type="button" onclick="setDatePreset('clear')" class="text-rose-500 hover:underline cursor-pointer">Clear</button>
             </div>
           </div>
           <div class="flex items-center gap-1.5">
             <input
               type="date"
               id="startDateInput"
-              class="w-1/2 h-9 px-2 text-xs bg-white border border-slate-300 rounded text-slate-900 focus:outline-none focus:border-[#5046e5] focus:ring-1 focus:ring-[#5046e5] cursor-pointer"
-              title="From Date"
+              class="w-1/2 h-9 px-2 border border-slate-300 rounded-md text-xs text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-[#5046e5]/20 focus:border-[#5046e5]"
             />
-            <span class="text-slate-400 text-xs font-bold">–</span>
+            <span class="text-slate-400 text-xs">-</span>
             <input
               type="date"
               id="endDateInput"
-              class="w-1/2 h-9 px-2 text-xs bg-white border border-slate-300 rounded text-slate-900 focus:outline-none focus:border-[#5046e5] focus:ring-1 focus:ring-[#5046e5] cursor-pointer"
-              title="To Date"
+              class="w-1/2 h-9 px-2 border border-slate-300 rounded-md text-xs text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-[#5046e5]/20 focus:border-[#5046e5]"
             />
           </div>
         </div>
 
-        <!-- Action Buttons -->
-        <div class="md:col-span-3 flex items-center gap-2">
+        <!-- Action Buttons (Col 2) -->
+        <div class="lg:col-span-2 flex items-center gap-2">
           <button
             type="button"
             id="startButton"
-            class="flex-1 h-9 px-4 bg-[#5046e5] hover:bg-[#4338ca] text-white text-xs font-semibold rounded shadow-2xs transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50 cursor-pointer"
+            onclick="startProcessing()"
+            class="flex-1 h-9 bg-[#5046e5] hover:bg-[#4338ca] text-white rounded-md text-xs font-bold shadow-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <svg id="startIcon" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1555.832l3.197-2.132a1 1 0 000-1.664z" />
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <span id="buttonText">Start Process</span>
@@ -235,39 +380,141 @@
 
           <button
             type="button"
-            id="downloadCsvBtn"
-            class="h-9 px-3.5 bg-[#5046e5] hover:bg-[#4338ca] text-white text-xs font-semibold rounded shadow-2xs transition-colors whitespace-nowrap flex items-center gap-1.5 cursor-pointer"
-            title="Download uploaded links as CSV"
+            id="stopProcessBtn"
+            onclick="cancelProcessingJob()"
+            class="hidden h-9 px-3 bg-rose-600 hover:bg-rose-700 text-white rounded-md text-xs font-bold shadow-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+            title="Stop / Cancel current background upload"
           >
-            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+            <span>Stop</span>
+          </button>
+
+          <button
+            type="button"
+            id="downloadCsvBtn"
+            class="h-9 px-3 bg-slate-800 hover:bg-slate-900 text-white rounded-md text-xs font-bold shadow-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+            title="Download CSV report of uploaded videos"
+          >
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
             <span>Download CSV</span>
           </button>
         </div>
-
       </div>
     </div>
 
-    <!-- 4. Clean Enterprise Table -->
-    <div class="bg-white border border-slate-200 rounded-lg shadow-2xs overflow-hidden">
+    <!-- 4. Clean Enterprise Table & Search Toolbar (Unified Rectangular Styling) -->
+    <div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-2xs space-y-0">
+      
+      <!-- Table Search & Action Toolbar -->
+      <div class="p-2.5 border-b border-slate-200 bg-slate-50/80 flex items-center justify-between gap-3 flex-wrap">
+        <!-- Search & Source Filters (Left) -->
+        <div class="flex items-center gap-2.5 flex-1 min-w-[320px]">
+          <!-- Real-Time Search Input Box -->
+          <div class="relative flex-1 max-w-sm">
+            <input
+              type="text"
+              id="tableSearchInput"
+              placeholder="Search videos by title, batch, or subject..."
+              oninput="handleTableSearch()"
+              class="w-full h-8.5 pl-8 pr-3 text-xs bg-white border border-slate-300 rounded-md text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#5046e5] focus:border-[#5046e5] transition-all"
+            />
+            <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+          </div>
+
+          <!-- Source Filter Segmented Buttons (All / YouTube / Drive) -->
+          <div class="flex items-center bg-slate-200/70 p-0.5 rounded-md border border-slate-300 text-xs shrink-0 whitespace-nowrap">
+            <button
+              type="button"
+              id="sourceFilterAll"
+              onclick="setSourceFilter('all')"
+              class="h-7.5 px-3 rounded text-xs font-bold bg-white text-slate-900 shadow-2xs cursor-pointer transition-all whitespace-nowrap flex items-center gap-1"
+            >
+              <span>All (<span id="sourceCountAll">0</span>)</span>
+            </button>
+            <button
+              type="button"
+              id="sourceFilterYouTube"
+              onclick="setSourceFilter('youtube')"
+              class="h-7.5 px-3 rounded text-xs font-semibold text-slate-600 hover:text-slate-900 cursor-pointer transition-all whitespace-nowrap flex items-center gap-1.5"
+            >
+              <svg class="w-3.5 h-3.5 text-rose-600 shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+              <span>YouTube (<span id="sourceCountYouTube">0</span>)</span>
+            </button>
+            <button
+              type="button"
+              id="sourceFilterDrive"
+              onclick="setSourceFilter('drive')"
+              class="h-7.5 px-3 rounded text-xs font-semibold text-slate-600 hover:text-slate-900 cursor-pointer transition-all whitespace-nowrap flex items-center gap-1.5"
+            >
+              <svg class="w-3.5 h-3.5 text-[#5046e5] shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+              <span>Drive (<span id="sourceCountDrive">0</span>)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Right Side Quick Action Buttons -->
+        <div class="flex items-center gap-2 shrink-0">
+          <!-- Copy All Links Button -->
+          <button
+            type="button"
+            onclick="copyAllVideoLinks()"
+            class="h-8.5 px-3 bg-white hover:bg-slate-50 text-slate-700 hover:text-[#5046e5] border border-slate-300 rounded-md text-xs font-semibold shadow-2xs transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+            title="Copy all embed links (YouTube embed URL or Google Drive preview link)"
+          >
+            <svg class="w-3.5 h-3.5 text-slate-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+            </svg>
+            <span>Copy All Embed Links</span>
+          </button>
+
+          <!-- Sync YouTube Uploads Button -->
+          <button
+            type="button"
+            onclick="syncYouTubeUploads()"
+            class="h-8.5 px-3 bg-white hover:bg-slate-50 text-slate-700 hover:text-rose-600 border border-slate-300 rounded-md text-xs font-semibold shadow-2xs transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+            title="Fetch all live uploaded videos and real thumbnails from your YouTube channel"
+          >
+            <svg class="w-3.5 h-3.5 text-rose-600 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+            </svg>
+            <span>Sync YouTube</span>
+          </button>
+
+          <!-- Clear / Clean Table Button -->
+          <button
+            type="button"
+            onclick="clearCompletedVideos()"
+            class="h-8.5 px-3 bg-white hover:bg-slate-50 text-slate-700 hover:text-rose-600 border border-slate-300 rounded-md text-xs font-semibold shadow-2xs transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+            title="Clean / Remove all completed videos from this dashboard"
+          >
+            <svg class="w-3.5 h-3.5 text-slate-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            <span>Clean Table</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Video Data Table -->
       <div class="overflow-x-auto">
-        <table class="w-full text-left text-xs border-collapse">
-          <thead class="bg-slate-50 text-slate-700 border-b border-slate-200 font-bold tracking-tight">
-            <tr>
-              <th scope="col" class="py-3 px-3 w-12 text-center border-r border-slate-200">#</th>
-              <th scope="col" class="py-3 px-4 min-w-[340px] border-r border-slate-200">
-                File Name &amp; Batch
-                <span class="block text-[10px] text-slate-400 font-normal lowercase">(click ✏️ to edit title live)</span>
-              </th>
-              <th scope="col" class="py-3 px-4 w-28 border-r border-slate-200 text-center">Date</th>
-              <th scope="col" class="py-3 px-4 w-36 border-r border-slate-200">File Type</th>
-              <th scope="col" class="py-3 px-4 w-80 border-r border-slate-200">
-                Upload Status
-                <span class="block text-[10px] text-slate-400 font-normal lowercase">(live progress &amp; speed)</span>
-              </th>
-              <th scope="col" class="py-3 px-4 w-36 text-center">Action</th>
+        <table class="w-full text-left border-collapse text-xs">
+          <thead>
+            <tr class="bg-slate-50 border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-600">
+              <th class="py-3 px-3 w-12 text-center border-r border-slate-200">#</th>
+              <th class="py-3 px-4 border-r border-slate-200">File Name &amp; Batch <span class="font-normal text-[10px] text-slate-400 lowercase">(click ✏️ to edit live)</span></th>
+              <th class="py-3 px-3 w-28 text-center border-r border-slate-200">Date</th>
+              <th class="py-3 px-3 w-32 text-center border-r border-slate-200">Format &amp; Source</th>
+              <th class="py-3 px-4 w-72 border-r border-slate-200">Thumbnail &amp; Status</th>
+              <th class="py-3 px-4 w-44 text-center">Action</th>
             </tr>
           </thead>
-          <tbody id="trackingTableBody" class="divide-y divide-slate-200 bg-white">
+          <tbody id="trackingTableBody" class="divide-y divide-slate-100 font-medium">
             <tr id="emptyRow" class="text-slate-400">
               <td colspan="6" class="py-16 text-center">
                 <div class="flex flex-col items-center justify-center gap-2">
@@ -282,127 +529,651 @@
         </table>
       </div>
     </div>
-
   </main>
 
-  <!-- 5. Interactive Video Player Modal -->
-  <div id="videoModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-xl max-w-3xl w-full overflow-hidden shadow-2xl border border-slate-200">
-      <div class="px-4 py-3 border-b border-slate-200 flex items-center justify-between bg-slate-50">
-        <div class="flex items-center gap-2 truncate pr-4">
-          <span class="p-1 rounded bg-indigo-50 text-[#5046e5]">
-            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M4 6.47v11.06c0 .8.88 1.28 1.54.84l8.29-5.53c.61-.41.61-1.27 0-1.68L5.54 5.63C4.88 5.19 4 5.67 4 6.47z"/></svg>
-          </span>
-          <h3 id="modalVideoTitle" class="text-sm font-bold text-slate-900 truncate">Video Preview</h3>
+  <!-- 5. Modern Smart Video Player Modal with Poster & Play Button -->
+  <div id="videoModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs p-4">
+    <div class="bg-white rounded-xl max-w-4xl w-full overflow-hidden shadow-2xl border border-slate-200 flex flex-col">
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between px-5 py-3 border-b border-slate-200 bg-slate-50">
+        <div class="space-y-1 overflow-hidden pr-3">
+          <div class="flex items-center gap-2">
+            <span id="modalSourceBadge" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-600 border border-rose-200">
+              <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+              <span>YouTube (Unlisted)</span>
+            </span>
+            <span id="modalBatchTag" class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-[#5046e5] border border-indigo-200">Batch</span>
+            <span id="modalSubjectTag" class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">Subject</span>
+          </div>
+          <h3 id="modalVideoTitle" class="text-sm font-bold text-slate-900 truncate">Lecture Preview</h3>
         </div>
-        <button onclick="closeVideoModal()" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer">
-          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-        </button>
-      </div>
-      <div class="relative bg-black aspect-video w-full">
-        <iframe id="modalIframe" class="w-full h-full" src="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-      </div>
-      <div class="p-4 bg-white flex items-center justify-between flex-wrap gap-2 text-xs">
-        <div class="flex items-center gap-2">
-          <span id="modalBatchTag" class="px-2 py-0.5 rounded bg-indigo-50 text-[#5046e5] font-semibold border border-indigo-200">Batch</span>
-          <span id="modalSubjectTag" class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-semibold border border-slate-200">Subject</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <button id="modalCopyBtn" onclick="copyModalEmbedLink()" class="px-3 py-1.5 rounded bg-[#5046e5] hover:bg-[#4338ca] text-white font-semibold shadow-2xs transition-colors flex items-center gap-1.5 cursor-pointer">
-            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-            <span>Copy Embed Link</span>
+
+        <div class="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onclick="openEditModalFromPlayer()"
+            class="px-2.5 py-1.5 bg-white hover:bg-indigo-50 text-[#5046e5] border border-indigo-200 rounded text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+            title="Edit Title, Batch, or Change Thumbnail"
+          >
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+            </svg>
+            <span>Edit / Thumbnail</span>
           </button>
-          <a id="modalYtLink" href="#" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold border border-slate-300 transition-colors">
-            Open Watch URL ↗
+
+          <a id="modalYtLink" href="#" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer">
+            <span>Open Link ↗</span>
           </a>
+
+          <button onclick="closeVideoModal()" class="w-8 h-8 rounded hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors cursor-pointer text-lg font-bold">
+            &times;
+          </button>
+        </div>
+      </div>
+
+      <!-- Video Player / Poster Container Area -->
+      <div class="relative aspect-video w-full bg-slate-950 flex items-center justify-center overflow-hidden">
+        <!-- 1. Initial Thumbnail Poster View with Play Button -->
+        <div id="modalPosterContainer" class="absolute inset-0 z-10 flex items-center justify-center cursor-pointer group select-none" onclick="startModalPlayback()">
+          <img id="modalPosterImg" src="" alt="Thumbnail" class="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300 opacity-90 group-hover:opacity-100" onerror="this.src='https://placehold.co/1280x720?text=Click+to+Play'" />
+          <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-black/40"></div>
+          
+          <!-- Big Centered Play Button Overlay -->
+          <div class="relative z-20 flex flex-col items-center gap-3">
+            <div class="w-20 h-20 rounded-2xl bg-[#5046e5] text-white shadow-2xl flex items-center justify-center transform group-hover:scale-110 transition-all duration-200 border-2 border-white/30">
+              <svg class="w-10 h-10 ml-1 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            </div>
+            <span class="text-white font-bold text-xs bg-black/70 backdrop-blur-xs px-4 py-1.5 rounded-full border border-white/20 shadow-md">Click to Play Video</span>
+          </div>
+
+          <!-- Bottom Video Info Overlay on Poster -->
+          <div class="absolute bottom-4 left-5 right-5 z-20 flex items-end justify-between pointer-events-none">
+            <div class="space-y-0.5 max-w-xl text-left">
+              <span id="posterBatchTag" class="text-xs font-bold text-amber-300 uppercase tracking-wider block"></span>
+              <h4 id="posterVideoTitle" class="text-base font-bold text-white drop-shadow-md line-clamp-1"></h4>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Active Embedded Player Iframe (Loads on Play click) -->
+        <iframe id="modalIframe" src="" class="w-full h-full border-0 relative z-0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. Video Details & Thumbnail Studio Modal -->
+  <div id="editVideoModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-4">
+    <div class="bg-white rounded-xl max-w-xl w-full p-5 shadow-2xl border border-slate-200 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+        <div class="flex items-center gap-2">
+          <div class="w-7 h-7 rounded bg-indigo-50 text-[#5046e5] border border-indigo-200 flex items-center justify-center font-bold text-xs">
+            ✏️
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-slate-900">Edit Video &amp; Thumbnail Studio</h3>
+            <p class="text-[11px] text-slate-500">Update YouTube title, batch, and set custom thumbnails</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeEditModal()" class="text-slate-400 hover:text-slate-600 text-lg font-bold cursor-pointer">&times;</button>
+      </div>
+
+      <input type="hidden" id="editModalFileId" value="" />
+      <input type="hidden" id="editModalVideoId" value="" />
+
+      <!-- Video Title Input -->
+      <div class="space-y-1">
+        <label class="block text-xs font-bold text-slate-800">Video Title (Syncs with YouTube):</label>
+        <input
+          type="text"
+          id="editModalTitleInput"
+          class="w-full h-9 px-3 text-xs font-semibold border border-slate-300 rounded-md text-slate-900 focus:ring-2 focus:ring-[#5046e5]/20 focus:border-[#5046e5]"
+          placeholder="Enter video title..."
+        />
+      </div>
+
+      <!-- Batch & Subject Row -->
+      <div class="grid grid-cols-2 gap-3">
+        <div class="space-y-1">
+          <label class="block text-xs font-semibold text-slate-700">Batch Name:</label>
+          <input
+            type="text"
+            id="editModalBatchInput"
+            class="w-full h-8.5 px-3 text-xs border border-slate-300 rounded-md text-slate-900 focus:ring-2 focus:ring-[#5046e5]/20 focus:border-[#5046e5]"
+            placeholder="e.g. 27-LNE51MP 2026"
+          />
+        </div>
+        <div class="space-y-1">
+          <label class="block text-xs font-semibold text-slate-700">Subject / Category:</label>
+          <input
+            type="text"
+            id="editModalSubjectInput"
+            class="w-full h-8.5 px-3 text-xs border border-slate-300 rounded-md text-slate-900 focus:ring-2 focus:ring-[#5046e5]/20 focus:border-[#5046e5]"
+            placeholder="e.g. Physics / Lecture"
+          />
+        </div>
+      </div>
+
+      <!-- Thumbnail Management Box -->
+      <div class="p-3.5 rounded-lg bg-slate-50 border border-slate-200 space-y-3">
+        <div class="flex items-center justify-between">
+          <label class="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+            <span>Thumbnail Studio (16:9)</span>
+            <span class="text-[10px] font-normal text-slate-500">Live preview &amp; YouTube uploader</span>
+          </label>
+          <button
+            type="button"
+            onclick="generateSmartThumbnail()"
+            class="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded text-[11px] font-bold shadow-2xs transition-colors cursor-pointer flex items-center gap-1"
+            title="Auto-generate a clean professional thumbnail banner"
+          >
+            <span>⚡ 1-Click Auto Thumbnail</span>
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+          <!-- Thumbnail Live Preview (Col 5) -->
+          <div class="sm:col-span-5">
+            <div class="relative aspect-video w-full rounded border border-slate-300 overflow-hidden bg-slate-900 shadow-2xs group">
+              <img id="editModalThumbPreview" src="https://placehold.co/640x360?text=Preview" alt="Thumbnail Preview" class="w-full h-full object-cover" />
+              <div class="absolute bottom-1 right-1 bg-black/70 px-1.5 py-0.5 rounded text-[9px] text-white font-mono">16:9 HD</div>
+            </div>
+          </div>
+
+          <!-- Thumbnail Options (Col 7) -->
+          <div class="sm:col-span-7 space-y-2 text-xs">
+            <div>
+              <span class="text-[11px] font-semibold text-slate-700 block mb-1">Option A: Upload Image File</span>
+              <button
+                type="button"
+                onclick="document.getElementById('thumbnailFileInput').click()"
+                class="w-full h-8 px-3 bg-white hover:bg-indigo-50 text-slate-700 hover:text-[#5046e5] border border-slate-300 rounded text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+                <span>Choose Image (JPG / PNG)</span>
+              </button>
+            </div>
+
+            <div>
+              <span class="text-[11px] font-semibold text-slate-700 block mb-1">Option B: Image URL</span>
+              <input
+                type="text"
+                id="editModalThumbUrlInput"
+                oninput="handleCustomThumbUrlInput()"
+                placeholder="Paste image link https://..."
+                class="w-full h-8 px-2 text-xs border border-slate-300 rounded bg-white text-slate-900 focus:ring-1 focus:ring-[#5046e5]"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex items-center justify-between pt-2 border-t border-slate-200">
+        <button
+          type="button"
+          onclick="deleteCurrentVideoFromEditModal()"
+          class="px-3 py-1.5 text-xs text-rose-600 hover:bg-rose-50 border border-rose-200 rounded font-semibold cursor-pointer transition-colors"
+        >
+          🗑️ Remove Video
+        </button>
+
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            onclick="closeEditModal()"
+            class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs font-semibold cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onclick="saveVideoEditModal()"
+            class="px-4 py-1.5 bg-[#5046e5] hover:bg-[#4338ca] text-white rounded text-xs font-bold shadow-2xs transition-colors cursor-pointer flex items-center gap-1.5"
+          >
+            <span>Save &amp; Apply</span>
+          </button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Notification Toast -->
-  <div id="toast" class="fixed bottom-5 right-5 transform transition-all duration-300 translate-y-20 opacity-0 bg-slate-900 text-white px-4 py-2.5 rounded shadow-xl flex items-center gap-2.5 z-50 text-xs font-medium">
-    <div id="toastIcon"></div>
-    <div id="toastMessage"></div>
+  <!-- Google Auth & API Keys Modal -->
+  <div id="authConfigModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-[#5046e5] text-white flex items-center justify-center font-bold">G</div>
+          <div>
+            <h3 class="text-sm font-bold text-slate-900">Google OAuth &amp; Multi-Key Rotation</h3>
+            <p class="text-[11px] text-slate-500">Connect Google account for unlimited uploads</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeAuthModal()" class="text-slate-400 hover:text-slate-600 text-lg font-bold cursor-pointer">&times;</button>
+      </div>
+
+      <!-- Quick Connect Tabs / Options -->
+      <div class="space-y-3">
+        <!-- Direct Access Token Input (Guaranteed Instant Connect) -->
+        <div class="p-3 rounded-lg bg-emerald-50/70 border border-emerald-200 text-xs space-y-2">
+          <div class="flex items-center justify-between font-bold text-emerald-900">
+            <span>Option A: Instant Token Connect (Zero-Setup)</span>
+            <span class="text-[10px] text-emerald-700 font-semibold">Recommended</span>
+          </div>
+          <div class="flex gap-2">
+            <input
+              type="password"
+              id="directAccessTokenInput"
+              placeholder="Paste Google Access Token (ya29...)"
+              class="flex-1 p-2 text-xs font-mono border border-emerald-300 rounded bg-white text-slate-900 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
+            />
+            <button
+              type="button"
+              onclick="saveDirectToken()"
+              class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded text-xs transition-colors cursor-pointer whitespace-nowrap"
+            >
+              Connect Token
+            </button>
+          </div>
+          <p class="text-[10px] text-emerald-700">Paste any valid OAuth Bearer access token from Google OAuth Playground or gcloud to connect instantly without creating OAuth credentials.</p>
+        </div>
+
+        <!-- OAuth Client ID (Popup Sign-In) -->
+        <div class="p-3 rounded-lg bg-slate-50 border border-slate-200 text-xs space-y-2.5">
+          <div class="flex items-center justify-between font-bold text-slate-800">
+            <span>Option B: Google Cloud OAuth 2.0 Web Client ID</span>
+            <span id="keyCountText" class="text-[10px] font-semibold text-[#5046e5]">0 key(s) active</span>
+          </div>
+
+          <!-- Quick Origin Setup Helper -->
+          <div class="p-2.5 rounded bg-amber-50/80 border border-amber-200 text-xs space-y-1">
+            <div class="flex items-center justify-between font-bold text-amber-900">
+              <span class="text-[11px]">Authorized JavaScript Origin:</span>
+              <button type="button" onclick="copyOriginUrl()" class="px-2 py-0.5 rounded bg-amber-200/80 hover:bg-amber-300 text-amber-900 text-[10px] font-bold cursor-pointer transition-colors">
+                Copy Origin URL
+              </button>
+            </div>
+            <div class="font-mono text-[11px] text-amber-800 bg-white/80 px-2 py-1 rounded border border-amber-200/60 truncate" id="originUrlDisplay">
+              https://...
+            </div>
+          </div>
+
+          <textarea
+            id="clientIdsList"
+            rows="2"
+            placeholder="Paste your OAuth Client ID (e.g. 123456789-xxx.apps.googleusercontent.com)..."
+            class="w-full p-2 text-xs font-mono border border-slate-300 rounded bg-white text-slate-900 focus:ring-2 focus:ring-[#5046e5]/20 focus:border-[#5046e5]"
+          ></textarea>
+
+          <div class="flex items-center justify-between pt-1">
+            <span class="text-[10px] text-slate-500">Add origin in Google Cloud Console &rarr; Credentials &rarr; OAuth Client</span>
+            <button
+              type="button"
+              onclick="saveAndAuthorize()"
+              class="px-3.5 py-1.5 rounded bg-[#5046e5] hover:bg-[#4338ca] text-white font-bold text-xs shadow-2xs transition-colors cursor-pointer"
+            >
+              Save &amp; Sign In
+            </button>
+          </div>
+        </div>
+
+        <!-- Sync YouTube Uploads -->
+        <div class="p-3 rounded-lg bg-rose-50/60 border border-rose-100 flex items-center justify-between">
+          <div>
+            <div class="text-xs font-bold text-slate-900">Sync YouTube Uploads</div>
+            <div class="text-[11px] text-slate-500">Fetch all previously uploaded channel videos</div>
+          </div>
+          <button
+            type="button"
+            onclick="syncYouTubeUploads()"
+            class="px-3.5 py-1.5 rounded bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-2xs transition-colors cursor-pointer flex items-center gap-1.5"
+          >
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+            </svg>
+            <span>Sync Uploads</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between pt-2 border-t border-slate-100">
+        <button type="button" onclick="logoutGoogle()" class="text-xs text-rose-600 hover:underline font-semibold cursor-pointer">
+          Disconnect Account
+        </button>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="saveClientIds()" class="px-4 py-1.5 bg-slate-800 hover:bg-slate-900 text-white rounded text-xs font-bold shadow-2xs transition-colors cursor-pointer">
+            Save Keys
+          </button>
+          <button type="button" onclick="closeAuthModal()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs font-semibold cursor-pointer">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 
+  <!-- Toast Notification Container -->
+  <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 ease-out flex items-center gap-2.5 px-4 py-2.5 bg-slate-900 text-white rounded-lg shadow-xl text-xs font-medium border border-slate-700 select-none">
+    <span id="toastIcon"></span>
+    <span id="toastMessage">Notification message</span>
+  </div>
+
+  <!-- Hidden Custom Thumbnail Input File Selector -->
+  <input type="file" id="thumbnailFileInput" class="hidden" accept="image/png, image/jpeg, image/webp" onchange="handleThumbnailSelected(event)" />
+
+  <!-- Complete Application JavaScript Engine -->
   <script>
     let clientId = 'client_' + (Date.now ? Date.now() : new Date().getTime()) + '_' + Math.random().toString(36).substr(2, 6);
     let eventSource = null;
     let currentState = null;
     let currentFilter = 'all'; // 'all' | 'completed' | 'pending' | 'failed'
 
-    const connectionBadge = document.getElementById('connectionBadge');
-    const navAuthBtn = document.getElementById('navAuthBtn');
-    const navConnectedBadge = document.getElementById('navConnectedBadge');
-    const bgNoticeBanner = document.getElementById('bgNoticeBanner');
-    const cancelJobBtn = document.getElementById('cancelJobBtn');
-    const folderInput = document.getElementById('folderInput');
-    const playlistNameInput = document.getElementById('playlistNameInput');
-    const playlistPill = document.getElementById('playlistPill');
-    const playlistPillTitle = document.getElementById('playlistPillTitle');
-    const startDateInput = document.getElementById('startDateInput');
-    const endDateInput = document.getElementById('endDateInput');
-    const startButton = document.getElementById('startButton');
-    const buttonText = document.getElementById('buttonText');
-    const downloadCsvBtn = document.getElementById('downloadCsvBtn');
-    const trackingTableBody = document.getElementById('trackingTableBody');
-    const toast = document.getElementById('toast');
-    const toastMessage = document.getElementById('toastMessage');
-    const toastIcon = document.getElementById('toastIcon');
+    // Date Range Picker State (Image 2 style)
+    let dateFilterRange = {
+      start: null, // YYYY-MM-DD
+      end: null,   // YYYY-MM-DD
+      preset: 'all' // 'all' | 'today' | 'yesterday' | 'last7' | 'custom'
+    };
+    let calendarDisplayYear = new Date().getFullYear();
+    let calendarDisplayMonth = new Date().getMonth(); // 0-based
+    let isCalendarOpen = false;
 
-    // Filter pill buttons
-    const filterPillAll = document.getElementById('filterPillAll');
-    const filterPillCompleted = document.getElementById('filterPillCompleted');
-    const filterPillPending = document.getElementById('filterPillPending');
-    const filterPillFailed = document.getElementById('filterPillFailed');
+    const MONTH_NAMES_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const MONTH_NAMES_FULL = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
-    // Modal elements
-    const videoModal = document.getElementById('videoModal');
-    const modalIframe = document.getElementById('modalIframe');
-    const modalVideoTitle = document.getElementById('modalVideoTitle');
-    const modalBatchTag = document.getElementById('modalBatchTag');
-    const modalSubjectTag = document.getElementById('modalSubjectTag');
-    const modalYtLink = document.getElementById('modalYtLink');
+    // DOM Elements (retrieved on init)
+    let connectionBadge, navAuthBtn, navConnectedBadge, bgNoticeBanner, cancelJobBtn;
+    let folderInput, playlistNameInput, playlistPill, playlistPillTitle, startDateInput, endDateInput;
+    let startButton, buttonText, downloadCsvBtn, trackingTableBody, toast, toastMessage, toastIcon;
+    let filterPillAll, filterPillCompleted, filterPillPending, filterPillFailed;
+    let videoModal, modalIframe, modalVideoTitle, modalBatchTag, modalSubjectTag, modalYtLink;
     let currentModalEmbedLink = '';
 
-    // Date Presets Function
+    // Date formatting functions
     function formatDateToYMD(d) {
+      if (!d || isNaN(d.getTime())) return '';
       const year = d.getFullYear();
       const month = String(d.getMonth() + 1).padStart(2, '0');
       const day = String(d.getDate()).padStart(2, '0');
       return `${year}-${month}-${day}`;
     }
 
-    window.setDatePreset = function(preset) {
-      const now = new Date();
-      if (preset === 'today') {
-        const todayStr = formatDateToYMD(now);
-        startDateInput.value = todayStr;
-        endDateInput.value = todayStr;
-        showToast('Date set to Today', 'info');
-      } else if (preset === 'yesterday') {
-        const yest = new Date(now);
-        yest.setDate(yest.getDate() - 1);
-        const yestStr = formatDateToYMD(yest);
-        startDateInput.value = yestStr;
-        endDateInput.value = yestStr;
-        showToast('Date set to Yesterday', 'info');
-      } else if (preset === 'all') {
-        startDateInput.value = '2020-01-01';
-        endDateInput.value = formatDateToYMD(now);
-        showToast('Date range set to All Time', 'info');
-      }
-    };
+    function formatDateToDMY(d) {
+      if (!d || isNaN(d.getTime())) return '';
+      return d.toLocaleDateString('en-GB'); // DD/MM/YYYY
+    }
 
-    // Set Table Filter Function
+    function formatDisplayDate(ymd) {
+      if (!ymd) return '';
+      const parts = ymd.split('-').map(Number);
+      if (parts.length < 3) return ymd;
+      const [y, m, d] = parts;
+      return `${d} ${MONTH_NAMES_SHORT[m - 1]} ${y}`;
+    }
+
+    function getTodayYMD() {
+      return formatDateToYMD(new Date());
+    }
+
+    function getYesterdayYMD() {
+      const d = new Date();
+      d.setDate(d.getDate() - 1);
+      return formatDateToYMD(d);
+    }
+
+    function getFileYMD(file) {
+      if (!file) return getTodayYMD();
+      if (file.createdTime) {
+        const d = new Date(file.createdTime);
+        if (!isNaN(d.getTime())) return formatDateToYMD(d);
+      }
+      const name = file.name || file.originalName || file.customTitle || '';
+      const ymdMatch = name.match(/(\d{4})-(\d{2})-(\d{2})/);
+      if (ymdMatch) return `${ymdMatch[1]}-${ymdMatch[2]}-${ymdMatch[3]}`;
+      const dmyMatch = name.match(/(\d{2})-(\d{2})-(\d{4})/);
+      if (dmyMatch) return `${dmyMatch[3]}-${dmyMatch[2]}-${dmyMatch[1]}`;
+      return getTodayYMD();
+    }
+
+    // Status Filter Handler
     window.setTableFilter = function(filter) {
       currentFilter = filter;
       updateFilterPillsUI();
       renderFilteredTable();
     };
 
+    // Calendar Popover & Date Range Handling (Image 2 UX)
+    window.toggleCalendarPopover = function(e) {
+      if (e) e.stopPropagation();
+      const pop = document.getElementById('calendarPopover');
+      if (!pop) return;
+      isCalendarOpen = !isCalendarOpen;
+      if (isCalendarOpen) {
+        pop.classList.remove('hidden');
+        if (dateFilterRange.start) {
+          const parts = dateFilterRange.start.split('-').map(Number);
+          calendarDisplayYear = parts[0];
+          calendarDisplayMonth = parts[1] - 1;
+        } else if (currentState && currentState.files && currentState.files.length > 0) {
+          const first = currentState.files[0];
+          const ymd = getFileYMD(first);
+          const parts = ymd.split('-').map(Number);
+          calendarDisplayYear = parts[0];
+          calendarDisplayMonth = parts[1] - 1;
+        } else {
+          const now = new Date();
+          calendarDisplayYear = now.getFullYear();
+          calendarDisplayMonth = now.getMonth();
+        }
+        renderCalendarGrid();
+      } else {
+        pop.classList.add('hidden');
+      }
+    };
+
+    window.closeCalendarPopover = function() {
+      const pop = document.getElementById('calendarPopover');
+      if (pop) pop.classList.add('hidden');
+      isCalendarOpen = false;
+    };
+
+    document.addEventListener('click', (e) => {
+      const wrapper = document.getElementById('calendarWrapper');
+      if (wrapper && !wrapper.contains(e.target) && isCalendarOpen) {
+        closeCalendarPopover();
+      }
+    });
+
+    window.navigateMonth = function(dir) {
+      calendarDisplayMonth += dir;
+      if (calendarDisplayMonth < 0) {
+        calendarDisplayMonth = 11;
+        calendarDisplayYear -= 1;
+      } else if (calendarDisplayMonth > 11) {
+        calendarDisplayMonth = 0;
+        calendarDisplayYear += 1;
+      }
+      renderCalendarGrid();
+    };
+
+    function renderCalendarGrid() {
+      const label = document.getElementById('calendarMonthYearLabel');
+      const grid = document.getElementById('calendarDaysGrid');
+      if (!label || !grid) return;
+
+      label.textContent = `${MONTH_NAMES_FULL[calendarDisplayMonth]} ${calendarDisplayYear}`;
+      grid.innerHTML = '';
+
+      const firstDayOfMonth = new Date(calendarDisplayYear, calendarDisplayMonth, 1);
+      const lastDayOfMonth = new Date(calendarDisplayYear, calendarDisplayMonth + 1, 0);
+      const daysInMonth = lastDayOfMonth.getDate();
+
+      // Monday-first index: 0 = Mon, ..., 6 = Sun
+      let startDayIndex = firstDayOfMonth.getDay() - 1;
+      if (startDayIndex < 0) startDayIndex = 6;
+
+      const prevMonthLastDay = new Date(calendarDisplayYear, calendarDisplayMonth, 0).getDate();
+      const prevMonthYear = calendarDisplayMonth === 0 ? calendarDisplayYear - 1 : calendarDisplayYear;
+      const prevMonth = calendarDisplayMonth === 0 ? 11 : calendarDisplayMonth - 1;
+
+      // Previous month overflow days
+      for (let i = startDayIndex - 1; i >= 0; i--) {
+        const dayNum = prevMonthLastDay - i;
+        const ymd = `${prevMonthYear}-${String(prevMonth + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
+        const dayCol = (startDayIndex - 1 - i) % 7;
+        const isWeekend = dayCol === 5 || dayCol === 6;
+        grid.appendChild(createCalendarDayButton(dayNum, ymd, true, isWeekend));
+      }
+
+      // Current month days
+      for (let d = 1; d <= daysInMonth; d++) {
+        const ymd = `${calendarDisplayYear}-${String(calendarDisplayMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        const dayOfWeek = (startDayIndex + d - 1) % 7;
+        const isWeekend = dayOfWeek === 5 || dayOfWeek === 6;
+        grid.appendChild(createCalendarDayButton(d, ymd, false, isWeekend));
+      }
+
+      // Next month overflow days
+      const totalRendered = startDayIndex + daysInMonth;
+      const remainingCells = (7 - (totalRendered % 7)) % 7;
+      const nextMonthYear = calendarDisplayMonth === 11 ? calendarDisplayYear + 1 : calendarDisplayYear;
+      const nextMonth = calendarDisplayMonth === 11 ? 0 : calendarDisplayMonth + 1;
+
+      for (let d = 1; d <= remainingCells; d++) {
+        const ymd = `${nextMonthYear}-${String(nextMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        const dayOfWeek = (totalRendered + d - 1) % 7;
+        const isWeekend = dayOfWeek === 5 || dayOfWeek === 6;
+        grid.appendChild(createCalendarDayButton(d, ymd, true, isWeekend));
+      }
+    }
+
+    function createCalendarDayButton(dayNum, ymd, isOtherMonth, isWeekend) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = dayNum;
+      btn.dataset.ymd = ymd;
+
+      const { start, end } = dateFilterRange;
+      const isStart = start === ymd;
+      const isEnd = end === ymd;
+      const isInRange = start && end && ymd > start && ymd < end;
+
+      let classes = 'h-8 flex items-center justify-center text-xs font-semibold cursor-pointer transition-all relative ';
+
+      if (isStart && isEnd) {
+        classes += 'bg-[#0284c7] text-white rounded-md font-bold shadow-xs z-10';
+      } else if (isStart) {
+        classes += end ? 'bg-[#0284c7] text-white rounded-l-md font-bold z-10' : 'bg-[#0284c7] text-white rounded-md font-bold shadow-xs z-10';
+      } else if (isEnd) {
+        classes += 'bg-[#0284c7] text-white rounded-r-md font-bold z-10';
+      } else if (isInRange) {
+        classes += 'bg-[#e0f2fe] text-slate-900 font-semibold rounded-none';
+      } else if (isOtherMonth) {
+        classes += 'text-slate-300 hover:text-slate-500 hover:bg-slate-50 rounded-md';
+      } else if (isWeekend) {
+        classes += 'text-rose-500 hover:bg-slate-100 rounded-md';
+      } else {
+        classes += 'text-slate-700 hover:bg-slate-100 rounded-md';
+      }
+
+      btn.className = classes;
+
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        handleCalendarDateClick(ymd);
+      };
+
+      return btn;
+    }
+
+    function handleCalendarDateClick(ymd) {
+      if (!dateFilterRange.start || (dateFilterRange.start && dateFilterRange.end)) {
+        dateFilterRange.start = ymd;
+        dateFilterRange.end = null;
+        dateFilterRange.preset = 'custom';
+      } else if (dateFilterRange.start && !dateFilterRange.end) {
+        if (ymd < dateFilterRange.start) {
+          dateFilterRange.end = dateFilterRange.start;
+          dateFilterRange.start = ymd;
+        } else {
+          dateFilterRange.end = ymd;
+        }
+        dateFilterRange.preset = 'custom';
+        setTimeout(() => closeCalendarPopover(), 250);
+      }
+
+      renderCalendarGrid();
+      updateDateFilterDisplayAndFilter();
+    }
+
+    window.applyPresetRange = function(preset) {
+      if (preset === 'today') {
+        const todayStr = getTodayYMD();
+        dateFilterRange = { start: todayStr, end: todayStr, preset: 'today' };
+        showToast('Date set to Today', 'info');
+      } else if (preset === 'yesterday') {
+        const yestStr = getYesterdayYMD();
+        dateFilterRange = { start: yestStr, end: yestStr, preset: 'yesterday' };
+        showToast('Date set to Yesterday', 'info');
+      } else if (preset === 'last7') {
+        const todayStr = getTodayYMD();
+        const d7 = new Date();
+        d7.setDate(d7.getDate() - 6);
+        const d7Str = formatDateToYMD(d7);
+        dateFilterRange = { start: d7Str, end: todayStr, preset: 'last7' };
+        showToast('Date set to Last 7 Days', 'info');
+      } else if (preset === 'all') {
+        dateFilterRange = { start: null, end: null, preset: 'all' };
+        showToast('Showing all dates', 'info');
+      }
+
+      if (startDateInput && endDateInput) {
+        startDateInput.value = dateFilterRange.start || '';
+        endDateInput.value = dateFilterRange.end || '';
+      }
+
+      renderCalendarGrid();
+      updateDateFilterDisplayAndFilter();
+      closeCalendarPopover();
+    };
+
+    window.setDatePreset = function(preset) {
+      applyPresetRange(preset);
+    };
+
+    function updateDateFilterDisplayAndFilter() {
+      const displayText = document.getElementById('dateRangeInputText');
+      const { start, end } = dateFilterRange;
+
+      if (displayText) {
+        if (!start && !end) {
+          displayText.textContent = 'All Dates';
+        } else if (start && !end) {
+          displayText.textContent = formatDisplayDate(start);
+        } else if (start && end) {
+          if (start === end) {
+            if (start === getTodayYMD()) {
+              displayText.textContent = `${formatDisplayDate(start)} (Today)`;
+            } else if (start === getYesterdayYMD()) {
+              displayText.textContent = `${formatDisplayDate(start)} (Yesterday)`;
+            } else {
+              displayText.textContent = formatDisplayDate(start);
+            }
+          } else {
+            displayText.textContent = `${formatDisplayDate(start)} – ${formatDisplayDate(end)}`;
+          }
+        }
+      }
+
+      renderFilteredTable();
+      if (currentState) {
+        updateDynamicMetrics();
+      }
+    }
+
     function updateFilterPillsUI() {
+      if (!filterPillAll) return;
       filterPillAll.className = "inline-flex items-center h-8 px-4 rounded border border-slate-300 bg-white text-slate-800 font-semibold shadow-2xs whitespace-nowrap cursor-pointer hover:bg-slate-50 transition-all";
       filterPillCompleted.className = "inline-flex items-center h-8 px-4 rounded border border-emerald-500 bg-white text-emerald-600 font-semibold shadow-2xs whitespace-nowrap cursor-pointer hover:bg-emerald-50 transition-all";
       filterPillPending.className = "inline-flex items-center h-8 px-4 rounded border border-indigo-400 bg-white text-indigo-600 font-semibold shadow-2xs whitespace-nowrap cursor-pointer hover:bg-indigo-50 transition-all";
@@ -445,6 +1216,7 @@
     }
 
     function showToast(message, type = 'info') {
+      if (!toastMessage || !toast) return;
       toastMessage.textContent = message;
       if (type === 'success') {
         toastIcon.innerHTML = `<svg class="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>`;
@@ -461,12 +1233,31 @@
       }, 4000);
     }
 
-    function updateStats(stats) {
-      if (!stats) return;
-      const total = stats.total || 0;
-      const completed = stats.completed || 0;
-      const pending = stats.pending || 0;
-      const failed = stats.failed || 0;
+    function updateDynamicMetrics() {
+      if (!currentState || !currentState.files) {
+        document.getElementById('metricTotal').textContent = '0';
+        document.getElementById('metricUploaded').textContent = '0 (0.00%)';
+        document.getElementById('metricPending').textContent = '0 (0.00%)';
+        if (filterPillFailed) filterPillFailed.classList.add('hidden');
+        return;
+      }
+
+      const { start, end } = dateFilterRange;
+      let matchingFiles = currentState.files;
+
+      if (start && end) {
+        matchingFiles = matchingFiles.filter(f => {
+          const fileYMD = getFileYMD(f);
+          return fileYMD >= start && fileYMD <= end;
+        });
+      } else if (start) {
+        matchingFiles = matchingFiles.filter(f => getFileYMD(f) === start);
+      }
+
+      const total = matchingFiles.length;
+      const completed = matchingFiles.filter(f => f.status === 'completed').length;
+      const pending = matchingFiles.filter(f => f.status === 'uploading' || f.status === 'queued').length;
+      const failed = matchingFiles.filter(f => f.status === 'failed').length;
 
       const completedPct = total > 0 ? ((completed / total) * 100).toFixed(2) : '0.00';
       const pendingPct = total > 0 ? ((pending / total) * 100).toFixed(2) : '0.00';
@@ -475,121 +1266,695 @@
       document.getElementById('metricUploaded').textContent = `${completed} (${completedPct}%)`;
       document.getElementById('metricPending').textContent = `${pending} (${pendingPct}%)`;
 
-      if (failed > 0) {
+      if (failed > 0 && filterPillFailed) {
         filterPillFailed.classList.remove('hidden');
         document.getElementById('metricFailed').textContent = failed;
-      } else {
+      } else if (filterPillFailed) {
         filterPillFailed.classList.add('hidden');
       }
     }
 
-    async function checkAuthStatus() {
-      try {
-        const res = await fetch('/api/auth-status');
-        const data = await res.json();
-        if (data.configured) {
-          navAuthBtn.classList.add('hidden');
-          navConnectedBadge.classList.remove('hidden');
-          navConnectedBadge.classList.add('inline-flex');
+    window.selectProcessingMode = function(mode) {
+      const radio = document.querySelector(`input[name="processingMode"][value="${mode}"]`);
+      if (radio) {
+        radio.checked = true;
+      }
+      updateProcessingModeCards();
+    };
+
+    window.updateProcessingModeCards = function() {
+      const selectedMode = document.querySelector('input[name="processingMode"]:checked')?.value || 'youtube';
+      const modes = [
+        { id: 'modeCard-youtube', val: 'youtube' },
+        { id: 'modeCard-queue', val: 'queue' },
+        { id: 'modeCard-drive_secure', val: 'drive_secure' }
+      ];
+
+      modes.forEach(m => {
+        const card = document.getElementById(m.id);
+        if (!card) return;
+        if (m.val === selectedMode) {
+          card.className = 'relative flex items-start p-3 rounded-lg border-2 border-[#5046e5] bg-indigo-50/20 shadow-xs cursor-pointer transition-all';
         } else {
-          navAuthBtn.classList.remove('hidden');
-          navConnectedBadge.classList.add('hidden');
-          navConnectedBadge.classList.remove('inline-flex');
+          card.className = 'relative flex items-start p-3 rounded-lg border-2 border-slate-200 bg-white hover:bg-slate-50 cursor-pointer transition-all';
+        }
+      });
+    };
+
+    window.handleConnectClick = function() {
+      const token = localStorage.getItem('oauth_access_token');
+      const expiry = localStorage.getItem('oauth_token_expiry');
+      if (token && (!expiry || Date.now() < parseInt(expiry, 10))) {
+        window.gAccessToken = token;
+        window.isAuthenticated = true;
+        checkAuthStatus();
+        showToast('Already connected to Google Account!', 'success');
+        return;
+      }
+      const clientId = getNextClientId();
+      if (clientId) {
+        launchOAuthPopup();
+      } else {
+        openAuthModal();
+      }
+    };
+
+    window.saveDirectToken = function() {
+      const input = document.getElementById('directAccessTokenInput');
+      if (!input) return;
+      const raw = input.value.trim();
+      if (!raw) {
+        showToast('Please enter or paste a valid Google Access Token.', 'error');
+        return;
+      }
+      const cleanToken = raw.replace(/^Bearer\s+/i, '').trim();
+      window.gAccessToken = cleanToken;
+      window.isAuthenticated = true;
+      localStorage.setItem('oauth_access_token', cleanToken);
+      // Valid for 1 hour by default
+      localStorage.setItem('oauth_token_expiry', Date.now() + 3600 * 1000);
+      checkAuthStatus();
+      closeAuthModal();
+      input.value = '';
+      showToast('✔ Google Token connected successfully!', 'success');
+      setTimeout(() => {
+        syncYouTubeUploads();
+      }, 500);
+    };
+
+    window.openAuthModal = function() {
+      const modal = document.getElementById('authConfigModal');
+      const originDisplay = document.getElementById('originUrlDisplay');
+      if (originDisplay) {
+        originDisplay.textContent = window.location.origin;
+      }
+      if (modal) modal.classList.remove('hidden');
+    };
+
+    window.closeAuthModal = function() {
+      const modal = document.getElementById('authConfigModal');
+      if (modal) modal.classList.add('hidden');
+    };
+
+    window.copyOriginUrl = function() {
+      const origin = window.location.origin;
+      copyToClipboard(origin, 'Origin URL');
+    };
+
+    window.checkAuthStatus = function() {
+      try {
+        if (window.isAuthenticated) {
+          if (navAuthBtn) {
+            navAuthBtn.classList.add('hidden');
+            navAuthBtn.classList.remove('flex');
+          }
+          if (navConnectedBadge) {
+            navConnectedBadge.classList.remove('hidden');
+            navConnectedBadge.classList.add('flex');
+          }
+        } else {
+          if (navAuthBtn) {
+            navAuthBtn.classList.remove('hidden');
+            navAuthBtn.classList.add('flex');
+          }
+          if (navConnectedBadge) {
+            navConnectedBadge.classList.add('hidden');
+            navConnectedBadge.classList.remove('flex');
+          }
         }
       } catch (e) {
         console.error('Failed to check auth status:', e);
       }
-    }
+    };
 
-    function checkUrlParams() {
-      const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.get('auth') === 'success') {
-        showToast('Google Account authorized successfully!', 'success');
-        window.history.replaceState({}, document.title, window.location.pathname);
-        checkAuthStatus();
+    window.logoutGoogle = function() {
+      localStorage.removeItem('oauth_access_token');
+      localStorage.removeItem('oauth_token_expiry');
+      window.gAccessToken = null;
+      window.isAuthenticated = false;
+      checkAuthStatus();
+      closeAuthModal();
+      showToast('Logged out from Google Account', 'info');
+    };
+
+    window.loadClientIds = function() {
+      const saved = localStorage.getItem('yt_client_ids');
+      const textarea = document.getElementById('clientIdsList');
+      const countText = document.getElementById('keyCountText');
+      if (saved && textarea) {
+        textarea.value = saved;
+        const count = saved.split('\n').filter(s => s.trim()).length;
+        if (countText) countText.textContent = `${count} key(s) active`;
       }
+      const originDisplay = document.getElementById('originUrlDisplay');
+      if (originDisplay) {
+        originDisplay.textContent = window.location.origin;
+      }
+    };
+
+    window.saveClientIds = function(silent = false) {
+      const textarea = document.getElementById('clientIdsList');
+      const countText = document.getElementById('keyCountText');
+      if (textarea) {
+        const val = textarea.value.trim();
+        localStorage.setItem('yt_client_ids', val);
+        const count = val ? val.split('\n').filter(s => s.trim()).length : 0;
+        if (countText) countText.textContent = `${count} key(s) active`;
+        if (!silent) showToast(`Saved ${count} API client ID(s)`, 'success');
+        return count;
+      }
+      return 0;
+    };
+
+    window.getNextClientId = function() {
+      const saved = localStorage.getItem('yt_client_ids');
+      if (!saved) return null;
+      const ids = saved.split('\n').map(s => s.trim()).filter(Boolean);
+      if (ids.length === 0) return null;
+      let currentIndex = parseInt(localStorage.getItem('yt_client_id_index') || '0', 10);
+      if (currentIndex >= ids.length) currentIndex = 0;
+      const chosen = ids[currentIndex];
+      localStorage.setItem('yt_client_id_index', (currentIndex + 1) % ids.length);
+      return chosen;
+    };
+
+    window.saveAndAuthorize = function() {
+      const count = saveClientIds(true);
+      if (count === 0) {
+        showToast('Please paste your Google OAuth Web Client ID first.', 'error');
+        const textarea = document.getElementById('clientIdsList');
+        if (textarea) textarea.focus();
+        return;
+      }
+      launchOAuthPopup();
+    };
+
+    window.launchOAuthPopup = function() {
+      const targetClientId = getNextClientId();
+      if (!targetClientId) {
+        openAuthModal();
+        showToast('Please paste your Google OAuth Web Client ID in Settings first.', 'info');
+        const textarea = document.getElementById('clientIdsList');
+        if (textarea) textarea.focus();
+        return;
+      }
+
+      const scopes = [
+        'https://www.googleapis.com/auth/drive.readonly',
+        'https://www.googleapis.com/auth/drive',
+        'https://www.googleapis.com/auth/youtube.upload',
+        'https://www.googleapis.com/auth/youtube.force-ssl',
+        'https://www.googleapis.com/auth/youtube'
+      ].join(' ');
+
+      if (window.google && window.google.accounts && window.google.accounts.oauth2) {
+        try {
+          const tokenClient = google.accounts.oauth2.initTokenClient({
+            client_id: targetClientId,
+            scope: scopes,
+            callback: (tokenResponse) => {
+              if (tokenResponse && tokenResponse.access_token) {
+                window.gAccessToken = tokenResponse.access_token;
+                window.isAuthenticated = true;
+                localStorage.setItem('oauth_access_token', tokenResponse.access_token);
+                localStorage.setItem('oauth_token_expiry', Date.now() + (tokenResponse.expires_in || 3500) * 1000);
+                checkAuthStatus();
+                closeAuthModal();
+                showToast('✔ Google Account authorized successfully!', 'success');
+                // Automatically sync YouTube uploads into the dashboard
+                setTimeout(() => {
+                  syncYouTubeUploads();
+                }, 600);
+              } else if (tokenResponse && tokenResponse.error) {
+                showToast('Google Auth Notice: ' + tokenResponse.error, 'error');
+              }
+            },
+            error_callback: (err) => {
+              console.error('GIS Error callback:', err);
+              openAuthModal();
+              showToast('Invalid Client ID or Origin. Please verify your Client ID and Authorized Origins.', 'error');
+            }
+          });
+          tokenClient.requestAccessToken({ prompt: 'consent' });
+        } catch (initErr) {
+          console.error('Init token client error:', initErr);
+          openAuthModal();
+          showToast('OAuth Init Error: Please check your Google OAuth Client ID.', 'error');
+        }
+      } else {
+        showToast('Google Identity Services SDK loading, please retry in 2 seconds...', 'info');
+      }
+    };
+
+    window.syncYouTubeUploads = async function() {
+      if (!window.gAccessToken) {
+        showToast('Please click "Connect Google" to authorize access to your YouTube channel uploads.', 'info');
+        openAuthModal();
+        return;
+      }
+      showToast('Syncing videos directly from your YouTube channel...', 'info');
+      try {
+        const res = await fetch('/api/sync-youtube', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${window.gAccessToken}`
+          }
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(`✔ Successfully synced ${data.count} uploaded video(s) from YouTube channel "${data.channelTitle}"!`, 'success');
+          loadJobStatus();
+        } else {
+          showToast('Sync note: ' + (data.error || 'Could not fetch channel uploads'), 'error');
+        }
+      } catch (err) {
+        console.error('YouTube sync error:', err);
+        showToast('Sync failed: ' + err.message, 'error');
+      }
+    };
+
+    let currentSearchQuery = '';
+    let currentSourceFilter = 'all'; // 'all' | 'youtube' | 'drive'
+    let currentActiveEditFile = null;
+
+    window.handleTableSearch = function() {
+      const input = document.getElementById('tableSearchInput');
+      currentSearchQuery = input ? input.value.trim().toLowerCase() : '';
+      renderFilteredTable();
+    };
+
+    window.setSourceFilter = function(source) {
+      currentSourceFilter = source;
+      const allBtn = document.getElementById('sourceFilterAll');
+      const ytBtn = document.getElementById('sourceFilterYouTube');
+      const driveBtn = document.getElementById('sourceFilterDrive');
+
+      if (allBtn) allBtn.className = 'h-7.5 px-3 rounded text-xs font-semibold text-slate-600 hover:text-slate-900 cursor-pointer transition-all whitespace-nowrap flex items-center gap-1';
+      if (ytBtn) ytBtn.className = 'h-7.5 px-3 rounded text-xs font-semibold text-slate-600 hover:text-slate-900 cursor-pointer transition-all whitespace-nowrap flex items-center gap-1.5';
+      if (driveBtn) driveBtn.className = 'h-7.5 px-3 rounded text-xs font-semibold text-slate-600 hover:text-slate-900 cursor-pointer transition-all whitespace-nowrap flex items-center gap-1.5';
+
+      if (source === 'all' && allBtn) {
+        allBtn.className = 'h-7.5 px-3 rounded text-xs font-bold bg-white text-slate-900 shadow-2xs cursor-pointer transition-all whitespace-nowrap flex items-center gap-1';
+      } else if (source === 'youtube' && ytBtn) {
+        ytBtn.className = 'h-7.5 px-3 rounded text-xs font-bold bg-white text-slate-900 shadow-2xs cursor-pointer transition-all whitespace-nowrap flex items-center gap-1.5';
+      } else if (source === 'drive' && driveBtn) {
+        driveBtn.className = 'h-7.5 px-3 rounded text-xs font-bold bg-white text-slate-900 shadow-2xs cursor-pointer transition-all whitespace-nowrap flex items-center gap-1.5';
+      }
+
+      renderFilteredTable();
+    };
+
+    // Determine if a video is hosted on YouTube or Google Drive
+    function isYouTubeVideo(file) {
+      if (!file) return false;
+      if (file.youtubeUrl || file.studioUrl) return true;
+      if (file.thumbnailUrl && file.thumbnailUrl.includes('img.youtube.com')) return true;
+      if (file.videoId && !file.videoId.includes('/') && file.videoId.length === 11 && currentState?.processingMode !== 'drive_secure') {
+        return true;
+      }
+      return false;
     }
 
-    // Modal Video Preview
-    window.openVideoModal = function(videoId, title, batch, subject) {
-      if (!videoId) return;
-      currentModalEmbedLink = `https://www.youtube.com/embed/${videoId}`;
-      modalIframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
-      modalVideoTitle.textContent = title;
-      modalBatchTag.textContent = batch || 'Batch';
-      modalSubjectTag.textContent = subject || 'Subject';
-      modalYtLink.href = `https://www.youtube.com/watch?v=${videoId}`;
+    function extractYouTubeVideoId(file) {
+      if (!file) return null;
+      if (file.videoId && file.videoId.length === 11 && !file.videoId.includes('/')) return file.videoId;
+      if (file.youtubeUrl) {
+        const m = file.youtubeUrl.match(/(?:youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*)/);
+        if (m && m[1] && m[1].length === 11) return m[1];
+      }
+      return file.videoId || null;
+    }
+
+    window.openVideoModal = function(fileOrId) {
+      let file = null;
+      if (typeof fileOrId === 'object') {
+        file = fileOrId;
+      } else if (currentState && currentState.files) {
+        file = currentState.files.find(f => f.id === fileOrId || f.videoId === fileOrId);
+      }
+      if (!file) return;
+
+      currentActiveEditFile = file;
+      const isYt = isYouTubeVideo(file);
+      const ytId = extractYouTubeVideoId(file);
+      const modalSourceBadge = document.getElementById('modalSourceBadge');
+      const modalPosterContainer = document.getElementById('modalPosterContainer');
+      const modalPosterImg = document.getElementById('modalPosterImg');
+      const posterVideoTitle = document.getElementById('posterVideoTitle');
+      const posterBatchTag = document.getElementById('posterBatchTag');
+
+      // Stop any prior playback
+      modalIframe.src = '';
+
+      // Determine best thumbnail poster
+      const thumbUrl = file.thumbnailUrl || (isYt && ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : 'https://placehold.co/1280x720?text=Click+to+Play');
+      if (modalPosterImg) modalPosterImg.src = thumbUrl;
+      if (posterVideoTitle) posterVideoTitle.textContent = file.customTitle || file.name || 'Lecture Video';
+      if (posterBatchTag) posterBatchTag.textContent = file.batch ? `PW • ${file.batch}` : 'PW LECTURE';
+      if (modalPosterContainer) modalPosterContainer.classList.remove('hidden');
+
+      if (isYt && ytId) {
+        modalYtLink.href = `https://youtu.be/${ytId}`;
+        modalYtLink.textContent = 'Open YouTube ↗';
+        if (modalSourceBadge) {
+          modalSourceBadge.className = 'inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-600 border border-rose-200';
+          modalSourceBadge.innerHTML = `<svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg><span>YouTube (Unlisted)</span>`;
+        }
+      } else {
+        const driveId = file.id || file.videoId;
+        modalYtLink.href = `https://drive.google.com/file/d/${driveId}/view`;
+        modalYtLink.textContent = 'Open Drive ↗';
+        if (modalSourceBadge) {
+          modalSourceBadge.className = 'inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-[#5046e5] border border-indigo-200';
+          modalSourceBadge.innerHTML = `<svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg><span>Google Drive</span>`;
+        }
+      }
+
+      modalVideoTitle.textContent = file.customTitle || file.name || 'Lecture Video';
+      modalBatchTag.textContent = file.batch || 'General Batch';
+      modalSubjectTag.textContent = file.subject || 'Lecture';
       videoModal.classList.remove('hidden');
+    };
+
+    window.startModalPlayback = function() {
+      if (!currentActiveEditFile) return;
+      const file = currentActiveEditFile;
+      const isYt = isYouTubeVideo(file);
+      const ytId = extractYouTubeVideoId(file);
+      const modalPosterContainer = document.getElementById('modalPosterContainer');
+
+      if (modalPosterContainer) modalPosterContainer.classList.add('hidden');
+
+      if (isYt && ytId) {
+        modalIframe.src = `https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&rel=0`;
+      } else {
+        const driveId = file.id || file.videoId;
+        modalIframe.src = `https://drive.google.com/file/d/${driveId}/preview`;
+      }
     };
 
     window.closeVideoModal = function() {
       modalIframe.src = '';
+      const modalPosterContainer = document.getElementById('modalPosterContainer');
+      if (modalPosterContainer) modalPosterContainer.classList.remove('hidden');
       videoModal.classList.add('hidden');
     };
 
-    window.copyModalEmbedLink = function() {
-      if (currentModalEmbedLink) {
-        copyToClipboard(currentModalEmbedLink, 'Embed Link');
-      }
-    };
-
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && !videoModal.classList.contains('hidden')) {
+    window.openEditModalFromPlayer = function() {
+      if (currentActiveEditFile) {
         closeVideoModal();
-      }
-    });
-
-    window.startEditTitle = function(fileId) {
-      const titleTextEl = document.getElementById(`title-text-${fileId}`);
-      const titleEditForm = document.getElementById(`title-edit-${fileId}`);
-      const editInput = document.getElementById(`edit-input-${fileId}`);
-
-      if (titleTextEl && titleEditForm && editInput) {
-        titleTextEl.classList.add('hidden');
-        titleEditForm.classList.remove('hidden');
-        editInput.focus();
-        editInput.select();
+        openEditModal(currentActiveEditFile.id || currentActiveEditFile.videoId);
       }
     };
 
-    window.cancelEditTitle = function(fileId) {
-      const titleTextEl = document.getElementById(`title-text-${fileId}`);
-      const titleEditForm = document.getElementById(`title-edit-${fileId}`);
-      if (titleTextEl && titleEditForm) {
-        titleTextEl.classList.remove('hidden');
-        titleEditForm.classList.add('hidden');
+    window.openEditModal = function(fileId) {
+      let file = currentState?.files?.find(f => f.id === fileId || f.videoId === fileId);
+      if (!file) return;
+
+      currentActiveEditFile = file;
+      document.getElementById('editModalFileId').value = file.id;
+      document.getElementById('editModalVideoId').value = file.videoId || '';
+      document.getElementById('editModalTitleInput').value = file.customTitle || file.name || '';
+      document.getElementById('editModalBatchInput').value = file.batch || '';
+      document.getElementById('editModalSubjectInput').value = file.subject || '';
+
+      const thumbUrl = file.thumbnailUrl || (file.videoId ? `https://img.youtube.com/vi/${file.videoId}/hqdefault.jpg` : 'https://placehold.co/640x360?text=No+Thumbnail');
+      document.getElementById('editModalThumbPreview').src = thumbUrl;
+      document.getElementById('editModalThumbUrlInput').value = '';
+
+      document.getElementById('editVideoModal').classList.remove('hidden');
+    };
+
+    window.closeEditModal = function() {
+      document.getElementById('editVideoModal').classList.add('hidden');
+    };
+
+    window.handleCustomThumbUrlInput = function() {
+      const url = document.getElementById('editModalThumbUrlInput').value.trim();
+      if (url) {
+        document.getElementById('editModalThumbPreview').src = url;
       }
     };
 
-    window.saveTitle = async function(fileId) {
-      const editInput = document.getElementById(`edit-input-${fileId}`);
-      if (!editInput) return;
-      const newTitle = editInput.value.trim();
-      if (!newTitle) return;
+    window.generateSmartThumbnail = function() {
+      const title = document.getElementById('editModalTitleInput').value.trim() || 'Physics Lecture';
+      const batch = document.getElementById('editModalBatchInput').value.trim() || 'PW BATCH 2026';
+      const subject = document.getElementById('editModalSubjectInput').value.trim() || 'PHYSICS';
 
-      showToast('Updating title on YouTube...', 'info');
+      const canvas = document.createElement('canvas');
+      canvas.width = 1280;
+      canvas.height = 720;
+      const ctx = canvas.getContext('2d');
 
+      // 1. Dark Gradient Background
+      const grad = ctx.createLinearGradient(0, 0, 1280, 720);
+      grad.addColorStop(0, '#0f172a');
+      grad.addColorStop(0.5, '#1e1b4b');
+      grad.addColorStop(1, '#312e81');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 1280, 720);
+
+      // 2. Subtle Geometric Grid Pattern
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+      ctx.lineWidth = 1;
+      for (let x = 0; x < 1280; x += 60) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, 720);
+        ctx.stroke();
+      }
+      for (let y = 0; y < 720; y += 60) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(1280, y);
+        ctx.stroke();
+      }
+
+      // 3. Left Brand / Accent Pillar
+      ctx.fillStyle = '#5046e5';
+      ctx.fillRect(60, 80, 16, 560);
+
+      // 4. Batch Header Tag
+      ctx.fillStyle = 'rgba(238, 242, 255, 0.15)';
+      ctx.strokeStyle = '#6366f1';
+      ctx.lineWidth = 2;
+      ctx.roundRect(100, 80, 380, 52, 10);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 24px system-ui, -apple-system, sans-serif';
+      ctx.fillText(batch.toUpperCase(), 120, 115);
+
+      // 5. Subject Tag
+      ctx.fillStyle = '#f59e0b';
+      ctx.font = '900 32px system-ui, -apple-system, sans-serif';
+      ctx.fillText(subject.toUpperCase(), 100, 200);
+
+      // 6. Lecture Title (Multi-line wrap)
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 56px system-ui, -apple-system, sans-serif';
+      const words = title.split(' ');
+      let line = '';
+      let y = 290;
+      for (let i = 0; i < words.length; i++) {
+        const testLine = line + words[i] + ' ';
+        const metrics = ctx.measureText(testLine);
+        if (metrics.width > 1050 && i > 0) {
+          ctx.fillText(line, 100, y);
+          line = words[i] + ' ';
+          y += 75;
+        } else {
+          line = testLine;
+        }
+      }
+      ctx.fillText(line, 100, y);
+
+      // 7. PW / Portal Quality Watermark Badge (Bottom Right)
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
+      ctx.strokeStyle = '#5046e5';
+      ctx.lineWidth = 2;
+      ctx.roundRect(960, 580, 240, 60, 12);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 20px system-ui, -apple-system, sans-serif';
+      ctx.fillText('PW PORTAL HD', 995, 618);
+
+      const generatedBase64 = canvas.toDataURL('image/jpeg', 0.92);
+      document.getElementById('editModalThumbPreview').src = generatedBase64;
+      window.generatedBase64Thumbnail = generatedBase64;
+      showToast('✔ 1-Click HD Thumbnail generated! Click "Save & Apply" to update.', 'success');
+    };
+
+    window.saveVideoEditModal = async function() {
+      const fileId = document.getElementById('editModalFileId').value;
+      const title = document.getElementById('editModalTitleInput').value.trim();
+      const batch = document.getElementById('editModalBatchInput').value.trim();
+      const subject = document.getElementById('editModalSubjectInput').value.trim();
+      const urlThumb = document.getElementById('editModalThumbUrlInput').value.trim();
+      const base64Thumb = window.generatedBase64Thumbnail || null;
+      const chosenThumb = base64Thumb || urlThumb;
+
+      if (!fileId) return;
+
+      // 1. Optimistic immediate local UI update
+      if (currentActiveEditFile && (currentActiveEditFile.id === fileId || currentActiveEditFile.videoId === fileId)) {
+        if (chosenThumb) currentActiveEditFile.thumbnailUrl = chosenThumb;
+        if (title) {
+          currentActiveEditFile.name = title;
+          currentActiveEditFile.customTitle = title;
+        }
+        if (batch) currentActiveEditFile.batch = batch;
+        if (subject) currentActiveEditFile.subject = subject;
+      }
+
+      if (currentState && currentState.files) {
+        const target = currentState.files.find(f => f.id === fileId || f.videoId === fileId);
+        if (target) {
+          if (chosenThumb) target.thumbnailUrl = chosenThumb;
+          if (title) {
+            target.name = title;
+            target.customTitle = title;
+          }
+          if (batch) target.batch = batch;
+          if (subject) target.subject = subject;
+        }
+      }
+
+      // 2. Immediately close modal and re-render table with changes
+      window.generatedBase64Thumbnail = null;
+      closeEditModal();
+      renderFilteredTable();
+      showToast('✔ Saved! Updating video & thumbnail in background...', 'info');
+
+      // 3. Process backend & YouTube upload asynchronously in the background
       try {
-        const res = await fetch('/api/update-title', {
+        const res = await fetch('/api/edit-video', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ fileId, newTitle })
+          headers: {
+            'Content-Type': 'application/json',
+            ...(window.gAccessToken ? { 'Authorization': `Bearer ${window.gAccessToken}` } : {})
+          },
+          body: JSON.stringify({
+            fileId,
+            title,
+            batch,
+            subject,
+            thumbnailUrl: urlThumb,
+            imageBase64: base64Thumb,
+            accessToken: window.gAccessToken || null
+          })
         });
 
         const data = await res.json();
-        if (!res.ok || !data.success) {
-          throw new Error(data.error || 'Failed to update title');
+        if (data.success) {
+          showToast('✔ Video details & thumbnail successfully synced on YouTube!', 'success');
+          loadJobStatus();
+        } else {
+          showToast('Notice: ' + (data.error || 'Changes saved locally'), 'info');
         }
-
-        showToast('Title updated successfully on YouTube!', 'success');
-        cancelEditTitle(fileId);
-        loadJobStatus();
       } catch (err) {
-        showToast(err.message, 'error');
+        console.error('Background edit error:', err);
       }
     };
 
-    window.copyToClipboard = function(text, label = 'Embed Link') {
+    window.deleteVideo = async function(fileId) {
+      if (!confirm('Are you sure you want to remove this video from the portal list?')) return;
+      showToast('Removing video...', 'info');
+      try {
+        const res = await fetch('/api/delete-video', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileId })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('✔ Video removed successfully.', 'success');
+          loadJobStatus();
+        } else {
+          showToast('Failed to remove: ' + data.error, 'error');
+        }
+      } catch (err) {
+        showToast('Error removing video: ' + err.message, 'error');
+      }
+    };
+
+    window.deleteCurrentVideoFromEditModal = function() {
+      const fileId = document.getElementById('editModalFileId').value;
+      if (fileId) {
+        closeEditModal();
+        deleteVideo(fileId);
+      }
+    };
+
+    window.clearCompletedVideos = async function() {
+      if (!confirm('Are you sure you want to clean/clear all completed videos from this dashboard?')) return;
+      showToast('Cleaning dashboard table...', 'info');
+      try {
+        const res = await fetch('/api/clear-history', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          showToast('✔ Table cleaned successfully.', 'success');
+          loadJobStatus();
+        }
+      } catch (err) {
+        showToast('Error clearing: ' + err.message, 'error');
+      }
+    };
+
+    window.copyAllVideoLinks = function() {
+      if (!currentState?.files || currentState.files.length === 0) {
+        showToast('No videos available to copy.', 'error');
+        return;
+      }
+
+      const completed = currentState.files.filter(f => f.status === 'completed');
+      if (completed.length === 0) {
+        showToast('No completed videos found to copy.', 'error');
+        return;
+      }
+
+      const links = completed.map((f, i) => {
+        const isYt = isYouTubeVideo(f);
+        const ytId = extractYouTubeVideoId(f);
+        const embedLink = isYt && ytId ? `https://www.youtube.com/embed/${ytId}` : `https://drive.google.com/file/d/${f.id}/preview`;
+        return `${i + 1}. ${f.customTitle || f.name} - ${embedLink}`;
+      }).join('\n');
+
+      navigator.clipboard.writeText(links).then(() => {
+        showToast(`✔ Copied ${completed.length} embed video link(s) to clipboard!`, 'success');
+      }).catch(() => {
+        showToast('Failed to copy links to clipboard', 'error');
+      });
+    };
+
+    window.triggerThumbnailUpload = function(videoId) {
+      window.currentThumbnailVideoId = videoId;
+      const fileInput = document.getElementById('thumbnailFileInput');
+      if (fileInput) {
+        fileInput.value = '';
+        fileInput.click();
+      }
+    };
+
+    window.handleThumbnailSelected = async function(e) {
+      const file = e.target.files[0];
+      if (!file || !currentActiveEditFile) return;
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = reader.result;
+        document.getElementById('editModalThumbPreview').src = base64;
+        window.generatedBase64Thumbnail = base64;
+        showToast('✔ Thumbnail image selected! Click "Save & Apply" to upload.', 'success');
+      };
+      reader.readAsDataURL(file);
+    };
+
+    window.copyToClipboard = function(text, label = 'Link') {
       if (!text) return;
       navigator.clipboard.writeText(text).then(() => {
         showToast(`✔ Copied ${label}: ${text}`, 'success');
@@ -599,6 +1964,8 @@
     };
 
     function renderFilteredTable() {
+      if (!trackingTableBody) return;
+
       if (!currentState || !currentState.files || currentState.files.length === 0) {
         trackingTableBody.innerHTML = `
           <tr id="emptyRow" class="text-slate-400">
@@ -615,20 +1982,65 @@
         return;
       }
 
-      let filteredFiles = currentState.files;
+      let allFiles = currentState.files;
+
+      // Update Toolbar Counts
+      const countAll = allFiles.length;
+      const countYt = allFiles.filter(f => isYouTubeVideo(f)).length;
+      const countDrive = allFiles.filter(f => !isYouTubeVideo(f)).length;
+
+      const elCountAll = document.getElementById('sourceCountAll');
+      const elCountYt = document.getElementById('sourceCountYouTube');
+      const elCountDrive = document.getElementById('sourceCountDrive');
+
+      if (elCountAll) elCountAll.textContent = countAll;
+      if (elCountYt) elCountYt.textContent = countYt;
+      if (elCountDrive) elCountDrive.textContent = countDrive;
+
+      let filteredFiles = allFiles;
+
+      // 1. Source Filter (All / YouTube / Drive)
+      if (currentSourceFilter === 'youtube') {
+        filteredFiles = filteredFiles.filter(f => isYouTubeVideo(f));
+      } else if (currentSourceFilter === 'drive') {
+        filteredFiles = filteredFiles.filter(f => !isYouTubeVideo(f));
+      }
+
+      // 2. Search Query Filter
+      if (currentSearchQuery) {
+        filteredFiles = filteredFiles.filter(f => {
+          const t = (f.customTitle || f.name || '').toLowerCase();
+          const b = (f.batch || '').toLowerCase();
+          const s = (f.subject || '').toLowerCase();
+          return t.includes(currentSearchQuery) || b.includes(currentSearchQuery) || s.includes(currentSearchQuery);
+        });
+      }
+
+      // 3. Date Range Filter
+      const { start, end } = dateFilterRange;
+      if (start && end) {
+        filteredFiles = filteredFiles.filter(f => {
+          const fileYMD = getFileYMD(f);
+          return fileYMD >= start && fileYMD <= end;
+        });
+      } else if (start) {
+        filteredFiles = filteredFiles.filter(f => getFileYMD(f) === start);
+      }
+      
+      // 4. Status Filter
       if (currentFilter === 'completed') {
-        filteredFiles = currentState.files.filter(f => f.status === 'completed');
+        filteredFiles = filteredFiles.filter(f => f.status === 'completed');
       } else if (currentFilter === 'pending') {
-        filteredFiles = currentState.files.filter(f => f.status === 'uploading' || f.status === 'queued');
+        filteredFiles = filteredFiles.filter(f => f.status === 'uploading' || f.status === 'queued');
       } else if (currentFilter === 'failed') {
-        filteredFiles = currentState.files.filter(f => f.status === 'failed');
+        filteredFiles = filteredFiles.filter(f => f.status === 'failed');
       }
 
       if (filteredFiles.length === 0) {
         trackingTableBody.innerHTML = `
           <tr class="text-slate-400">
             <td colspan="6" class="py-12 text-center text-xs font-medium text-slate-500">
-              No videos matching "${currentFilter}" filter.
+              No videos matching the active filters or search term.
             </td>
           </tr>
         `;
@@ -639,30 +2051,49 @@
       filteredFiles.forEach((file, index) => {
         const row = document.createElement('tr');
         row.id = `file-row-${file.id}`;
-        row.className = 'hover:bg-slate-50/80 transition-colors text-slate-800 border-b border-slate-200';
+        row.className = 'hover:bg-slate-50/90 transition-colors text-slate-800 border-b border-slate-200';
 
         const displayTitle = file.customTitle || file.name || file.originalName || 'Lecture Video';
         const extMatch = (file.originalName || file.name || '').match(/\.([0-9a-z]+)$/i);
-        const ext = extMatch ? extMatch[1].toUpperCase() : 'VIDEO';
-        const embedUrl = file.videoId ? `https://www.youtube.com/embed/${file.videoId}` : '';
+        const ext = extMatch ? extMatch[1].toUpperCase() : 'MP4';
+        const isYt = isYouTubeVideo(file);
+        const ytId = extractYouTubeVideoId(file);
+        
+        // Exact embed URL based on source
+        const embedLink = isYt && ytId ? `https://www.youtube.com/embed/${ytId}` : `https://drive.google.com/file/d/${file.id}/preview`;
+        const embedLabel = isYt ? 'YouTube Embed Link' : 'Drive Embed Link';
 
+        // Clean Source Badge
+        const sourceBadgeHtml = isYt ? `
+          <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-600 border border-rose-200 shadow-2xs">
+            <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+            <span>YouTube</span>
+          </span>
+        ` : `
+          <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-[#5046e5] border border-indigo-200 shadow-2xs">
+            <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+            <span>Drive</span>
+          </span>
+        `;
+
+        // Thumbnail & Status
         let statusHtml = '';
         if (file.status === 'completed') {
-          const thumb = file.thumbnailUrl || (file.videoId ? `https://img.youtube.com/vi/${file.videoId}/mqdefault.jpg` : 'https://placehold.co/100x60?text=Preview');
+          const thumb = file.thumbnailUrl || (isYt && ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : 'https://placehold.co/120x68?text=Preview');
           statusHtml = `
-            <div class="flex items-center gap-3">
-              <button onclick="openVideoModal('${file.videoId}', '${escapeHtml(displayTitle)}', '${escapeHtml(file.batch)}', '${escapeHtml(file.subject)}')" class="relative group w-16 h-10 rounded border border-slate-200 overflow-hidden shadow-2xs flex-shrink-0 bg-slate-900 cursor-pointer" title="Click to preview lecture">
-                <img src="${thumb}" alt="Preview" class="w-full h-full object-cover group-hover:opacity-80 transition-opacity" onerror="this.src='https://placehold.co/100x60?text=Preview'"/>
-                <div class="absolute inset-0 flex items-center justify-center">
-                  <span class="w-4 h-4 rounded-full bg-black/60 group-hover:bg-[#5046e5] text-white flex items-center justify-center text-[8px] transition-colors">▶</span>
+            <div class="flex items-center gap-2.5">
+              <button onclick="openVideoModal('${file.id || ytId}')" class="relative group w-16 h-9 rounded border border-slate-300 overflow-hidden shadow-2xs shrink-0 bg-slate-900 cursor-pointer" title="Click to open video preview">
+                <img src="${thumb}" alt="Preview" class="w-full h-full object-cover group-hover:scale-105 transition-transform" onerror="this.src='https://placehold.co/120x68?text=Preview'"/>
+                <div class="absolute inset-0 bg-black/30 group-hover:bg-[#5046e5]/60 flex items-center justify-center transition-colors">
+                  <span class="w-4 h-4 rounded-full bg-white text-slate-900 flex items-center justify-center text-[7px] font-bold shadow-xs">▶</span>
                 </div>
               </button>
               <div class="space-y-0.5">
-                <div class="flex items-center gap-1.5">
-                  <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
-                  <span class="font-bold text-emerald-700 text-xs">Uploaded (100%)</span>
-                </div>
-                <div class="text-[10px] text-slate-500 font-mono">Stream Completed</div>
+                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                  <span>Uploaded 100%</span>
+                </span>
+                <div class="text-[9px] text-slate-400 font-mono">Stream Ready</div>
               </div>
             </div>
           `;
@@ -670,20 +2101,20 @@
           const speedText = file.speedMBps ? `${file.speedMBps} MB/s` : 'Streaming...';
           const etaText = file.etaSeconds ? `${file.etaSeconds}s left` : '';
           statusHtml = `
-            <div class="space-y-1.5 max-w-[280px]">
-              <div class="flex items-center justify-between text-xs font-semibold">
-                <span class="text-[#5046e5] flex items-center gap-1.5">
-                  <span class="w-2 h-2 rounded-full bg-[#5046e5] animate-ping"></span>
+            <div class="space-y-1 max-w-[240px]">
+              <div class="flex items-center justify-between text-[11px] font-semibold text-[#5046e5]">
+                <span class="flex items-center gap-1">
+                  <span class="w-1.5 h-1.5 rounded-full bg-[#5046e5] animate-ping"></span>
                   <span>Uploading ${file.percentage || 0}%</span>
                 </span>
-                <span class="font-mono text-slate-500 text-[10px]" id="progress-bytes-${file.id}">
+                <span class="font-mono text-slate-500 text-[9px]" id="progress-bytes-${file.id}">
                   ${formatBytes(file.uploadedBytes || 0)} / ${formatBytes(file.totalBytes || file.size)}
                 </span>
               </div>
               <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden border border-slate-200">
                 <div id="progress-bar-${file.id}" class="bg-[#5046e5] h-full rounded-full transition-all duration-150" style="width: ${file.percentage || 0}%"></div>
               </div>
-              <div class="flex items-center justify-between text-[10px] text-slate-500 font-mono">
+              <div class="flex items-center justify-between text-[9px] text-slate-400 font-mono">
                 <span id="speed-${file.id}">⚡ ${speedText}</span>
                 <span id="eta-${file.id}">${etaText}</span>
               </div>
@@ -691,353 +2122,512 @@
           `;
         } else if (file.status === 'failed') {
           statusHtml = `
-            <div class="space-y-0.5">
-              <div class="flex items-center gap-1.5">
-                <span class="w-2 h-2 rounded-full bg-rose-500 inline-block"></span>
-                <span class="font-bold text-rose-600 text-xs">Failed</span>
+            <div class="space-y-1">
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-600 border border-rose-200">
+                  <span>Failed</span>
+                </span>
+                <button onclick="convertToDrive('${file.id}')" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-[#5046e5] border border-indigo-200 hover:bg-indigo-100 transition-colors cursor-pointer shadow-2xs" title="Convert to Instant Secure Drive Player Link">
+                  <span>▶ Use Drive Player</span>
+                </button>
               </div>
-              <div class="text-[10px] text-rose-500 font-mono truncate max-w-[240px]" title="${escapeHtml(file.error)}">${escapeHtml(file.error)}</div>
+              <div class="text-[9px] text-rose-500 font-mono truncate max-w-[190px]" title="${escapeHtml(file.error)}">${escapeHtml(file.error || 'Upload error')}</div>
             </div>
           `;
         } else {
           statusHtml = `
-            <div class="flex items-center gap-1.5 text-slate-500">
-              <span class="w-2 h-2 rounded-full bg-slate-300 inline-block"></span>
-              <span class="font-medium text-slate-600 text-xs">Queued</span>
+            <div class="space-y-1">
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200">
+                  <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                  <span>Queued</span>
+                </span>
+                <button onclick="convertToDrive('${file.id}')" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-slate-50 text-slate-600 border border-slate-200 hover:text-[#5046e5] hover:border-indigo-200 transition-colors cursor-pointer" title="Convert to Instant Drive Player Link">
+                  <span>▶ Drive Link</span>
+                </button>
+              </div>
             </div>
           `;
         }
 
-        let actionHtml = '';
-        if (embedUrl) {
-          actionHtml = `
-            <div class="flex items-center justify-center gap-1.5">
-              <a href="${embedUrl}" target="_blank" rel="noopener noreferrer" class="w-8 h-8 rounded border border-indigo-200 bg-white hover:bg-indigo-50 text-[#5046e5] flex items-center justify-center transition-colors shadow-2xs cursor-pointer" title="Open YouTube Embed URL">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
-                </svg>
-              </a>
-              <button onclick="copyToClipboard('${embedUrl}', 'Embed Link')" class="w-8 h-8 rounded border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 flex items-center justify-center transition-colors shadow-2xs cursor-pointer" title="Copy Embed URL">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                </svg>
-              </button>
-              <a href="${file.studioUrl || 'https://studio.youtube.com/video/' + file.videoId + '/edit'}" target="_blank" rel="noopener noreferrer" class="w-8 h-8 rounded border border-slate-200 bg-white hover:bg-amber-50 text-slate-600 hover:text-amber-700 flex items-center justify-center transition-colors shadow-2xs cursor-pointer" title="Open in YouTube Studio">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                </svg>
-              </a>
-            </div>
-          `;
-        } else {
-          actionHtml = `<span class="text-[11px] text-slate-400 font-medium italic">Pending</span>`;
-        }
+        // Action Buttons
+        const actionHtml = `
+          <div class="flex items-center justify-center gap-1">
+            <button onclick="openVideoModal('${file.id || ytId}')" class="h-7 px-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded text-xs font-semibold shadow-2xs transition-colors flex items-center gap-1 cursor-pointer" title="Preview Video with Poster">
+              <span>▶</span>
+            </button>
+            <button onclick="copyToClipboard('${embedLink}', '${embedLabel}')" class="h-7 px-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded text-xs font-semibold shadow-2xs transition-colors flex items-center gap-1 cursor-pointer" title="Copy ${embedLabel}">
+              <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+            </button>
+            <button onclick="openEditModal('${file.id || ytId}')" class="h-7 px-2 bg-white hover:bg-indigo-50 text-[#5046e5] border border-indigo-200 rounded text-xs font-semibold shadow-2xs transition-colors flex items-center gap-1 cursor-pointer" title="Edit Title, Batch, or Thumbnail">
+              <span>✏️</span>
+            </button>
+            <button onclick="deleteVideo('${file.id || ytId}')" class="h-7 px-2 bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 rounded text-xs font-semibold shadow-2xs transition-colors flex items-center gap-1 cursor-pointer" title="Remove Video">
+              <span>🗑️</span>
+            </button>
+          </div>
+        `;
 
-        const fileDate = file.createdTime ? new Date(file.createdTime).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB');
+        const fileDateYmd = getFileYMD(file);
+        const dateParts = fileDateYmd ? fileDateYmd.split('-') : [];
+        const fileDate = (dateParts.length === 3) ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` : (file.createdTime ? new Date(file.createdTime).toLocaleDateString('en-GB') : formatDateToDMY(new Date()));
+
+        const rawBytes = file.totalBytes || file.size || 0;
+        const showByteSize = (!isYt || file.status === 'uploading') && rawBytes > 0;
+        const byteSizeBadge = showByteSize ? `<span>${formatBytes(rawBytes)}</span>` : '';
 
         row.innerHTML = `
-          <td class="py-3 px-3 text-center font-mono text-slate-400 border-r border-slate-200">${index + 1}</td>
-          <td class="py-3 px-4 border-r border-slate-200">
+          <td class="py-2.5 px-3 text-center font-mono text-slate-400 border-r border-slate-200 text-xs">${index + 1}</td>
+          <td class="py-2.5 px-4 border-r border-slate-200">
             <div id="title-text-${file.id}" class="space-y-1">
               <div class="flex items-center gap-1.5 group">
-                <span class="font-bold text-slate-900 text-xs leading-snug" title="${escapeHtml(displayTitle)}">
+                <span class="font-bold text-slate-900 text-xs leading-snug cursor-pointer hover:text-[#5046e5] transition-colors" onclick="openVideoModal('${file.id || ytId}')" title="${escapeHtml(displayTitle)}">
                   ${escapeHtml(displayTitle)}
                 </span>
-                <button onclick="startEditTitle('${file.id}')" class="opacity-0 group-hover:opacity-100 p-0.5 text-[#5046e5] hover:bg-indigo-50 rounded transition-all cursor-pointer" title="Edit Title Live">
+                <button onclick="openEditModal('${file.id}')" class="opacity-0 group-hover:opacity-100 p-0.5 text-[#5046e5] hover:bg-indigo-50 rounded transition-all cursor-pointer" title="Edit Details Live">
                   <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
                   </svg>
                 </button>
               </div>
-
-              <div class="flex items-center flex-wrap gap-1.5 pt-0.5">
-                <button onclick="copyToClipboard('${escapeHtml(displayTitle)}', 'Title')" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-500 hover:bg-blue-600 text-white text-[10px] font-mono font-medium shadow-2xs cursor-pointer">
-                  <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <button onclick="copyToClipboard('${escapeHtml(displayTitle)}', 'Title')" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-indigo-50 text-[#5046e5] border border-indigo-200 hover:bg-indigo-100 transition-colors cursor-pointer" title="Copy Title">
+                  <svg class="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
                   <span>Copy Title</span>
                 </button>
-                <span class="px-2 py-0.5 rounded bg-indigo-50 text-[#5046e5] font-semibold border border-indigo-200 text-[10px]">
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-100 text-slate-700 border border-slate-200 uppercase tracking-wider">
                   ${escapeHtml(file.batch || 'Batch')}
                 </span>
-                <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-semibold border border-slate-200 text-[10px]">
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
                   ${escapeHtml(file.subject || 'Lecture')}
                 </span>
               </div>
             </div>
-
-            <!-- Inline Edit Form -->
-            <div id="title-edit-${file.id}" class="hidden flex items-center gap-1.5 mt-1">
-              <input
-                type="text"
-                id="edit-input-${file.id}"
-                value="${escapeHtml(displayTitle)}"
-                class="px-2 py-1 text-xs bg-white border border-[#5046e5] rounded text-slate-900 focus:outline-none w-60"
-                onkeydown="if(event.key==='Enter') saveTitle('${file.id}'); else if(event.key==='Escape') cancelEditTitle('${file.id}');"
-              />
-              <button onclick="saveTitle('${file.id}')" class="px-2 py-1 bg-[#5046e5] hover:bg-[#4338ca] text-white rounded text-xs font-semibold cursor-pointer">Save</button>
-              <button onclick="cancelEditTitle('${file.id}')" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded text-xs cursor-pointer">Cancel</button>
-            </div>
           </td>
-          <td class="py-3 px-4 text-center font-mono text-slate-600 border-r border-slate-200 text-xs">
+          <td class="py-2.5 px-3 text-center font-mono border-r border-slate-200 text-xs whitespace-nowrap text-slate-700">
             ${fileDate}
           </td>
-          <td class="py-3 px-4 border-r border-slate-200">
-            <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-slate-100 text-slate-800 text-[11px] font-semibold border border-slate-200">
-              <svg class="w-3.5 h-3.5 text-[#5046e5]" fill="currentColor" viewBox="0 0 24 24"><path d="M4 6.47v11.06c0 .8.88 1.28 1.54.84l8.29-5.53c.61-.41.61-1.27 0-1.68L5.54 5.63C4.88 5.19 4 5.67 4 6.47z"/></svg>
-              <span>Video</span>
+          <td class="py-2.5 px-3 text-center border-r border-slate-200 whitespace-nowrap space-y-1">
+            <div>${sourceBadgeHtml}</div>
+            <div class="flex items-center justify-center gap-1 text-[9px] font-mono text-slate-500">
+              <span class="px-1.5 py-0.2 bg-slate-100 border border-slate-200 rounded font-bold text-slate-700">${ext}</span>
+              ${byteSizeBadge}
             </div>
-            <div class="text-[11px] text-slate-500 font-mono mt-0.5">${formatBytes(file.size || file.totalBytes)} (${ext})</div>
           </td>
-          <td class="py-3 px-4 border-r border-slate-200" id="status-cell-${file.id}">
+          <td class="py-2.5 px-4 border-r border-slate-200" id="status-cell-${file.id}">
             ${statusHtml}
           </td>
-          <td class="py-3 px-4 text-center" id="action-cell-${file.id}">
+          <td class="py-2.5 px-4 text-center">
             ${actionHtml}
           </td>
         `;
+
         trackingTableBody.appendChild(row);
       });
     }
 
-    function renderState(state) {
-      if (!state) return;
-      currentState = state;
-
-      // Ensure inputs stay clean for fresh input
-      if (state.playlistUrl) {
-        playlistPill.classList.remove('hidden');
-        playlistPill.classList.add('inline-flex');
-        playlistPill.href = state.playlistUrl;
-        playlistPillTitle.textContent = state.playlistTitle || 'View Playlist';
-      } else {
-        playlistPill.classList.add('hidden');
-        playlistPill.classList.remove('inline-flex');
+    function connectSSE() {
+      if (eventSource) {
+        eventSource.close();
       }
 
-      updateStats(state.stats);
-
-      const isRunning = state.status === 'processing' || state.status === 'scanning';
-      if (isRunning) {
-        bgNoticeBanner.classList.remove('hidden');
-        startButton.disabled = true;
-        buttonText.textContent = state.status === 'scanning' ? 'Scanning...' : 'Streaming...';
-        document.getElementById('startIcon').classList.add('animate-spin');
-      } else {
-        bgNoticeBanner.classList.add('hidden');
-        startButton.disabled = false;
-        buttonText.textContent = 'Start Process';
-        document.getElementById('startIcon').classList.remove('animate-spin');
+      if (connectionBadge) {
+        connectionBadge.className = 'flex items-center gap-1.5 px-3 h-8 rounded text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200';
+        connectionBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span><span>Connecting SSE...</span>`;
       }
-
-      renderFilteredTable();
-    }
-
-    async function loadJobStatus() {
-      try {
-        const res = await fetch('/api/job-status?t=' + Date.now());
-        const data = await res.json();
-        if (data.success && data.state) {
-          renderState(data.state);
-        }
-      } catch (err) {
-        console.error('Failed to load job status:', err);
-      }
-    }
-
-    function initSSE() {
-      if (eventSource) eventSource.close();
 
       eventSource = new EventSource(`/api/events?clientId=${clientId}`);
 
       eventSource.onopen = () => {
-        connectionBadge.innerHTML = `
-          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-          <span class="text-slate-800 font-semibold">Live SSE Connected</span>
-        `;
-        connectionBadge.className = "flex items-center gap-1.5 px-3 h-8 rounded text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-300";
-      };
-
-      eventSource.onerror = () => {
-        connectionBadge.innerHTML = `
-          <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
-          <span class="text-amber-800">SSE Reconnecting...</span>
-        `;
-        connectionBadge.className = "flex items-center gap-1.5 px-3 h-8 rounded text-xs font-medium bg-amber-50 text-amber-800 border border-amber-300";
+        if (connectionBadge) {
+          connectionBadge.className = 'flex items-center gap-1.5 px-3 h-8 rounded text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200';
+          connectionBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span><span>Live SSE Connected</span>`;
+        }
       };
 
       eventSource.onmessage = (e) => {
         try {
           const data = JSON.parse(e.data);
-          handlePipelineEvent(data);
-        } catch (parseErr) {
-          console.error('SSE JSON parse error:', parseErr);
+          handleSSEEvent(data);
+        } catch (err) {
+          console.error('Error parsing SSE message:', err);
+        }
+      };
+
+      eventSource.onerror = () => {
+        if (connectionBadge) {
+          connectionBadge.className = 'flex items-center gap-1.5 px-3 h-8 rounded text-xs font-medium bg-rose-50 text-rose-700 border border-rose-200';
+          connectionBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-500 inline-block"></span><span>Reconnecting SSE...</span>`;
         }
       };
     }
 
-    function handlePipelineEvent(event) {
-      switch (event.type) {
-        case 'state_sync':
-          renderState(event.state);
-          break;
+    function handleSSEEvent(event) {
+      if (!event || !event.type) return;
 
-        case 'title_updated':
-          showToast(`Title updated: "${event.newTitle}"`, 'success');
-          loadJobStatus();
-          break;
+      if (event.type === 'state_sync') {
+        currentState = event.state;
+        renderState(currentState);
+      } else if (event.type === 'file_start') {
+        if (currentState && currentState.files) {
+          const f = currentState.files.find(item => item.id === event.fileId);
+          if (f) {
+            f.status = 'uploading';
+            f.percentage = 0;
+            f.uploadedBytes = 0;
+          }
+          renderFilteredTable();
+          updateDynamicMetrics();
+        }
+      } else if (event.type === 'upload_progress') {
+        const bar = document.getElementById(`progress-bar-${event.fileId}`);
+        const bytesEl = document.getElementById(`progress-bytes-${event.fileId}`);
+        const speedEl = document.getElementById(`speed-${event.fileId}`);
+        const etaEl = document.getElementById(`eta-${event.fileId}`);
 
-        case 'playlist_ready':
-          showToast(`Playlist Ready: "${event.playlistTitle}"`, 'success');
-          loadJobStatus();
-          break;
+        if (bar) bar.style.width = `${event.percentage}%`;
+        if (bytesEl) bytesEl.textContent = `${formatBytes(event.uploadedBytes)} / ${formatBytes(event.totalBytes)}`;
+        if (speedEl) speedEl.textContent = event.speedMBps ? `⚡ ${event.speedMBps} MB/s` : 'Streaming...';
+        if (etaEl) etaEl.textContent = event.etaSeconds ? `${event.etaSeconds}s left` : '';
 
-        case 'no_files_found':
-          showToast(event.message, 'info');
-          loadJobStatus();
-          break;
-
-        case 'file_start':
-          loadJobStatus();
-          break;
-
-        case 'upload_progress':
-          handleUploadProgress(event);
-          break;
-
-        case 'file_completed':
-          loadJobStatus();
-          break;
-
-        case 'file_error':
-          loadJobStatus();
-          break;
-
-        case 'process_completed':
-          showToast('All video uploads completed!', 'success');
-          loadJobStatus();
-          break;
-
-        case 'job_cancelled':
-          showToast('Upload cancelled.', 'info');
-          loadJobStatus();
-          break;
-
-        case 'error':
-          showToast(event.message, 'error');
-          loadJobStatus();
-          break;
+        if (currentState && currentState.files) {
+          const f = currentState.files.find(item => item.id === event.fileId);
+          if (f) {
+            f.percentage = event.percentage;
+            f.uploadedBytes = event.uploadedBytes;
+            f.speedMBps = event.speedMBps;
+            f.etaSeconds = event.etaSeconds;
+          }
+        }
+      } else if (event.type === 'file_completed') {
+        if (currentState && currentState.files) {
+          const f = currentState.files.find(item => item.id === event.fileId);
+          if (f) {
+            f.status = 'completed';
+            f.percentage = 100;
+            f.videoId = event.videoId;
+            f.youtubeUrl = event.youtubeUrl;
+            f.studioUrl = event.studioUrl;
+            f.thumbnailUrl = event.thumbnailUrl;
+          }
+          renderFilteredTable();
+          updateDynamicMetrics();
+        }
+      } else if (event.type === 'file_error') {
+        if (currentState && currentState.files) {
+          const f = currentState.files.find(item => item.id === event.fileId);
+          if (f) {
+            f.status = 'failed';
+            f.error = event.error;
+          }
+          renderFilteredTable();
+          updateDynamicMetrics();
+        }
+      } else if (event.type === 'quota_exceeded' || event.type === 'quota_paused') {
+        if (currentState) {
+          currentState.status = 'paused_quota';
+          if (currentState.files && event.fileId) {
+            const f = currentState.files.find(item => item.id === event.fileId);
+            if (f) {
+              f.status = 'failed';
+              f.error = event.error || 'YouTube daily limit reached (10-15 videos/day)';
+            }
+          }
+          renderState(currentState);
+        }
+        showQuotaAlertBanner();
+        showToast(event.message || 'YouTube daily upload quota reached. Click "Convert Remaining to Drive Player" for instant playback!', 'warn');
+      } else if (event.type === 'job_cancelled') {
+        if (currentState) {
+          currentState.isProcessing = false;
+          currentState.status = 'cancelled';
+          renderState(currentState);
+        }
+        showToast('Process was stopped.', 'info');
+      } else if (event.type === 'process_completed') {
+        showToast('All processing completed successfully!', 'success');
+        loadJobStatus();
+      } else if (event.type === 'job_status') {
+        if (event.state) {
+          currentState = event.state;
+          renderState(currentState);
+        }
       }
     }
 
-    function handleUploadProgress(event) {
-      const progressBar = document.getElementById(`progress-bar-${event.fileId}`);
-      const progressBytes = document.getElementById(`progress-bytes-${event.fileId}`);
-      const speedEl = document.getElementById(`speed-${event.fileId}`);
-      const etaEl = document.getElementById(`eta-${event.fileId}`);
+    window.showQuotaAlertBanner = function() {
+      const banner = document.getElementById('quotaAlertBanner');
+      if (banner) banner.classList.remove('hidden');
+    };
 
-      if (progressBar) progressBar.style.width = `${event.percentage}%`;
-      if (progressBytes) progressBytes.textContent = `${formatBytes(event.uploadedBytes)} / ${formatBytes(event.totalBytes)}`;
-      if (speedEl && event.speedMBps) speedEl.textContent = `⚡ ${event.speedMBps} MB/s`;
-      if (etaEl && event.etaSeconds) etaEl.textContent = `${event.etaSeconds}s left`;
-    }
+    window.dismissQuotaBanner = function() {
+      const banner = document.getElementById('quotaAlertBanner');
+      if (banner) banner.classList.add('hidden');
+    };
 
-    downloadCsvBtn.addEventListener('click', () => {
-      if (!currentState || !currentState.files || currentState.files.length === 0) {
-        showToast('No videos available to download.', 'info');
-        return;
+    window.convertToDrive = async function(fileId) {
+      showToast('Converting video to Secure Drive Player...', 'info');
+      try {
+        const res = await fetch('/api/convert-to-drive', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileId })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('✔ Successfully converted video to Secure Drive Player!', 'success');
+          loadJobStatus();
+        } else {
+          showToast('Error converting video: ' + (data.error || 'Unknown error'), 'error');
+        }
+      } catch (err) {
+        showToast('Convert failed: ' + err.message, 'error');
+      }
+    };
+
+    window.convertAllToDrivePlayer = async function() {
+      if (!confirm('Do you want to convert all remaining and failed videos to Google Drive Secure Player embed links? They will be immediately playable!')) return;
+      showToast('Converting videos to Secure Drive Player...', 'info');
+      try {
+        const res = await fetch('/api/convert-to-drive', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ allPending: true, allFailed: true })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(`✔ Converted ${data.convertedCount} video(s) to Secure Drive Player!`, 'success');
+          dismissQuotaBanner();
+          loadJobStatus();
+        } else {
+          showToast('Error: ' + (data.error || 'Failed to convert'), 'error');
+        }
+      } catch (err) {
+        showToast('Convert failed: ' + err.message, 'error');
+      }
+    };
+
+    function renderState(state) {
+      if (!state) return;
+      currentState = state;
+
+      const stopBtn = document.getElementById('stopProcessBtn');
+
+      if (state.isProcessing || state.status === 'processing' || state.status === 'scanning') {
+        startButton.disabled = true;
+        buttonText.textContent = state.status === 'scanning' ? 'Scanning...' : 'Processing...';
+        if (stopBtn) stopBtn.classList.remove('hidden');
+        if (bgNoticeBanner) bgNoticeBanner.classList.remove('hidden');
+      } else {
+        startButton.disabled = false;
+        buttonText.textContent = 'Start Process';
+        if (stopBtn) stopBtn.classList.add('hidden');
+        if (bgNoticeBanner) bgNoticeBanner.classList.add('hidden');
       }
 
-      let csv = 'Sr No,Lecture Name,Batch,Subject,File Size,Date,Status,YouTube Embed URL,Playlist URL\n';
-      const plUrl = currentState.playlistUrl || '';
-      currentState.files.forEach((f, idx) => {
-        const title = (f.customTitle || f.name || '').replace(/"/g, '""');
-        const batch = (f.batch || '').replace(/"/g, '""');
-        const subject = (f.subject || '').replace(/"/g, '""');
-        const size = formatBytes(f.size || f.totalBytes);
-        const date = f.createdTime ? new Date(f.createdTime).toLocaleDateString('en-GB') : '';
-        const status = f.status || 'queued';
-        const embedUrl = f.videoId ? `https://www.youtube.com/embed/${f.videoId}` : '';
-        csv += `${idx + 1},"${title}","${batch}","${subject}","${size}","${date}","${status}","${embedUrl}","${plUrl}"\n`;
-      });
+      if (state.status === 'paused_quota') {
+        showQuotaAlertBanner();
+      }
 
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      link.setAttribute('download', `video_upload_embed_report_${new Date().toISOString().slice(0,10)}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      showToast('Embed links report downloaded!', 'success');
-    });
+      if (state.playlistUrl && playlistPill && playlistPillTitle) {
+        playlistPill.href = state.playlistUrl;
+        playlistPillTitle.textContent = state.playlistTitle || 'View Playlist';
+        playlistPill.classList.remove('hidden');
+        playlistPill.classList.add('inline-flex');
+      } else if (playlistPill) {
+        playlistPill.classList.add('hidden');
+        playlistPill.classList.remove('inline-flex');
+      }
 
-    startButton.addEventListener('click', async (e) => {
-      e.preventDefault();
-      const folderInputVal = folderInput.value.trim();
-      const playlistNameVal = playlistNameInput ? playlistNameInput.value.trim() : '';
-      const startDateVal = startDateInput ? startDateInput.value : '';
-      const endDateVal = endDateInput ? endDateInput.value : '';
+      updateDynamicMetrics();
+      renderFilteredTable();
+    }
 
-      if (!folderInputVal) {
+    async function loadJobStatus() {
+      try {
+        const res = await fetch('/api/status');
+        const data = await res.json();
+        if (data.state) {
+          currentState = data.state;
+          if (data.history && Array.isArray(data.history) && data.history.length > 0) {
+            const currentFiles = currentState.files || [];
+            const notInCurrent = data.history.filter(h => !currentFiles.some(f => f.id === h.id || (f.videoId && f.videoId === h.videoId)));
+            currentState.files = [...currentFiles, ...notInCurrent];
+          }
+          renderState(currentState);
+        }
+      } catch (err) {
+        console.error('Error loading job status:', err);
+      }
+    }
+
+    window.startProcessing = async function(force = false) {
+      const folder = folderInput.value.trim();
+      if (!folder) {
         showToast('Please enter a Google Drive folder link or ID', 'error');
         folderInput.focus();
         return;
       }
 
+      const modeInput = document.querySelector('input[name="processingMode"]:checked');
+      const processingMode = modeInput ? modeInput.value : 'youtube';
+      const playlistName = playlistNameInput ? playlistNameInput.value.trim() : '';
+      const startDate = startDateInput ? startDateInput.value : '';
+      const endDate = endDateInput ? endDateInput.value : '';
+
       startButton.disabled = true;
-      buttonText.textContent = 'Starting Pipeline...';
-      document.getElementById('startIcon').classList.add('animate-spin');
+      buttonText.textContent = 'Scanning...';
+      const stopBtn = document.getElementById('stopProcessBtn');
+      if (stopBtn) stopBtn.classList.remove('hidden');
+      showToast('Scanning Drive folder for video files...', 'info');
 
       try {
-        const response = await fetch('/api/process', {
+        const res = await fetch('/api/process-folder', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(window.gAccessToken ? { 'Authorization': `Bearer ${window.gAccessToken}` } : {})
+          },
           body: JSON.stringify({
-            folderInput: folderInputVal,
-            playlistName: playlistNameVal,
-            startDate: startDateVal,
-            endDate: endDateVal
+            folderUrl: folder,
+            processingMode,
+            playlistName,
+            startDate,
+            endDate,
+            clientId,
+            force
           })
         });
 
-        const data = await response.json();
-
-        if (!response.ok || !data.success) {
-          throw new Error(data.error || 'Failed to start process');
-        }
-
-        showToast('Pipeline started! Scanning selected date range...', 'success');
-        loadJobStatus();
-      } catch (err) {
-        showToast(err.message, 'error');
-        loadJobStatus();
-      }
-    });
-
-    cancelJobBtn.addEventListener('click', async () => {
-      if (!confirm('Are you sure you want to cancel the active upload pipeline?')) return;
-      try {
-        const res = await fetch('/api/cancel', { method: 'POST' });
         const data = await res.json();
         if (data.success) {
-          showToast('Job cancelled.', 'info');
+          showToast(`Found ${data.totalFiles} video(s)! Processing started.`, 'success');
+          loadJobStatus();
+        } else if (data.isJobRunning) {
+          if (confirm('A previous video upload job is currently active in the background. Would you like to stop it and start uploading this folder now?')) {
+            window.startProcessing(true);
+          } else {
+            startButton.disabled = false;
+            buttonText.textContent = 'Start Process';
+          }
+        } else {
+          showToast('Failed to start: ' + (data.error || 'Unknown error'), 'error');
+          startButton.disabled = false;
+          buttonText.textContent = 'Start Process';
+          if (stopBtn) stopBtn.classList.add('hidden');
         }
-      } catch (e) {
-        showToast('Failed to cancel job', 'error');
+      } catch (err) {
+        showToast('Error connecting to server: ' + err.message, 'error');
+        startButton.disabled = false;
+        buttonText.textContent = 'Start Process';
+        if (stopBtn) stopBtn.classList.add('hidden');
       }
-    });
+    };
 
+    window.cancelProcessingJob = async function() {
+      if (!confirm('Are you sure you want to stop current processing?')) return;
+      showToast('Stopping task...', 'info');
+      try {
+        const res = await fetch('/api/cancel-job', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          showToast('Job cancelled successfully.', 'info');
+          loadJobStatus();
+        }
+      } catch (err) {
+        showToast('Error cancelling job: ' + err.message, 'error');
+      }
+    };
+
+    // Initialize after DOM Ready
     window.addEventListener('DOMContentLoaded', () => {
-      // Default to Today's date
-      setDatePreset('today');
-      // Keep inputs clean & empty
-      folderInput.value = '';
-      if (playlistNameInput) playlistNameInput.value = '';
+      // Bind DOM references
+      connectionBadge = document.getElementById('connectionBadge');
+      navAuthBtn = document.getElementById('navAuthBtn');
+      navConnectedBadge = document.getElementById('navConnectedBadge');
+      bgNoticeBanner = document.getElementById('bgNoticeBanner');
+      cancelJobBtn = document.getElementById('cancelJobBtn');
+      folderInput = document.getElementById('folderInput');
+      playlistNameInput = document.getElementById('playlistNameInput');
+      playlistPill = document.getElementById('playlistPill');
+      playlistPillTitle = document.getElementById('playlistPillTitle');
+      startDateInput = document.getElementById('startDateInput');
+      endDateInput = document.getElementById('endDateInput');
+      startButton = document.getElementById('startButton');
+      buttonText = document.getElementById('buttonText');
+      downloadCsvBtn = document.getElementById('downloadCsvBtn');
+      trackingTableBody = document.getElementById('trackingTableBody');
+      toast = document.getElementById('toast');
+      toastMessage = document.getElementById('toastMessage');
+      toastIcon = document.getElementById('toastIcon');
 
-      checkUrlParams();
+      filterPillAll = document.getElementById('filterPillAll');
+      filterPillCompleted = document.getElementById('filterPillCompleted');
+      filterPillPending = document.getElementById('filterPillPending');
+      filterPillFailed = document.getElementById('filterPillFailed');
+
+      videoModal = document.getElementById('videoModal');
+      modalIframe = document.getElementById('modalIframe');
+      modalVideoTitle = document.getElementById('modalVideoTitle');
+      modalBatchTag = document.getElementById('modalBatchTag');
+      modalSubjectTag = document.getElementById('modalSubjectTag');
+      modalYtLink = document.getElementById('modalYtLink');
+
+      // CSV Download Button Handler
+      if (downloadCsvBtn) {
+        downloadCsvBtn.addEventListener('click', () => {
+          if (!currentState || !currentState.files || currentState.files.length === 0) {
+            showToast('No videos available to export.', 'error');
+            return;
+          }
+
+          let csvContent = "data:text/csv;charset=utf-8,";
+          csvContent += "Index,File Name,Batch,Subject,Created Date,File Size,Status,YouTube Video ID,Embed Link,Studio Edit Link\n";
+
+          currentState.files.forEach((f, idx) => {
+            const embed = f.videoId ? `https://www.youtube.com/embed/${f.videoId}` : '';
+            const studio = f.studioUrl || (f.videoId ? `https://studio.youtube.com/video/${f.videoId}/edit` : '');
+            const row = [
+              idx + 1,
+              `"${(f.customTitle || f.name || '').replace(/"/g, '""')}"`,
+              `"${(f.batch || '').replace(/"/g, '""')}"`,
+              `"${(f.subject || '').replace(/"/g, '""')}"`,
+              `"${f.createdTime || ''}"`,
+              `"${formatBytes(f.totalBytes || f.size)}"`,
+              `"${f.status}"`,
+              `"${f.videoId || ''}"`,
+              `"${embed}"`,
+              `"${studio}"`
+            ];
+            csvContent += row.join(",") + "\n";
+          });
+
+          const encodedUri = encodeURI(csvContent);
+          const link = document.createElement('a');
+          link.setAttribute('href', encodedUri);
+          link.setAttribute('download', `YouTube_Upload_Report_${formatDateToYMD(new Date())}.csv`);
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          showToast('CSV downloaded successfully!', 'success');
+        });
+      }
+
+      loadClientIds();
+      updateProcessingModeCards();
+
+      const token = localStorage.getItem('oauth_access_token');
+      const expiry = localStorage.getItem('oauth_token_expiry');
+      if (token && expiry && Date.now() < parseInt(expiry, 10)) {
+        window.gAccessToken = token;
+        window.isAuthenticated = true;
+      } else {
+        window.isAuthenticated = false;
+      }
+
       checkAuthStatus();
-      updateFilterPillsUI();
+      connectSSE();
       loadJobStatus();
-      initSSE();
     });
   </script>
 </body>

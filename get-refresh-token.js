@@ -150,7 +150,7 @@ async function main() {
     }
   });
 
-  server.listen(port, () => {
+  server.listen(port, '0.0.0.0', () => {
     // Server is listening
   });
 }

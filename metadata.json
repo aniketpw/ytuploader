@@ -1,0 +1,6 @@
+{
+  "name": "Drive to YouTube Uploader",
+  "description": "Automated pipeline to stream videos from Google Drive to YouTube as Unlisted with real-time SSE progress tracking and playlist generation.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
