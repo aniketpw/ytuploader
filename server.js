@@ -376,8 +376,13 @@ function isAuthError(err) {
     msg.includes('unauthorized') ||
     msg.includes('invalid_token') ||
     err.code === 401 ||
-    err.code === 403 && (msg.includes('token') || msg.includes('auth') || msg.includes('credentials'))
+    (err.code === 403 && (msg.includes('token') || msg.includes('auth') || msg.includes('credentials')))
   );
+}
+
+function normalizeUnicodeText(str) {
+  if (!str) return '';
+  return str.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').trim();
 }
 
 /**
@@ -398,9 +403,10 @@ async function scanDriveFolderRecursively(drive, rootFolderId, startDateIso, end
     // Check if the provided link/ID is a direct video file rather than a folder
     if (rootMeta.data.mimeType !== 'application/vnd.google-apps.folder') {
       if (isVideoFile(rootMeta.data)) {
+        const cleanName = normalizeUnicodeText(rootFolderName || 'Direct Upload');
         discoveredVideos.set(rootMeta.data.id, {
           ...rootMeta.data,
-          batch: rootFolderName || 'Direct Upload',
+          batch: cleanName,
           subject: 'Video',
           folderPath: rootMeta.data.name
         });
@@ -419,7 +425,6 @@ async function scanDriveFolderRecursively(drive, rootFolderId, startDateIso, end
   }
 
   // Queue stores objects: { folderId, folderPath, subfolders }
-  // subfolders contains all folder names BELOW the root master folder
   const folderQueue = [{
     folderId: rootFolderId,
     folderPath: '',
@@ -493,22 +498,31 @@ async function scanDriveFolderRecursively(drive, rootFolderId, startDateIso, end
 
             if (passesDateFilter && !discoveredVideos.has(file.id)) {
               const subfolders = current.subfolders || [];
-              let batch = rootFolderName || 'Batch';
+              const cleanRoot = normalizeUnicodeText(rootFolderName || '');
+              const isMasterRoot = !cleanRoot || cleanRoot.toLowerCase().includes('master') || cleanRoot.toLowerCase().includes('all batches') || cleanRoot === 'Batch Folder' || cleanRoot === 'Root';
+
+              let batch = cleanRoot || 'Batch';
               let subject = 'Lecture';
-              let folderHierarchyText = '';
 
               if (subfolders.length === 0) {
-                batch = rootFolderName || 'Batch';
+                batch = cleanRoot || 'Batch';
                 subject = 'Lecture';
-                folderHierarchyText = (rootFolderName && rootFolderName !== 'Batch Folder' && rootFolderName !== 'Root') ? rootFolderName : '';
               } else if (subfolders.length === 1) {
-                batch = subfolders[0];
-                subject = subfolders[0];
-                folderHierarchyText = subfolders[0];
+                if (isMasterRoot) {
+                  batch = normalizeUnicodeText(subfolders[0]);
+                  subject = 'Lecture';
+                } else {
+                  batch = cleanRoot;
+                  subject = normalizeUnicodeText(subfolders[0]);
+                }
               } else {
-                batch = subfolders[0];
-                subject = subfolders.slice(1).join(' - ');
-                folderHierarchyText = subfolders.join(' - ');
+                if (isMasterRoot) {
+                  batch = normalizeUnicodeText(subfolders[0]);
+                  subject = normalizeUnicodeText(subfolders.slice(1).join(' - '));
+                } else {
+                  batch = cleanRoot;
+                  subject = normalizeUnicodeText(subfolders.join(' - '));
+                }
               }
 
               discoveredVideos.set(file.id, {
@@ -516,8 +530,7 @@ async function scanDriveFolderRecursively(drive, rootFolderId, startDateIso, end
                 batch,
                 subject,
                 folderPath: current.folderPath || rootFolderName || 'Root',
-                subfolders,
-                folderHierarchyText
+                subfolders
               });
             }
           }

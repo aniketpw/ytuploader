@@ -1601,24 +1601,33 @@
           </td>
           <td class="py-2.5 px-3 text-center text-[#78716C] border-r border-[#D6D3CD] text-[11px]">${idx + 1}</td>
           <td class="py-2.5 px-4 border-r border-[#D6D3CD]">
-            <div class="space-y-0.5">
-              <div class="flex items-center gap-2 group">
-                <span id="scan-title-disp-${file.id}" class="font-bold text-[#1B1B1B] text-xs leading-snug cursor-pointer hover:text-orange-700" onclick="promptRenameFile('${file.id}')" title="Click to rename before uploading">
-                  ${escapeHtml(currentTitle)}
-                </span>
-                <button onclick="promptRenameFile('${file.id}')" class="opacity-0 group-hover:opacity-100 text-[#78716C] hover:text-[#1B1B1B] cursor-pointer" title="Edit Title">
-                  ✏️
+            <div class="space-y-1">
+              <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2 group flex-1">
+                  <span id="scan-title-disp-${file.id}" class="font-bold text-[#1B1B1B] text-xs leading-snug cursor-pointer hover:text-orange-700 transition-colors" onclick="promptRenameFile('${file.id}')" title="Click to rename before uploading">
+                    ${escapeHtml(currentTitle)}
+                  </span>
+                  <button type="button" onclick="promptRenameFile('${file.id}')" class="text-[#78716C] hover:text-[#1B1B1B] cursor-pointer text-xs" title="Edit Title">
+                    ✏️
+                  </button>
+                </div>
+                <button type="button" onclick="previewScanFile('${file.id}')" class="h-6 px-2 bg-white hover:bg-stone-100 border border-[#D6D3CD] text-[#1B1B1B] text-[10px] font-bold uppercase rounded-none cursor-pointer shrink-0 flex items-center gap-1" title="Watch / Preview Video">
+                  <span>▶ Play</span>
                 </button>
               </div>
-              <div class="text-[9px] text-[#78716C]">
-                <span>Batch: ${escapeHtml(file.batch || 'Batch')}</span> • <span>${escapeHtml(file.name)}</span>
+              <div class="flex items-center gap-2 text-[9px] text-[#78716C]">
+                <span class="font-bold uppercase text-[#1B1B1B] bg-stone-200 px-1 py-0.2">${escapeHtml(file.batch || 'Batch')}</span>
+                <span>•</span>
+                <span class="font-semibold text-stone-700">${escapeHtml(file.subject || 'Lecture')}</span>
+                <span>•</span>
+                <span>${escapeHtml(file.name)}</span>
               </div>
             </div>
           </td>
-          <td class="py-2.5 px-3 text-center font-mono-code border-r border-[#D6D3CD] text-[11px] text-[#78716C]">
+          <td class="py-2.5 px-3 text-center font-mono-code border-r border-[#D6D3CD] text-[11px] text-[#78716C] whitespace-nowrap">
             ${formatBytes(file.size)}
           </td>
-          <td class="py-2.5 px-3 text-center font-mono-code border-r border-[#D6D3CD] text-[11px] text-[#78716C]">
+          <td class="py-2.5 px-3 text-center font-mono-code border-r border-[#D6D3CD] text-[11px] text-[#78716C] whitespace-nowrap">
             ${fileDate}
           </td>
           <td class="py-2.5 px-3 text-center">
@@ -1631,6 +1640,20 @@
 
       updateScanSelectedSummary();
     }
+
+    window.previewScanFile = function(fileId) {
+      const file = scannedFilesList.find(f => f.id === fileId);
+      if (!file) return;
+      openVideoModal({
+        id: file.id,
+        videoId: file.id,
+        name: file.name,
+        customTitle: customFileTitlesMap[file.id] || file.customTitle || file.name,
+        batch: file.batch || 'Batch',
+        subject: file.subject || 'Lecture',
+        createdTime: file.createdTime
+      });
+    };
 
     window.promptRenameFile = function(fileId) {
       const file = scannedFilesList.find(f => f.id === fileId);
