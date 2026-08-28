@@ -1397,8 +1397,8 @@
     </div>
   </div>
 
-  <!-- Toast Notification -->
-  <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 ease-out flex items-center gap-2.5 px-4 py-2.5 bg-[#1B1B1B] text-white shadow-xl font-mono-code text-xs font-medium select-none">
+  <!-- Toast Notification (Centered Bottom, Never Collides with Theme Dock) -->
+  <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none transform translate-y-20 opacity-0 transition-all duration-300 ease-out flex items-center gap-2.5 px-4 py-2 bg-[var(--bg-card)] text-[var(--text-main)] border border-[var(--border-main)] shadow-2xl font-mono-code text-xs font-medium select-none">
     <span id="toastIcon"></span>
     <span id="toastMessage">Notification</span>
   </div>
@@ -4260,7 +4260,6 @@
       if (typeof renderScanReviewTable === 'function' && window.scannedFilesList && window.scannedFilesList.length > 0) {
         renderScanReviewTable();
       }
-      showToast(isDark ? '🌙 Dark Mode Activated' : '☀️ Light Mode Activated', 'info');
     };
 
     window.toggleAppTheme = function() {
@@ -4298,17 +4297,17 @@
   </script>
 
   <!-- Floating Tactile Theme Pill (Bottom-Right Zen Quick-Toggle) -->
-  <div id="floatingThemeDock" class="fixed bottom-5 right-5 z-50 flex items-center font-mono-code text-xs select-none">
+  <div id="floatingThemeDock" class="fixed bottom-6 right-6 z-40 flex items-center font-mono-code text-xs select-none">
     <button
       type="button"
       id="floatingThemeBtn"
       onclick="toggleAppTheme()"
-      class="flex items-center gap-2.5 px-3.5 py-2 bg-[var(--bg-card)] hover:bg-[var(--bg-subcard)] text-[var(--text-main)] border border-[var(--border-main)] hover:border-[var(--btn-primary-bg)] shadow-2xl cursor-pointer select-none transition-all duration-200 hover:scale-105 active:scale-95 group"
+      class="flex items-center gap-2.5 px-3.5 py-2 bg-[var(--bg-card)] hover:bg-[var(--bg-subcard)] text-[var(--text-main)] border border-[var(--border-main)] hover:border-[var(--btn-primary-bg)] shadow-xl hover:shadow-2xl cursor-pointer select-none transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 group font-mono-code text-xs"
       title="Toggle Light / Dark Mode (Shortcut: Press 'D')"
     >
-      <span id="floatingThemeIcon" class="text-sm transition-transform duration-500 ease-out group-hover:rotate-45 inline-block">🌙</span>
-      <span id="floatingThemeLabel" class="text-[10px] font-bold uppercase tracking-wider">Dark Mode</span>
-      <kbd class="text-[9px] px-1.5 py-0.5 bg-[var(--bg-main)] text-[var(--text-muted)] border border-[var(--border-main)] font-mono-code font-bold">D</kbd>
+      <span id="floatingThemeIcon" class="text-sm transition-transform duration-500 ease-out group-hover:rotate-45 inline-block select-none">🌙</span>
+      <span id="floatingThemeLabel" class="text-[10px] font-bold uppercase tracking-wider select-none">Dark Mode</span>
+      <kbd class="text-[9px] px-1.5 py-0.5 bg-[var(--bg-main)] text-[var(--text-muted)] border border-[var(--border-main)] font-mono-code font-bold select-none">D</kbd>
     </button>
   </div>
 </body>
