@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Drive to YouTube — Cloud Video Portal</title>
+  <title>Drive → YouTube Cloud Video Portal</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Google Identity Services for OAuth -->
@@ -72,11 +72,11 @@
 </head>
 <body class="min-h-full flex flex-col bg-[#EDEAE5] text-[#1B1B1B] selection:bg-[#1B1B1B] selection:text-white">
 
-  <!-- 1. Minimal Editorial Header (Matching Office Mobile) -->
-  <header class="w-full border-b border-[#D6D3CD] px-6 py-3.5 bg-[#EDEAE5]/90 backdrop-blur-xs sticky top-0 z-40">
+  <!-- 1. Minimal Editorial Header -->
+  <header class="w-full border-b border-[#D6D3CD] px-6 py-3 bg-[#EDEAE5]/95 backdrop-blur-xs sticky top-0 z-40">
     <div class="max-w-[1280px] mx-auto flex items-center justify-between">
       
-      <!-- Brand Logo in Office Mobile style -->
+      <!-- Brand Logo -->
       <div class="flex items-center gap-2.5">
         <div class="w-7 h-7 rounded bg-[#1B1B1B] text-white flex items-center justify-center font-bold text-xs shadow-xs">
           <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -88,14 +88,28 @@
         </div>
       </div>
 
-      <!-- Right Header Actions & Status Badges -->
+      <!-- Right Header Actions (Google Auth, Sync YouTube, Verify, SSE Status) -->
       <div class="flex items-center gap-2 font-mono-code text-xs">
+        
+        <!-- Top Sync YouTube Button -->
+        <button
+          type="button"
+          onclick="syncYouTubeUploads()"
+          class="flex items-center gap-1.5 px-3 h-8 rounded border border-[#D6D3CD] bg-[#F6F4F0] hover:bg-white text-[#1B1B1B] font-semibold transition-all text-[11px] uppercase tracking-wider cursor-pointer shadow-2xs"
+          title="Sync live videos from your YouTube channel"
+        >
+          <svg class="w-3.5 h-3.5 text-rose-600" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+          </svg>
+          <span>Sync Channel</span>
+        </button>
+
         <!-- Google Auth Not Connected Button -->
         <button
           type="button"
           id="navAuthBtn"
           onclick="handleConnectClick()"
-          class="flex items-center gap-2 px-3 h-8 rounded border border-[#1B1B1B] bg-transparent hover:bg-[#1B1B1B] hover:text-white text-[#1B1B1B] font-semibold transition-all cursor-pointer text-[11px] uppercase tracking-wider"
+          class="flex items-center gap-1.5 px-3 h-8 rounded border border-[#1B1B1B] bg-transparent hover:bg-[#1B1B1B] hover:text-white text-[#1B1B1B] font-semibold transition-all cursor-pointer text-[11px] uppercase tracking-wider"
           title="Google Account is not connected. Click to connect."
         >
           <span class="w-2 h-2 rounded-full bg-rose-500 inline-block"></span>
@@ -114,7 +128,7 @@
           href="https://www.youtube.com/verify"
           target="_blank"
           rel="noopener noreferrer"
-          class="hidden sm:flex items-center gap-1.5 px-3 h-8 rounded border border-[#D6D3CD] bg-[#F6F4F0] hover:bg-white text-[#1B1B1B] font-semibold transition-all text-[11px] uppercase tracking-wider"
+          class="hidden sm:flex items-center gap-1 px-3 h-8 rounded border border-[#D6D3CD] bg-[#F6F4F0] hover:bg-white text-[#1B1B1B] font-semibold transition-all text-[11px] uppercase tracking-wider"
           title="Verify YouTube Channel for >15 min uploads"
         >
           <span>Verify (&gt;15 min) ↗</span>
@@ -129,7 +143,7 @@
     </div>
   </header>
 
-  <!-- Main Container (Centered Editorial Page) -->
+  <!-- Main Container -->
   <main class="flex-1 max-w-[1280px] w-full mx-auto px-6 py-8 space-y-7">
 
     <!-- Background Notice Banner -->
@@ -170,51 +184,37 @@
       </div>
     </div>
 
-    <!-- 2. Hero Editorial Section (Matching Office Mobile Screenshot) -->
+    <!-- 2. Hero Editorial Section (Customized for Drive to YouTube Video Portal) -->
     <div class="space-y-3 pt-2">
-      <!-- Step Indicator -->
+      <!-- Feature Tag -->
       <div class="font-mono-code text-[11px] uppercase tracking-widest text-[#78716C]">
-        STEP - 01 OF 03
+        DIRECT CLOUD PIPELINE • 0 MB LOCAL BANDWIDTH
       </div>
 
-      <!-- Big Editorial Heading -->
+      <!-- Big Editorial Heading Customized for Video Portal -->
       <h2 class="text-4xl md:text-5xl font-serif-editorial text-[#1B1B1B] leading-[1.1] tracking-tight">
-        Your Google Drive.<br />
-        Your <span class="italic font-normal">Way.</span>
+        Your Drive Videos.<br />
+        Your <span class="italic font-normal">Channel.</span>
       </h2>
 
       <!-- Comment-style Subtitle -->
       <p class="font-mono-code text-xs text-[#78716C]">
-        // connect a google drive folder. scan, upload, correct, filter.
+        // connect google drive folder. auto-scan subfolders, upload unlisted videos, sync 1080p streams.
       </p>
     </div>
 
-    <!-- Hidden radio for processingMode (preserving backend function without rendering unwanted 1st image cards) -->
+    <!-- Hidden radio for processingMode -->
     <input type="radio" name="processingMode" value="youtube" checked class="hidden" />
 
-    <!-- 3. Form Input Container (Matching Office Mobile Tab Bar + Input Style) -->
+    <!-- 3. Form Input Section -->
     <div class="space-y-6 pt-2">
       
-      <!-- Segmented Action Header Bar (PASTE LINK / SCAN OPTIONS / MY CHANNEL) -->
-      <div class="grid grid-cols-3 border border-[#1B1B1B] bg-[#EDEAE5] text-center font-mono-code text-xs font-bold uppercase tracking-wider">
-        <div class="py-2.5 bg-[#1B1B1B] text-white">
-          PASTE LINK
-        </div>
-        <div class="py-2.5 border-x border-[#1B1B1B] text-[#1B1B1B] hover:bg-white/40 transition-colors cursor-pointer" onclick="document.getElementById('playlistNameInput').focus()">
-          PLAYLIST
-        </div>
-        <div class="py-2.5 text-[#1B1B1B] hover:bg-white/40 transition-colors cursor-pointer" onclick="syncYouTubeUploads()">
-          SYNC CHANNEL
-        </div>
-      </div>
-
-      <!-- Main Input Section -->
       <div class="space-y-5">
         
-        <!-- Folder Link Input (Underline style matching Office Mobile) -->
+        <!-- Folder Link Input -->
         <div class="space-y-1.5">
           <label class="block font-mono-code text-[11px] font-bold uppercase tracking-widest text-[#1B1B1B]">
-            DRIVE FOLDER URL
+            GOOGLE DRIVE FOLDER URL
           </label>
           <div class="relative flex items-center">
             <input
@@ -235,7 +235,7 @@
             </button>
           </div>
           <p class="font-mono-code text-[11px] text-[#A8A29E]">
-            paste any google drive folder link or folder id • recursive scan • 0 mb local bandwidth
+            paste any google drive folder link or folder id • recursive subfolders auto-scanned • upload to unlisted
           </p>
         </div>
 
@@ -244,7 +244,7 @@
           <!-- Playlist Name -->
           <div class="space-y-1">
             <label class="block font-mono-code text-[10px] font-bold uppercase tracking-wider text-[#78716C]">
-              PLAYLIST NAME <span class="font-normal lowercase">(optional)</span>
+              YOUTUBE PLAYLIST NAME <span class="font-normal lowercase">(optional)</span>
             </label>
             <input
               type="text"
@@ -284,7 +284,7 @@
           </div>
         </div>
 
-        <!-- Submit Process Action Button (Matching Large Flat Button in Office Mobile) -->
+        <!-- Submit Process Action Button -->
         <div class="pt-2 flex items-center gap-3">
           <button
             type="button"
@@ -292,7 +292,7 @@
             onclick="startProcessing()"
             class="flex-1 py-3.5 bg-[#78716C] hover:bg-[#1B1B1B] text-white font-mono-code text-xs font-bold uppercase tracking-widest rounded transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
           >
-            <span id="buttonText">OPEN THIS FOLDER →</span>
+            <span id="buttonText">START CLOUD UPLOAD →</span>
           </button>
 
           <button
@@ -309,32 +309,39 @@
 
     <hr class="border-t border-[#D6D3CD] my-6" />
 
-    <!-- 4. Library & Dashboard Table Section (Matching Lower Half of Screenshot) -->
+    <!-- 4. Library & Dashboard Table Section -->
     <div class="space-y-4">
       
-      <!-- Section Header -->
-      <div class="flex items-end justify-between">
+      <!-- Section Header with Exact Date Range Picker from 2nd Image -->
+      <div class="flex items-center justify-between flex-wrap gap-3">
         <div class="space-y-0.5">
           <div class="font-mono-code text-[10px] uppercase tracking-widest text-[#78716C]">LIBRARY</div>
-          <h3 class="text-xl font-bold font-serif-editorial text-[#1B1B1B]">Saved videos &amp; uploads</h3>
+          <h3 class="text-xl font-bold font-serif-editorial text-[#1B1B1B]">Uploaded videos &amp; stream queue</h3>
         </div>
 
-        <!-- Quick View / Presets -->
-        <div class="flex items-center gap-3 font-mono-code text-xs">
-          <!-- Interactive Calendar Popover Trigger -->
+        <!-- Exact Date Picker Pill from 2nd Image: Pick date range: [ 📅 28 Aug 2026 ∨ ] -->
+        <div class="flex items-center gap-2.5">
+          <span class="text-xs font-semibold text-stone-700 whitespace-nowrap">Pick date range:</span>
+          
           <div class="relative" id="calendarWrapper">
             <button
               type="button"
               id="dateRangeInputBtn"
               onclick="toggleCalendarPopover(event)"
-              class="font-bold text-orange-700 hover:text-orange-900 uppercase tracking-wider flex items-center gap-1 cursor-pointer"
+              class="flex items-center gap-2 px-3 py-1.5 rounded-full border border-stone-300 bg-white hover:border-stone-400 shadow-2xs text-xs font-semibold text-stone-800 transition-all cursor-pointer focus:outline-none"
+              title="Click to pick custom date range"
             >
-              <span id="dateRangeInputText">QUICK VIEW</span>
-              <span>→</span>
+              <svg class="w-3.5 h-3.5 text-[#0284c7]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+              </svg>
+              <span id="dateRangeInputText" class="font-bold text-stone-900">All Dates</span>
+              <svg class="w-3 h-3 text-stone-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+              </svg>
             </button>
 
             <!-- Calendar Popover dropdown -->
-            <div id="calendarPopover" class="hidden absolute right-0 top-7 z-50 bg-[#F6F4F0] border border-[#1B1B1B] rounded shadow-xl p-4 w-[290px] select-none text-[#1B1B1B]">
+            <div id="calendarPopover" class="hidden absolute right-0 top-10 z-50 bg-[#F6F4F0] border border-[#1B1B1B] rounded shadow-xl p-4 w-[290px] select-none text-[#1B1B1B]">
               <div class="flex items-center justify-between pb-2 mb-2 border-b border-[#D6D3CD] font-mono-code">
                 <button type="button" onclick="navigateMonth(-1)" class="w-6 h-6 rounded hover:bg-white flex items-center justify-center font-bold text-xs cursor-pointer">‹</button>
                 <span id="calendarMonthYearLabel" class="text-xs font-bold text-[#1B1B1B]">August 2026</span>
@@ -357,7 +364,7 @@
         </div>
       </div>
 
-      <!-- Stats Filter Bar (Total, Uploaded, In Progress, Playlist) -->
+      <!-- Stats Filter Bar (Total, Uploaded, In Progress, Source Tabs) -->
       <div class="flex items-center justify-between gap-2 flex-wrap font-mono-code text-xs border border-[#D6D3CD] bg-[#F6F4F0] p-2 rounded">
         <div class="flex items-center gap-2 overflow-x-auto">
           <button
@@ -433,18 +440,18 @@
         </div>
       </div>
 
-      <!-- Search Input in Lowercase Mono -->
+      <!-- Real-time Search Input -->
       <div class="relative">
         <input
           type="text"
           id="tableSearchInput"
-          placeholder="search forms or videos..."
+          placeholder="search videos by title, batch, or subject..."
           oninput="handleTableSearch()"
           class="w-full py-1.5 font-mono-code text-xs text-[#1B1B1B] bg-transparent border-b border-[#D6D3CD] placeholder:text-[#A8A29E] focus:outline-none focus:border-b-2 focus:border-[#1B1B1B]"
         />
       </div>
 
-      <!-- Main Video Data Table / Grid (Clean Editorial Style) -->
+      <!-- Main Video Data Table -->
       <div class="border border-[#D6D3CD] bg-white rounded overflow-hidden">
         <table class="w-full text-left border-collapse text-xs">
           <thead>
@@ -460,14 +467,14 @@
           <tbody id="trackingTableBody" class="divide-y divide-[#EBE7DF]">
             <tr id="emptyRow" class="text-[#A8A29E]">
               <td colspan="6" class="py-14 text-center font-mono-code text-xs">
-                no videos in queue. paste a google drive folder link above and click open.
+                no videos in queue. paste a google drive folder link above and click start upload.
               </td>
             </tr>
           </tbody>
         </table>
       </div>
 
-      <!-- Full-Width CLEAR ALL button (Matching screenshot bottom bar) -->
+      <!-- Full-Width CLEAR ALL button -->
       <button
         type="button"
         onclick="clearCompletedVideos()"
@@ -1034,18 +1041,12 @@
 
       if (displayText) {
         if (!start && !end) {
-          displayText.textContent = 'QUICK VIEW';
+          displayText.textContent = 'All Dates';
         } else if (start && !end) {
           displayText.textContent = formatDisplayDate(start);
         } else if (start && end) {
           if (start === end) {
-            if (start === getTodayYMD()) {
-              displayText.textContent = `TODAY (${formatDisplayDate(start)})`;
-            } else if (start === getYesterdayYMD()) {
-              displayText.textContent = `YEST (${formatDisplayDate(start)})`;
-            } else {
-              displayText.textContent = formatDisplayDate(start);
-            }
+            displayText.textContent = formatDisplayDate(start);
           } else {
             displayText.textContent = `${formatDisplayDate(start)} – ${formatDisplayDate(end)}`;
           }
@@ -1157,13 +1158,7 @@
       }
     }
 
-    window.selectProcessingMode = function(mode) {
-      const radio = document.querySelector(`input[name="processingMode"][value="${mode}"]`);
-      if (radio) {
-        radio.checked = true;
-      }
-    };
-
+    window.selectProcessingMode = function(mode) {};
     window.updateProcessingModeCards = function() {};
 
     window.handleConnectClick = function() {
@@ -1386,7 +1381,7 @@
         });
         const data = await res.json();
         if (data.success) {
-          showToast(`✔ Successfully synced ${data.count} uploaded video(s) from channel "${data.channelTitle}"!`, 'success');
+          showToast(`✔ Synced ${data.count} uploaded video(s) from channel "${data.channelTitle}"!`, 'success');
           loadJobStatus();
         } else {
           showToast('Sync note: ' + (data.error || 'Could not fetch channel uploads'), 'error');
@@ -1820,7 +1815,7 @@
         trackingTableBody.innerHTML = `
           <tr id="emptyRow" class="text-[#A8A29E]">
             <td colspan="6" class="py-14 text-center font-mono-code text-xs">
-              no videos in queue. paste a google drive folder link above and click open.
+              no videos in queue. paste a google drive folder link above and click start upload.
             </td>
           </tr>
         `;
@@ -2222,7 +2217,7 @@
         if (bgNoticeBanner) bgNoticeBanner.classList.remove('hidden');
       } else {
         startButton.disabled = false;
-        buttonText.textContent = 'OPEN THIS FOLDER →';
+        buttonText.textContent = 'START CLOUD UPLOAD →';
         if (stopBtn) stopBtn.classList.add('hidden');
         if (bgNoticeBanner) bgNoticeBanner.classList.add('hidden');
       }
@@ -2309,18 +2304,18 @@
             window.startProcessing(true);
           } else {
             startButton.disabled = false;
-            buttonText.textContent = 'OPEN THIS FOLDER →';
+            buttonText.textContent = 'START CLOUD UPLOAD →';
           }
         } else {
           showToast('Failed to start: ' + (data.error || 'Unknown error'), 'error');
           startButton.disabled = false;
-          buttonText.textContent = 'OPEN THIS FOLDER →';
+          buttonText.textContent = 'START CLOUD UPLOAD →';
           if (stopBtn) stopBtn.classList.add('hidden');
         }
       } catch (err) {
         showToast('Error connecting: ' + err.message, 'error');
         startButton.disabled = false;
-        buttonText.textContent = 'OPEN THIS FOLDER →';
+        buttonText.textContent = 'START CLOUD UPLOAD →';
         if (stopBtn) stopBtn.classList.add('hidden');
       }
     };
@@ -2371,6 +2366,10 @@
       modalBatchTag = document.getElementById('modalBatchTag');
       modalSubjectTag = document.getElementById('modalSubjectTag');
       modalYtLink = document.getElementById('modalYtLink');
+
+      // Keep inputs blank on page load
+      if (folderInput) folderInput.value = '';
+      if (playlistNameInput) playlistNameInput.value = '';
 
       if (downloadCsvBtn) {
         downloadCsvBtn.addEventListener('click', () => {
