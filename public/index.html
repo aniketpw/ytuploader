@@ -983,6 +983,17 @@
           </div>
         </div>
 
+        <!-- Cloud Deployment & Docker Guide Card (Dual Access) -->
+        <div class="p-3.5 bg-sky-500/10 border-2 border-sky-500/50 hover:bg-sky-500/20 cursor-pointer transition-colors" onclick="closeAuthModal(); openInfoModal('cloud');">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="font-bold text-[var(--text-main)] text-xs uppercase tracking-wide">☁️ Cloud &amp; Docker Deployment Guide</div>
+              <p class="text-[10px] text-sky-700 dark:text-sky-300 mt-0.5">Deploy to Google Cloud Run, Railway, Render or VPS with Docker</p>
+            </div>
+            <span class="text-lg text-sky-600 dark:text-sky-300">→</span>
+          </div>
+        </div>
+
         <!-- Description & Tags Presets -->
         <div class="p-3 bg-[var(--bg-subcard)] border border-[var(--border-main)] text-xs space-y-2">
           <div class="flex items-center justify-between font-bold text-[var(--text-main)] uppercase text-[10px]">
@@ -1423,6 +1434,193 @@
           <span>START DIRECT UPLOAD ➔</span>
         </button>
       </div>
+    </div>
+  </div>
+
+  <!-- 7. Info, Privacy & Cloud Setup Modal (Opened via Left (i) Button) -->
+  <div id="infoModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs p-4 overflow-y-auto">
+    <div class="bg-[var(--bg-card)] border-2 border-[var(--border-main)] max-w-2xl w-full shadow-2xl font-mono-code my-4 flex flex-col text-[var(--text-main)] max-h-[90vh]">
+      
+      <!-- Modal Header with Navigation Tabs -->
+      <div class="flex items-center justify-between border-b border-[var(--border-main)] px-5 py-3.5 bg-[var(--bg-subcard)] shrink-0">
+        <div class="flex items-center gap-2.5">
+          <div class="w-6 h-6 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] flex items-center justify-center font-bold text-xs font-serif-editorial italic">i</div>
+          <div>
+            <h3 class="text-sm font-bold uppercase tracking-wider text-[var(--text-main)]">System Information &amp; Architecture</h3>
+            <p class="text-[10px] text-[var(--text-muted)]">User Guide, Privacy Guarantee &amp; Cloud Deployment</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeInfoModal()" class="text-[var(--text-muted)] hover:text-[var(--text-main)] text-xl font-bold cursor-pointer">&times;</button>
+      </div>
+
+      <!-- Segmented Tab Switcher -->
+      <div class="flex items-center border-b border-[var(--border-main)] bg-[var(--bg-card)] p-1 gap-1 text-xs shrink-0">
+        <button
+          type="button"
+          id="infoTabBtnGuide"
+          onclick="switchInfoTab('guide')"
+          class="flex-1 py-1.5 px-3 font-bold uppercase text-[11px] tracking-wider transition-all bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] shadow-xs cursor-pointer"
+        >
+          📖 How To Use
+        </button>
+        <button
+          type="button"
+          id="infoTabBtnPrivacy"
+          onclick="switchInfoTab('privacy')"
+          class="flex-1 py-1.5 px-3 font-bold uppercase text-[11px] tracking-wider transition-all text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer"
+        >
+          🔒 Privacy &amp; Security
+        </button>
+        <button
+          type="button"
+          id="infoTabBtnCloud"
+          onclick="switchInfoTab('cloud')"
+          class="flex-1 py-1.5 px-3 font-bold uppercase text-[11px] tracking-wider transition-all text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer"
+        >
+          ☁️ Cloud &amp; Docker Setup
+        </button>
+      </div>
+
+      <!-- Modal Body Tab Contents -->
+      <div class="p-6 space-y-4 overflow-y-auto flex-1 text-xs">
+        
+        <!-- Tab 1: How To Use -->
+        <div id="infoTabContentGuide" class="space-y-4">
+          <div class="border border-[var(--border-main)] bg-[var(--bg-subcard)] p-4 space-y-3">
+            <h4 class="font-bold text-sm uppercase text-orange-500 flex items-center gap-2">
+              <span>⚡</span>
+              <span>Quick Start in 4 Easy Steps</span>
+            </h4>
+            
+            <div class="space-y-3 text-[11px]">
+              <div class="flex items-start gap-3 border-b border-[var(--border-subtle)] pb-2.5">
+                <span class="w-5 h-5 rounded-full bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">1</span>
+                <div class="space-y-0.5">
+                  <div class="font-bold text-[var(--text-main)]">Authorize Your Google Account</div>
+                  <p class="text-[var(--text-muted)]">Click "Connect Google" in top header. Provide your Google OAuth Client ID to grant YouTube and Drive access directly to your channel.</p>
+                </div>
+              </div>
+
+              <div class="flex items-start gap-3 border-b border-[var(--border-subtle)] pb-2.5">
+                <span class="w-5 h-5 rounded-full bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">2</span>
+                <div class="space-y-0.5">
+                  <div class="font-bold text-[var(--text-main)]">Paste Drive Folder Link &amp; Filter</div>
+                  <p class="text-[var(--text-muted)]">Paste any Google Drive folder URL or ID. Set an optional Playlist Name or select Date Filters (Today, Yesterday, or custom range).</p>
+                </div>
+              </div>
+
+              <div class="flex items-start gap-3 border-b border-[var(--border-subtle)] pb-2.5">
+                <span class="w-5 h-5 rounded-full bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">3</span>
+                <div class="space-y-0.5">
+                  <div class="font-bold text-[var(--text-main)]">Scan &amp; Select Videos</div>
+                  <p class="text-[var(--text-muted)]">Click "SCAN &amp; SELECT →" to inspect all discovered videos, check for duplicates, watch instant video previews, or edit titles directly before uploading.</p>
+                </div>
+              </div>
+
+              <div class="flex items-start gap-3">
+                <span class="w-5 h-5 rounded-full bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">4</span>
+                <div class="space-y-0.5">
+                  <div class="font-bold text-[var(--text-main)]">Direct Cloud-to-Cloud Uploading</div>
+                  <p class="text-[var(--text-muted)]">Videos stream in real-time with 0 MB local bandwidth consumption. By default, every video is published as <b>Unlisted</b> for total security.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="border border-[var(--border-main)] bg-[var(--bg-subcard)] p-3.5 flex items-center justify-between">
+            <div class="space-y-0.5">
+              <div class="font-bold text-[var(--text-main)]">Need to upload a video directly from this computer?</div>
+              <div class="text-[10px] text-[var(--text-muted)]">Use the Direct Manual Upload studio with instant 1-click thumbnail generator.</div>
+            </div>
+            <button type="button" onclick="closeInfoModal(); openManualUploadModal();" class="px-3 py-1.5 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] font-bold text-[10px] uppercase tracking-wider shrink-0 cursor-pointer">
+              + Manual Upload
+            </button>
+          </div>
+        </div>
+
+        <!-- Tab 2: Privacy & Security -->
+        <div id="infoTabContentPrivacy" class="hidden space-y-4">
+          <div class="border border-[var(--border-main)] bg-[var(--bg-subcard)] p-4 space-y-3">
+            <h4 class="font-bold text-sm uppercase text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
+              <span>🛡️</span>
+              <span>100% Privacy &amp; Ownership Guarantee</span>
+            </h4>
+            
+            <div class="space-y-3 text-[11px] text-[var(--text-muted)] leading-relaxed">
+              <div class="border-b border-[var(--border-subtle)] pb-2.5 space-y-1">
+                <div class="font-bold text-[var(--text-main)]">🔒 Zero Third-Party Video Storage</div>
+                <p>Videos stream in high-speed chunks directly between Google Drive servers and your YouTube channel. No video files are permanently stored on any external server.</p>
+              </div>
+
+              <div class="border-b border-[var(--border-subtle)] pb-2.5 space-y-1">
+                <div class="font-bold text-[var(--text-main)]">🔑 Local Client Token Storage</div>
+                <p>All Google OAuth credentials and tokens reside securely in your browser's private <code class="bg-[var(--bg-card)] px-1 py-0.5 text-[var(--text-main)] border border-[var(--border-main)]">localStorage</code>. They are never transmitted to unauthorized parties.</p>
+              </div>
+
+              <div class="space-y-1">
+                <div class="font-bold text-[var(--text-main)]">👁️ Unlisted Video Default</div>
+                <p>Every single upload defaults strictly to <b>Unlisted</b>. Only people with the exact unlisted embed or video URL can view your lectures or media.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 3: Cloud & Docker Deployment Setup -->
+        <div id="infoTabContentCloud" class="hidden space-y-4">
+          <div class="border border-[var(--border-main)] bg-[var(--bg-subcard)] p-4 space-y-3">
+            <h4 class="font-bold text-sm uppercase text-sky-500 flex items-center gap-2">
+              <span>☁️</span>
+              <span>Deploy to Cloud in 60 Seconds</span>
+            </h4>
+            <p class="text-[11px] text-[var(--text-muted)]">This application includes a production-ready <code class="bg-[var(--bg-card)] px-1 py-0.5 text-[var(--text-main)] border border-[var(--border-main)]">Dockerfile</code> and can be deployed anywhere with 1 click.</p>
+
+            <!-- Option 1: Docker Local / VPS -->
+            <div class="space-y-1.5 border border-[var(--border-main)] bg-[var(--bg-card)] p-3">
+              <div class="font-bold text-[11px] text-[var(--text-main)] flex items-center justify-between">
+                <span>🐳 Option 1: Docker (Local / VPS / DigitalOcean)</span>
+                <button type="button" onclick="copyToClipboard('docker build -t drive-to-youtube . &amp;&amp; docker run -d -p 3000:3000 --name ytuploader drive-to-youtube', 'Docker Command')" class="text-[9px] underline text-sky-400 hover:text-sky-200 cursor-pointer font-bold">Copy Command</button>
+              </div>
+              <div class="bg-black text-emerald-400 p-2 text-[10px] font-mono-code overflow-x-auto select-all">
+                docker build -t drive-to-youtube .<br/>
+                docker run -d -p 3000:3000 --name ytuploader drive-to-youtube
+              </div>
+            </div>
+
+            <!-- Option 2: Google Cloud Run -->
+            <div class="space-y-1.5 border border-[var(--border-main)] bg-[var(--bg-card)] p-3">
+              <div class="font-bold text-[11px] text-[var(--text-main)] flex items-center justify-between">
+                <span>🚀 Option 2: Google Cloud Run (Serverless)</span>
+                <button type="button" onclick="copyToClipboard('gcloud run deploy drive-to-youtube --source . --platform managed --allow-unauthenticated', 'Cloud Run Command')" class="text-[9px] underline text-sky-400 hover:text-sky-200 cursor-pointer font-bold">Copy Command</button>
+              </div>
+              <div class="bg-black text-emerald-400 p-2 text-[10px] font-mono-code overflow-x-auto select-all">
+                gcloud run deploy drive-to-youtube --source . --platform managed --allow-unauthenticated
+              </div>
+            </div>
+
+            <!-- Settings Wizard Shortcut -->
+            <div class="pt-2 flex items-center justify-between">
+              <span class="text-[11px] text-[var(--text-muted)]">Need to configure Google OAuth Authorized Origins?</span>
+              <button type="button" onclick="closeInfoModal(); openAuthModal();" class="px-3 py-1 bg-sky-600 hover:bg-sky-500 text-white font-bold text-[10px] uppercase cursor-pointer">
+                ⚙️ OAuth Setup Wizard
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="px-5 py-3 border-t border-[var(--border-main)] bg-[var(--bg-subcard)] flex items-center justify-between shrink-0">
+        <span class="text-[10px] text-[var(--text-muted)] font-mono-code">Drive to YouTube • Production v2.0</span>
+        <button
+          type="button"
+          onclick="closeInfoModal()"
+          class="px-4 py-1.5 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] font-bold text-xs uppercase tracking-wider cursor-pointer"
+        >
+          Close
+        </button>
+      </div>
+
     </div>
   </div>
 
@@ -4309,16 +4507,61 @@
 
     function updateThemeControlsUI(isDark) {
       const icon = document.getElementById('floatingThemeIcon');
-      const label = document.getElementById('floatingThemeLabel');
-
-      if (icon && label) {
+      if (icon) {
         icon.classList.remove('theme-icon-spin');
         void icon.offsetWidth; // trigger DOM reflow for re-triggering animation
         icon.textContent = isDark ? '🌙' : '☀️';
-        label.textContent = isDark ? 'Dark Mode' : 'Light Mode';
         icon.classList.add('theme-icon-spin');
       }
     }
+
+    // Info & Architecture Modal Controls
+    window.openInfoModal = function(initialTab = 'guide') {
+      const modal = document.getElementById('infoModal');
+      if (modal) {
+        modal.classList.remove('hidden');
+        switchInfoTab(initialTab);
+      }
+    };
+
+    window.closeInfoModal = function() {
+      const modal = document.getElementById('infoModal');
+      if (modal) {
+        modal.classList.add('hidden');
+      }
+    };
+
+    window.switchInfoTab = function(tabName) {
+      const btnGuide = document.getElementById('infoTabBtnGuide');
+      const btnPrivacy = document.getElementById('infoTabBtnPrivacy');
+      const btnCloud = document.getElementById('infoTabBtnCloud');
+
+      const contentGuide = document.getElementById('infoTabContentGuide');
+      const contentPrivacy = document.getElementById('infoTabContentPrivacy');
+      const contentCloud = document.getElementById('infoTabContentCloud');
+
+      const inactiveClass = "flex-1 py-1.5 px-3 font-bold uppercase text-[11px] tracking-wider transition-all text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer";
+      const activeClass = "flex-1 py-1.5 px-3 font-bold uppercase text-[11px] tracking-wider transition-all bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] shadow-xs cursor-pointer";
+
+      if (btnGuide) btnGuide.className = inactiveClass;
+      if (btnPrivacy) btnPrivacy.className = inactiveClass;
+      if (btnCloud) btnCloud.className = inactiveClass;
+
+      if (contentGuide) contentGuide.classList.add('hidden');
+      if (contentPrivacy) contentPrivacy.classList.add('hidden');
+      if (contentCloud) contentCloud.classList.add('hidden');
+
+      if (tabName === 'privacy') {
+        if (btnPrivacy) btnPrivacy.className = activeClass;
+        if (contentPrivacy) contentPrivacy.classList.remove('hidden');
+      } else if (tabName === 'cloud') {
+        if (btnCloud) btnCloud.className = activeClass;
+        if (contentCloud) contentCloud.classList.remove('hidden');
+      } else {
+        if (btnGuide) btnGuide.className = activeClass;
+        if (contentGuide) contentGuide.classList.remove('hidden');
+      }
+    };
 
     // Global tactile keyboard shortcut: Press 'D' or 'Cmd+D' to toggle theme
     document.addEventListener('keydown', (e) => {
@@ -4335,18 +4578,30 @@
     });
   </script>
 
-  <!-- Floating Tactile Theme Pill (Bottom-Right Zen Quick-Toggle) -->
-  <div id="floatingThemeDock" class="fixed bottom-6 right-6 z-40 flex items-center font-mono-code text-xs select-none">
+  <!-- Left Floating Information / Quick Guide Button (Bottom-Left) -->
+  <div id="floatingInfoDock" class="fixed bottom-6 left-6 z-40 select-none">
+    <button
+      type="button"
+      onclick="openInfoModal('guide')"
+      class="w-10 h-10 flex items-center justify-center bg-[var(--bg-card)] hover:bg-[var(--bg-subcard)] text-[var(--text-main)] border border-[var(--border-main)] hover:border-[var(--btn-primary-bg)] shadow-xl hover:shadow-2xl cursor-pointer select-none transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 group font-mono-code relative"
+      title="How to Use, Privacy & Cloud Deployment Guide"
+    >
+      <span class="text-base font-bold font-serif-editorial italic group-hover:scale-110 transition-transform select-none">i</span>
+      <span class="absolute -top-1.5 -right-1.5 text-[8px] font-bold px-1 bg-[var(--bg-main)] text-[var(--text-muted)] border border-[var(--border-main)] leading-tight select-none">?</span>
+    </button>
+  </div>
+
+  <!-- Right Floating Tactile Theme Icon (Bottom-Right Icon-Only) -->
+  <div id="floatingThemeDock" class="fixed bottom-6 right-6 z-40 select-none">
     <button
       type="button"
       id="floatingThemeBtn"
       onclick="toggleAppTheme()"
-      class="flex items-center gap-2.5 px-3.5 py-2 bg-[var(--bg-card)] hover:bg-[var(--bg-subcard)] text-[var(--text-main)] border border-[var(--border-main)] hover:border-[var(--btn-primary-bg)] shadow-xl hover:shadow-2xl cursor-pointer select-none transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 group font-mono-code text-xs"
+      class="w-10 h-10 flex items-center justify-center bg-[var(--bg-card)] hover:bg-[var(--bg-subcard)] text-[var(--text-main)] border border-[var(--border-main)] hover:border-[var(--btn-primary-bg)] shadow-xl hover:shadow-2xl cursor-pointer select-none transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 group font-mono-code relative"
       title="Toggle Light / Dark Mode (Shortcut: Press 'D')"
     >
-      <span id="floatingThemeIcon" class="text-sm transition-transform duration-500 ease-out group-hover:rotate-45 inline-block select-none">🌙</span>
-      <span id="floatingThemeLabel" class="text-[10px] font-bold uppercase tracking-wider select-none">Dark Mode</span>
-      <kbd class="text-[9px] px-1.5 py-0.5 bg-[var(--bg-main)] text-[var(--text-muted)] border border-[var(--border-main)] font-mono-code font-bold select-none">D</kbd>
+      <span id="floatingThemeIcon" class="text-base transition-transform duration-500 ease-out group-hover:rotate-45 inline-block select-none">🌙</span>
+      <span class="absolute -top-1.5 -right-1.5 text-[8px] font-bold px-1 bg-[var(--bg-main)] text-[var(--text-muted)] border border-[var(--border-main)] leading-tight select-none">D</span>
     </button>
   </div>
 </body>
