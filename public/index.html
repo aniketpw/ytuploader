@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Drive → YouTube Cloud Video Portal</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'%3E%3Cpath d='M33.3 11.5c-.35-1.5-1.55-2.7-3.05-3-2.7-.8-12.25-.8-12.25-.8s-9.55 0-12.25.8c-1.5.3-2.7 1.5-3.05 3C2 14.2 2 18 2 18s0 3.8.7 6.5c.35 1.5 1.55 2.7 3.05 3 2.7.8 12.25.8 12.25.8s9.55 0 12.25-.8c1.5-.3 2.7-1.5 3.05-3 .7-2.7.7-6.5.7-6.5s0-3.8-.7-6.5z' fill='%23FF0000'/%3E%3Crect x='8.5' y='8.5' width='19' height='19' rx='3.5' fill='%23FFFFFF'/%3E%3Cg transform='translate(10.2, 10.5) scale(0.178)'%3E%3Cpath d='M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z' fill='%230066da'/%3E%3Cpath d='M43.65 25l-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44c-.8 1.4-1.2 2.95-1.2 4.5h27.5z' fill='%2300ac47'/%3E%3Cpath d='M43.65 25l13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z' fill='%2300832d'/%3E%3Cpath d='M59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h55.5c1.6 0 3.15-.45 4.5-1.2z' fill='%232684fc'/%3E%3Cpath d='M73.4 26.5l-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z' fill='%23ffba00'/%3E%3C/g%3E%3C/svg%3E">
   <!-- Instant Theme Initializer (Prevents any theme flicker on load) -->
   <script>
     (function() {
@@ -162,14 +163,25 @@
   <header class="w-full border-b border-[var(--border-main)] px-6 py-3 bg-[var(--bg-header)] backdrop-blur-xs sticky top-0 z-40">
     <div class="max-w-[1400px] mx-auto flex items-center justify-between">
       
-      <!-- Brand Logo -->
-      <div class="flex items-center gap-2.5">
-        <div class="w-7 h-7 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] flex items-center justify-center font-bold text-xs shadow-xs">
-          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/>
+      <!-- Brand Logo (Google Drive inside YouTube SVG) -->
+      <div class="flex items-center gap-2.5 group cursor-pointer" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">
+        <div class="relative w-8 h-8 flex items-center justify-center shrink-0 transition-transform group-hover:scale-105">
+          <svg class="w-8 h-8 drop-shadow-sm" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- YouTube Red Rounded Screen Container -->
+            <path d="M33.3 11.5c-.35-1.5-1.55-2.7-3.05-3-2.7-.8-12.25-.8-12.25-.8s-9.55 0-12.25.8c-1.5.3-2.7 1.5-3.05 3C2 14.2 2 18 2 18s0 3.8.7 6.5c.35 1.5 1.55 2.7 3.05 3 2.7.8 12.25.8 12.25.8s9.55 0 12.25-.8c1.5-.3 2.7-1.5 3.05-3 .7-2.7.7-6.5.7-6.5s0-3.8-.7-6.5z" fill="#FF0000"/>
+            <!-- White Squircle Plate for Maximum Contrast -->
+            <rect x="8.5" y="8.5" width="19" height="19" rx="3.5" fill="#FFFFFF"/>
+            <!-- Authentic Google Drive Geometric Prism Logo Inside -->
+            <g transform="translate(10.2, 10.5) scale(0.178)">
+              <path d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
+              <path d="M43.65 25l-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44c-.8 1.4-1.2 2.95-1.2 4.5h27.5z" fill="#00ac47"/>
+              <path d="M43.65 25l13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
+              <path d="M59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h55.5c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
+              <path d="M73.4 26.5l-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
+            </g>
           </svg>
         </div>
-        <div class="text-[17px] tracking-tight font-medium text-[var(--text-main)]">
+        <div class="text-[17px] tracking-tight font-medium text-[var(--text-main)] select-none">
           Drive <span class="font-serif-editorial italic font-normal text-xl text-[var(--btn-primary-bg)]">to YouTube</span>
         </div>
       </div>
