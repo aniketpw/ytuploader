@@ -145,33 +145,8 @@
         </div>
       </div>
 
-      <!-- Right Header Actions (Theme Switcher, Sync YouTube, Google Auth, Verify, SSE) -->
+      <!-- Right Header Actions (Sync YouTube, Google Auth, Verify, SSE) -->
       <div class="flex items-center gap-2 font-mono-code text-xs">
-
-        <!-- Unique Editorial Segmented Theme Switch (Light / Dark) -->
-        <div class="flex items-center p-0.5 border border-[var(--border-main)] bg-[var(--bg-subcard)] text-[11px] font-mono-code select-none h-8 mr-1 shadow-2xs" id="headerThemeToggle">
-          <button
-            type="button"
-            id="themeBtnLight"
-            onclick="setAppTheme('light')"
-            class="flex items-center gap-1 px-2.5 h-full transition-all cursor-pointer text-[var(--text-muted)] hover:text-[var(--text-main)]"
-            title="Switch to Light Editorial Theme (Shortcut: D)"
-          >
-            <span class="text-xs">☀️</span>
-            <span class="font-bold uppercase tracking-wider text-[10px] hidden sm:inline">Light</span>
-          </button>
-          
-          <button
-            type="button"
-            id="themeBtnDark"
-            onclick="setAppTheme('dark')"
-            class="flex items-center gap-1 px-2.5 h-full transition-all cursor-pointer bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] font-bold shadow-xs"
-            title="Switch to Dark Editorial Theme (Shortcut: D)"
-          >
-            <span class="text-xs">🌙</span>
-            <span class="font-bold uppercase tracking-wider text-[10px] hidden sm:inline">Dark</span>
-          </button>
-        </div>
         
         <!-- Top Sync YouTube Button -->
         <button
@@ -209,10 +184,10 @@
         </button>
 
         <!-- Connected Badge -->
-        <div id="navConnectedBadge" class="hidden items-center gap-2 px-3 h-8 border border-emerald-700/60 bg-emerald-950/40 text-emerald-300 font-semibold text-[11px] uppercase tracking-wider">
-          <span class="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span>
+        <div id="navConnectedBadge" class="hidden items-center gap-2 px-3 h-8 border border-emerald-300 dark:border-emerald-700/60 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 font-semibold text-[11px] uppercase tracking-wider">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400 inline-block"></span>
           <span>Google Connected</span>
-          <button type="button" onclick="openAuthModal()" class="text-emerald-400 hover:text-emerald-200 underline ml-1 cursor-pointer font-bold lowercase">settings</button>
+          <button type="button" onclick="openAuthModal()" class="text-emerald-700 dark:text-emerald-400 hover:text-emerald-950 dark:hover:text-emerald-200 underline ml-1 cursor-pointer font-bold lowercase">settings</button>
         </div>
 
         <!-- Verify Channel Link -->
@@ -4273,7 +4248,19 @@
         localStorage.setItem('om_theme', theme);
       } catch(e) {}
       updateThemeControlsUI(isDark);
-      showToast(isDark ? '🌙 Dark Mode' : '☀️ Light Mode', 'info');
+      if (typeof renderFilteredTable === 'function') {
+        renderFilteredTable();
+      }
+      if (typeof updateFilterPillsUI === 'function') {
+        updateFilterPillsUI();
+      }
+      if (typeof renderCalendarGrid === 'function') {
+        renderCalendarGrid();
+      }
+      if (typeof renderScanReviewTable === 'function' && window.scannedFilesList && window.scannedFilesList.length > 0) {
+        renderScanReviewTable();
+      }
+      showToast(isDark ? '🌙 Dark Mode Activated' : '☀️ Light Mode Activated', 'info');
     };
 
     window.toggleAppTheme = function() {
@@ -4282,24 +4269,17 @@
     };
 
     function updateThemeControlsUI(isDark) {
-      const btnLight = document.getElementById('themeBtnLight');
-      const btnDark = document.getElementById('themeBtnDark');
-      const floatIcon = document.getElementById('floatingThemeIcon');
-      const floatLabel = document.getElementById('floatingThemeLabel');
+      const dockLight = document.getElementById('dockBtnLight');
+      const dockDark = document.getElementById('dockBtnDark');
 
-      if (btnLight && btnDark) {
+      if (dockLight && dockDark) {
         if (isDark) {
-          btnDark.className = "flex items-center gap-1 px-2.5 h-full transition-all cursor-pointer bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] font-bold shadow-xs";
-          btnLight.className = "flex items-center gap-1 px-2.5 h-full transition-all cursor-pointer text-[var(--text-muted)] hover:text-[var(--text-main)]";
+          dockDark.className = "flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] shadow-xs";
+          dockLight.className = "flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer text-[var(--text-muted)] hover:text-[var(--text-main)]";
         } else {
-          btnLight.className = "flex items-center gap-1 px-2.5 h-full transition-all cursor-pointer bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] font-bold shadow-xs";
-          btnDark.className = "flex items-center gap-1 px-2.5 h-full transition-all cursor-pointer text-[var(--text-muted)] hover:text-[var(--text-main)]";
+          dockLight.className = "flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] shadow-xs";
+          dockDark.className = "flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer text-[var(--text-muted)] hover:text-[var(--text-main)]";
         }
-      }
-
-      if (floatIcon && floatLabel) {
-        floatIcon.textContent = isDark ? '🌙' : '☀️';
-        floatLabel.textContent = isDark ? 'Dark Mode' : 'Light Mode';
       }
     }
 
@@ -4318,18 +4298,42 @@
     });
   </script>
 
-  <!-- Floating Tactile Theme Pill (Bottom-Right Zen Quick-Toggle) -->
-  <div id="floatingThemeDock" class="fixed bottom-5 right-5 z-40 flex items-center font-mono-code text-xs">
-    <button
-      type="button"
-      onclick="toggleAppTheme()"
-      class="flex items-center gap-2 px-3 py-1.5 bg-[var(--bg-card)] hover:bg-[var(--bg-subcard)] text-[var(--text-main)] border border-[var(--border-main)] hover:border-[var(--btn-primary-bg)] shadow-2xl cursor-pointer select-none transition-all hover:scale-105 group"
-      title="Toggle Light / Dark Mode (Shortcut: Press 'D')"
-    >
-      <span id="floatingThemeIcon" class="text-sm transition-transform group-hover:rotate-12">🌙</span>
-      <span id="floatingThemeLabel" class="text-[10px] font-bold uppercase tracking-wider">Dark Mode</span>
-      <kbd class="text-[9px] px-1.5 py-0.5 bg-[var(--bg-main)] text-[var(--text-muted)] border border-[var(--border-main)] font-mono-code font-bold">D</kbd>
-    </button>
+  <!-- Floating Brutalist Segmented Theme Dock (Bottom-Right) -->
+  <div id="floatingThemeDock" class="fixed bottom-5 right-5 z-50 flex items-center font-mono-code text-xs select-none shadow-2xl">
+    <div class="flex items-center p-1 bg-[var(--bg-card)] border border-[var(--border-main)] shadow-xl backdrop-blur-md gap-1">
+      <button
+        type="button"
+        id="dockBtnLight"
+        onclick="setAppTheme('light')"
+        class="flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer text-[var(--text-muted)] hover:text-[var(--text-main)]"
+        title="Switch to Light Mode"
+      >
+        <span class="text-xs">☀️</span>
+        <span>Light</span>
+      </button>
+
+      <button
+        type="button"
+        id="dockBtnDark"
+        onclick="setAppTheme('dark')"
+        class="flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] shadow-xs"
+        title="Switch to Dark Mode"
+      >
+        <span class="text-xs">🌙</span>
+        <span>Dark</span>
+      </button>
+
+      <div class="h-4 w-px bg-[var(--border-main)] mx-0.5"></div>
+
+      <button
+        type="button"
+        onclick="toggleAppTheme()"
+        class="px-1.5 py-0.5 bg-[var(--bg-main)] text-[var(--text-muted)] hover:text-[var(--text-main)] border border-[var(--border-main)] font-mono-code text-[10px] font-bold cursor-pointer transition-colors"
+        title="Toggle Theme (Shortcut: Press 'D')"
+      >
+        D
+      </button>
+    </div>
   </div>
 </body>
 </html>
