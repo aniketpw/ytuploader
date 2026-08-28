@@ -73,8 +73,8 @@
 <body class="min-h-full flex flex-col bg-[#EDEAE5] text-[#1B1B1B] selection:bg-[#1B1B1B] selection:text-white">
 
   <!-- 1. Minimal Editorial Header -->
-  <header class="w-full border-b border-[#D6D3CD] px-6 py-3 bg-[#EDEAE5]/95 backdrop-blur-xs sticky top-0 z-40">
-    <div class="max-w-[1280px] mx-auto flex items-center justify-between">
+  <header class="w-full border-b border-[#D6D3CD] px-6 py-2.5 bg-[#EDEAE5]/95 backdrop-blur-xs sticky top-0 z-40">
+    <div class="max-w-[1500px] mx-auto flex items-center justify-between">
       
       <!-- Brand Logo -->
       <div class="flex items-center gap-2.5">
@@ -83,19 +83,19 @@
             <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/>
           </svg>
         </div>
-        <div class="text-[17px] tracking-tight font-medium text-[#1B1B1B]">
-          Drive <span class="font-serif-editorial italic font-normal text-xl">to YouTube</span>
+        <div class="text-base tracking-tight font-medium text-[#1B1B1B]">
+          Drive <span class="font-serif-editorial italic font-normal text-lg">to YouTube</span>
         </div>
       </div>
 
-      <!-- Right Header Actions (Google Auth, Sync YouTube, Verify, SSE Status) -->
+      <!-- Right Header Actions (Sync YouTube, Google Auth, Verify, SSE) -->
       <div class="flex items-center gap-2 font-mono-code text-xs">
         
         <!-- Top Sync YouTube Button -->
         <button
           type="button"
           onclick="syncYouTubeUploads()"
-          class="flex items-center gap-1.5 px-3 h-8 rounded border border-[#D6D3CD] bg-[#F6F4F0] hover:bg-white text-[#1B1B1B] font-semibold transition-all text-[11px] uppercase tracking-wider cursor-pointer shadow-2xs"
+          class="flex items-center gap-1.5 px-2.5 h-7.5 rounded border border-[#D6D3CD] bg-[#F6F4F0] hover:bg-white text-[#1B1B1B] font-semibold transition-all text-[11px] uppercase tracking-wider cursor-pointer shadow-2xs"
           title="Sync live videos from your YouTube channel"
         >
           <svg class="w-3.5 h-3.5 text-rose-600" viewBox="0 0 24 24" fill="currentColor">
@@ -104,12 +104,12 @@
           <span>Sync Channel</span>
         </button>
 
-        <!-- Google Auth Not Connected Button -->
+        <!-- Google Auth Button -->
         <button
           type="button"
           id="navAuthBtn"
           onclick="handleConnectClick()"
-          class="flex items-center gap-1.5 px-3 h-8 rounded border border-[#1B1B1B] bg-transparent hover:bg-[#1B1B1B] hover:text-white text-[#1B1B1B] font-semibold transition-all cursor-pointer text-[11px] uppercase tracking-wider"
+          class="flex items-center gap-1.5 px-2.5 h-7.5 rounded border border-[#1B1B1B] bg-transparent hover:bg-[#1B1B1B] hover:text-white text-[#1B1B1B] font-semibold transition-all cursor-pointer text-[11px] uppercase tracking-wider"
           title="Google Account is not connected. Click to connect."
         >
           <span class="w-2 h-2 rounded-full bg-rose-500 inline-block"></span>
@@ -117,7 +117,7 @@
         </button>
 
         <!-- Connected Badge -->
-        <div id="navConnectedBadge" class="hidden items-center gap-2 px-3 h-8 rounded border border-emerald-600 bg-emerald-50 text-emerald-900 font-semibold text-[11px] uppercase tracking-wider">
+        <div id="navConnectedBadge" class="hidden items-center gap-1.5 px-2.5 h-7.5 rounded border border-emerald-600 bg-emerald-50 text-emerald-900 font-semibold text-[11px] uppercase tracking-wider">
           <span class="w-2 h-2 rounded-full bg-emerald-600 inline-block"></span>
           <span>Google Connected</span>
           <button type="button" onclick="openAuthModal()" class="text-emerald-700 hover:text-emerald-950 underline ml-1 cursor-pointer font-bold lowercase">settings</button>
@@ -128,14 +128,14 @@
           href="https://www.youtube.com/verify"
           target="_blank"
           rel="noopener noreferrer"
-          class="hidden sm:flex items-center gap-1 px-3 h-8 rounded border border-[#D6D3CD] bg-[#F6F4F0] hover:bg-white text-[#1B1B1B] font-semibold transition-all text-[11px] uppercase tracking-wider"
+          class="hidden sm:flex items-center gap-1 px-2.5 h-7.5 rounded border border-[#D6D3CD] bg-[#F6F4F0] hover:bg-white text-[#1B1B1B] font-semibold transition-all text-[11px] uppercase tracking-wider"
           title="Verify YouTube Channel for >15 min uploads"
         >
           <span>Verify (&gt;15 min) ↗</span>
         </a>
 
         <!-- SSE Status -->
-        <div id="connectionBadge" class="flex items-center gap-1.5 px-2.5 h-8 rounded border border-[#D6D3CD] bg-[#F6F4F0] text-emerald-800 text-[11px] font-semibold">
+        <div id="connectionBadge" class="flex items-center gap-1.5 px-2 h-7.5 rounded border border-[#D6D3CD] bg-[#F6F4F0] text-emerald-800 text-[11px] font-semibold">
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-600 inline-block animate-pulse"></span>
           <span id="sseStatusText" class="font-mono-code">Live</span>
         </div>
@@ -144,11 +144,11 @@
   </header>
 
   <!-- Main Container -->
-  <main class="flex-1 max-w-[1280px] w-full mx-auto px-6 py-8 space-y-7">
+  <main class="flex-1 max-w-[1500px] w-full mx-auto px-6 py-4 space-y-4">
 
     <!-- Background Notice Banner -->
-    <div id="bgNoticeBanner" class="hidden border border-[#1B1B1B] bg-white rounded p-3 flex items-center justify-between text-xs text-[#1B1B1B] shadow-xs">
-      <div class="flex items-center gap-2.5 font-mono-code">
+    <div id="bgNoticeBanner" class="hidden border border-[#1B1B1B] bg-white rounded p-2.5 flex items-center justify-between text-xs text-[#1B1B1B] shadow-xs">
+      <div class="flex items-center gap-2 font-mono-code">
         <span class="w-2 h-2 rounded-full bg-orange-600 animate-ping"></span>
         <span class="font-bold text-[11px] uppercase tracking-wider" id="bgStatusText">Upload task active in background...</span>
       </div>
@@ -158,11 +158,11 @@
     </div>
 
     <!-- Quota Alert Banner -->
-    <div id="quotaAlertBanner" class="hidden border border-amber-400 bg-amber-50/90 rounded p-4 flex items-center justify-between flex-wrap gap-3">
-      <div class="space-y-1">
+    <div id="quotaAlertBanner" class="hidden border border-amber-400 bg-amber-50/90 rounded p-3 flex items-center justify-between flex-wrap gap-3">
+      <div class="space-y-0.5">
         <div class="flex items-center gap-2">
           <h4 class="text-xs font-bold font-mono-code uppercase tracking-wider text-amber-900">YouTube Daily Upload Limit Reached (~10-15 videos/day)</h4>
-          <span class="px-2 py-0.5 bg-amber-200 text-amber-900 rounded text-[9px] font-bold font-mono-code uppercase">Quota Paused</span>
+          <span class="px-1.5 py-0.2 bg-amber-200 text-amber-900 rounded text-[9px] font-bold font-mono-code uppercase">Quota Paused</span>
         </div>
         <p class="text-xs text-amber-800">You can convert all remaining or failed videos into instant <strong>Secure Google Drive Player</strong> embed links without waiting!</p>
       </div>
@@ -170,157 +170,147 @@
         <button
           type="button"
           onclick="convertAllToDrivePlayer()"
-          class="h-8 px-3 bg-[#1B1B1B] hover:bg-black text-white rounded text-[11px] font-bold uppercase tracking-wider cursor-pointer"
+          class="h-7.5 px-3 bg-[#1B1B1B] hover:bg-black text-white rounded text-[11px] font-bold uppercase tracking-wider cursor-pointer"
         >
           ⚡ Convert to Drive Player
         </button>
         <button
           type="button"
           onclick="dismissQuotaBanner()"
-          class="h-8 px-2.5 bg-white text-[#1B1B1B] border border-amber-300 rounded text-[11px] font-semibold cursor-pointer"
+          class="h-7.5 px-2 bg-white text-[#1B1B1B] border border-amber-300 rounded text-[11px] font-semibold cursor-pointer"
         >
           Dismiss
         </button>
       </div>
     </div>
 
-    <!-- 2. Hero Editorial Section (Customized for Drive to YouTube Video Portal) -->
-    <div class="space-y-3 pt-2">
-      <!-- Feature Tag -->
-      <div class="font-mono-code text-[11px] uppercase tracking-widest text-[#78716C]">
-        DIRECT CLOUD PIPELINE • 0 MB LOCAL BANDWIDTH
-      </div>
-
-      <!-- Big Editorial Heading Customized for Video Portal -->
-      <h2 class="text-4xl md:text-5xl font-serif-editorial text-[#1B1B1B] leading-[1.1] tracking-tight">
-        Your Drive Videos.<br />
-        Your <span class="italic font-normal">Channel.</span>
-      </h2>
-
-      <!-- Comment-style Subtitle -->
-      <p class="font-mono-code text-xs text-[#78716C]">
-        // connect google drive folder. auto-scan subfolders, upload unlisted videos, sync 1080p streams.
-      </p>
-    </div>
-
-    <!-- Hidden radio for processingMode -->
-    <input type="radio" name="processingMode" value="youtube" checked class="hidden" />
-
-    <!-- 3. Form Input Section -->
-    <div class="space-y-6 pt-2">
+    <!-- 2. Compact High-Density Control Bar (Saves 60%+ Vertical Space) -->
+    <div class="border border-[#D6D3CD] bg-[#F6F4F0] rounded-xl p-3.5 shadow-2xs space-y-2.5">
       
-      <div class="space-y-5">
+      <!-- Top Inline Row: Folder Input + Scan & Preview Buttons -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 items-end">
         
-        <!-- Folder Link Input -->
-        <div class="space-y-1.5">
-          <label class="block font-mono-code text-[11px] font-bold uppercase tracking-widest text-[#1B1B1B]">
-            GOOGLE DRIVE FOLDER URL
-          </label>
+        <!-- Drive Link Input (Col 7) -->
+        <div class="lg:col-span-7 space-y-1">
+          <div class="flex items-center justify-between">
+            <label class="block font-mono-code text-[10px] font-bold uppercase tracking-wider text-[#1B1B1B]">
+              GOOGLE DRIVE FOLDER URL / ID
+            </label>
+            <span class="font-mono-code text-[10px] text-[#78716C]">Recursive subfolders auto-scanned</span>
+          </div>
           <div class="relative flex items-center">
             <input
               type="text"
               id="folderInput"
               placeholder="https://drive.google.com/drive/folders/..."
-              class="w-full py-2.5 pr-10 om-input font-mono-code text-sm placeholder:text-[#A8A29E]"
+              class="w-full h-8.5 pl-2.5 pr-8 om-box-input font-mono-code text-xs rounded text-[#1B1B1B]"
             />
             <button
               type="button"
               onclick="pasteFromClipboard()"
-              class="absolute right-1 text-[#78716C] hover:text-[#1B1B1B] transition-colors cursor-pointer"
+              class="absolute right-2 text-[#78716C] hover:text-[#1B1B1B] transition-colors cursor-pointer"
               title="Paste from clipboard"
             >
-              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
             </button>
           </div>
-          <p class="font-mono-code text-[11px] text-[#A8A29E]">
-            paste any google drive folder link or folder id • recursive subfolders auto-scanned • upload to unlisted
-          </p>
         </div>
 
-        <!-- Optional Parameters (Playlist & Scan Date Range) -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
-          <!-- Playlist Name -->
-          <div class="space-y-1">
-            <label class="block font-mono-code text-[10px] font-bold uppercase tracking-wider text-[#78716C]">
-              YOUTUBE PLAYLIST NAME <span class="font-normal lowercase">(optional)</span>
-            </label>
-            <input
-              type="text"
-              id="playlistNameInput"
-              placeholder="e.g. 27-LNE51MP 2026"
-              class="w-full h-8 px-2.5 om-box-input font-mono-code text-xs rounded"
-            />
-          </div>
-
-          <!-- Date Filter Preset for Scan -->
-          <div class="space-y-1">
-            <div class="flex items-center justify-between font-mono-code text-[10px]">
-              <label class="font-bold uppercase tracking-wider text-[#78716C]">SCAN DATE FILTER</label>
-              <div class="flex items-center gap-1.5 text-[10px]">
-                <button type="button" onclick="setDatePreset('all')" class="text-orange-700 hover:underline font-bold cursor-pointer">All Time</button>
-                <span class="text-[#D6D3CD]">|</span>
-                <button type="button" onclick="setDatePreset('today')" class="text-[#78716C] hover:text-[#1B1B1B] cursor-pointer">Today</button>
-                <span class="text-[#D6D3CD]">|</span>
-                <button type="button" onclick="setDatePreset('yesterday')" class="text-[#78716C] hover:text-[#1B1B1B] cursor-pointer">Yesterday</button>
-                <span class="text-[#D6D3CD]">|</span>
-                <button type="button" onclick="setDatePreset('clear')" class="text-rose-600 hover:underline cursor-pointer">Clear</button>
-              </div>
-            </div>
-            <div class="flex items-center gap-1.5 font-mono-code">
-              <input
-                type="date"
-                id="startDateInput"
-                class="w-1/2 h-8 px-2 om-box-input text-xs rounded"
-              />
-              <span class="text-[#78716C] text-xs">-</span>
-              <input
-                type="date"
-                id="endDateInput"
-                class="w-1/2 h-8 px-2 om-box-input text-xs rounded"
-              />
-            </div>
-          </div>
+        <!-- Optional Playlist Name (Col 2) -->
+        <div class="lg:col-span-2 space-y-1">
+          <label class="block font-mono-code text-[10px] font-bold uppercase tracking-wider text-[#78716C]">
+            PLAYLIST NAME <span class="font-normal lowercase">(optional)</span>
+          </label>
+          <input
+            type="text"
+            id="playlistNameInput"
+            placeholder="e.g. Batch 2026"
+            class="w-full h-8.5 px-2.5 om-box-input font-mono-code text-xs rounded text-[#1B1B1B]"
+          />
         </div>
 
-        <!-- Submit Process Action Button -->
-        <div class="pt-2 flex items-center gap-3">
+        <!-- Action Buttons: Preview & Direct Upload (Col 3) -->
+        <div class="lg:col-span-3 flex items-center gap-2">
+          <!-- 1. Scan & Review First Button -->
+          <button
+            type="button"
+            id="scanPreviewBtn"
+            onclick="openScanReviewModal()"
+            class="flex-1 h-8.5 bg-[#1B1B1B] hover:bg-black text-white font-mono-code text-[11px] font-bold uppercase tracking-wider rounded transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+            title="Scan folder to see and choose specific videos before uploading"
+          >
+            <span>⚡ SCAN &amp; SELECT</span>
+          </button>
+
+          <!-- 2. Direct Upload Button -->
           <button
             type="button"
             id="startButton"
             onclick="startProcessing()"
-            class="flex-1 py-3.5 bg-[#78716C] hover:bg-[#1B1B1B] text-white font-mono-code text-xs font-bold uppercase tracking-widest rounded transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+            class="h-8.5 px-3 bg-white hover:bg-stone-100 text-[#1B1B1B] border border-[#1B1B1B] font-mono-code text-[11px] font-bold uppercase tracking-wider rounded transition-all flex items-center justify-center gap-1 cursor-pointer"
+            title="Start immediate upload without selection"
           >
-            <span id="buttonText">START CLOUD UPLOAD →</span>
+            <span id="buttonText">DIRECT UPLOAD</span>
           </button>
 
           <button
             type="button"
             id="stopProcessBtn"
             onclick="cancelProcessingJob()"
-            class="hidden py-3.5 px-6 bg-rose-700 hover:bg-rose-800 text-white font-mono-code text-xs font-bold uppercase tracking-widest rounded transition-all cursor-pointer"
+            class="hidden h-8.5 px-3 bg-rose-700 hover:bg-rose-800 text-white font-mono-code text-[11px] font-bold uppercase tracking-wider rounded transition-all cursor-pointer"
           >
             STOP
           </button>
         </div>
       </div>
+
+      <!-- Bottom Inline Scan Date Filter Presets -->
+      <div class="flex items-center justify-between pt-1 border-t border-[#D6D3CD]/60 font-mono-code text-[10px] text-[#78716C]">
+        <div class="flex items-center gap-2">
+          <span class="font-bold uppercase tracking-wider text-[#1B1B1B]">Scan Date Range:</span>
+          <input
+            type="date"
+            id="startDateInput"
+            class="h-6 px-1.5 om-box-input text-[11px] rounded text-[#1B1B1B]"
+          />
+          <span>to</span>
+          <input
+            type="date"
+            id="endDateInput"
+            class="h-6 px-1.5 om-box-input text-[11px] rounded text-[#1B1B1B]"
+          />
+        </div>
+
+        <div class="flex items-center gap-1.5">
+          <span class="text-[#A8A29E]">Presets:</span>
+          <button type="button" onclick="setDatePreset('all')" class="text-orange-700 hover:underline font-bold cursor-pointer">All Time</button>
+          <span>•</span>
+          <button type="button" onclick="setDatePreset('today')" class="hover:text-[#1B1B1B] cursor-pointer">Today</button>
+          <span>•</span>
+          <button type="button" onclick="setDatePreset('yesterday')" class="hover:text-[#1B1B1B] cursor-pointer">Yesterday</button>
+          <span>•</span>
+          <button type="button" onclick="setDatePreset('clear')" class="text-rose-600 hover:underline cursor-pointer">Clear</button>
+        </div>
+      </div>
     </div>
 
-    <hr class="border-t border-[#D6D3CD] my-6" />
+    <!-- Hidden radio for processingMode compatibility -->
+    <input type="radio" name="processingMode" value="youtube" checked class="hidden" />
 
-    <!-- 4. Library & Dashboard Table Section -->
-    <div class="space-y-4">
+    <!-- 3. Library & Dashboard Table Section -->
+    <div class="space-y-3 pt-1">
       
       <!-- Section Header with Exact Date Range Picker from 2nd Image -->
       <div class="flex items-center justify-between flex-wrap gap-3">
         <div class="space-y-0.5">
           <div class="font-mono-code text-[10px] uppercase tracking-widest text-[#78716C]">LIBRARY</div>
-          <h3 class="text-xl font-bold font-serif-editorial text-[#1B1B1B]">Uploaded videos &amp; stream queue</h3>
+          <h3 class="text-lg font-bold font-serif-editorial text-[#1B1B1B]">Uploaded videos &amp; stream queue</h3>
         </div>
 
         <!-- Exact Date Picker Pill from 2nd Image: Pick date range: [ 📅 28 Aug 2026 ∨ ] -->
-        <div class="flex items-center gap-2.5">
+        <div class="flex items-center gap-2">
           <span class="text-xs font-semibold text-stone-700 whitespace-nowrap">Pick date range:</span>
           
           <div class="relative" id="calendarWrapper">
@@ -328,7 +318,7 @@
               type="button"
               id="dateRangeInputBtn"
               onclick="toggleCalendarPopover(event)"
-              class="flex items-center gap-2 px-3 py-1.5 rounded-full border border-stone-300 bg-white hover:border-stone-400 shadow-2xs text-xs font-semibold text-stone-800 transition-all cursor-pointer focus:outline-none"
+              class="flex items-center gap-2 px-3 py-1 rounded-full border border-stone-300 bg-white hover:border-stone-400 shadow-2xs text-xs font-semibold text-stone-800 transition-all cursor-pointer focus:outline-none"
               title="Click to pick custom date range"
             >
               <svg class="w-3.5 h-3.5 text-[#0284c7]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -341,7 +331,7 @@
             </button>
 
             <!-- Calendar Popover dropdown -->
-            <div id="calendarPopover" class="hidden absolute right-0 top-10 z-50 bg-[#F6F4F0] border border-[#1B1B1B] rounded shadow-xl p-4 w-[290px] select-none text-[#1B1B1B]">
+            <div id="calendarPopover" class="hidden absolute right-0 top-9 z-50 bg-[#F6F4F0] border border-[#1B1B1B] rounded shadow-xl p-4 w-[290px] select-none text-[#1B1B1B]">
               <div class="flex items-center justify-between pb-2 mb-2 border-b border-[#D6D3CD] font-mono-code">
                 <button type="button" onclick="navigateMonth(-1)" class="w-6 h-6 rounded hover:bg-white flex items-center justify-center font-bold text-xs cursor-pointer">‹</button>
                 <span id="calendarMonthYearLabel" class="text-xs font-bold text-[#1B1B1B]">August 2026</span>
@@ -366,12 +356,12 @@
 
       <!-- Stats Filter Bar (Total, Uploaded, In Progress, Source Tabs) -->
       <div class="flex items-center justify-between gap-2 flex-wrap font-mono-code text-xs border border-[#D6D3CD] bg-[#F6F4F0] p-2 rounded">
-        <div class="flex items-center gap-2 overflow-x-auto">
+        <div class="flex items-center gap-1.5 overflow-x-auto">
           <button
             type="button"
             id="filterPillAll"
             onclick="setTableFilter('all')"
-            class="px-2.5 py-1 bg-[#1B1B1B] text-white font-bold rounded text-[11px] uppercase tracking-wider cursor-pointer"
+            class="px-2 py-0.5 bg-[#1B1B1B] text-white font-bold rounded text-[11px] uppercase tracking-wider cursor-pointer"
           >
             Total (<span id="metricTotal">0</span>)
           </button>
@@ -380,7 +370,7 @@
             type="button"
             id="filterPillCompleted"
             onclick="setTableFilter('completed')"
-            class="px-2.5 py-1 bg-white border border-[#D6D3CD] text-emerald-800 font-semibold rounded text-[11px] uppercase tracking-wider hover:bg-emerald-50 cursor-pointer"
+            class="px-2 py-0.5 bg-white border border-[#D6D3CD] text-emerald-800 font-semibold rounded text-[11px] uppercase tracking-wider hover:bg-emerald-50 cursor-pointer"
           >
             Uploaded (<span id="metricUploaded">0</span>)
           </button>
@@ -389,7 +379,7 @@
             type="button"
             id="filterPillPending"
             onclick="setTableFilter('pending')"
-            class="px-2.5 py-1 bg-white border border-[#D6D3CD] text-orange-800 font-semibold rounded text-[11px] uppercase tracking-wider hover:bg-orange-50 cursor-pointer"
+            class="px-2 py-0.5 bg-white border border-[#D6D3CD] text-orange-800 font-semibold rounded text-[11px] uppercase tracking-wider hover:bg-orange-50 cursor-pointer"
           >
             In Progress (<span id="metricPending">0</span>)
           </button>
@@ -398,7 +388,7 @@
             type="button"
             id="filterPillFailed"
             onclick="setTableFilter('failed')"
-            class="hidden px-2.5 py-1 bg-white border border-rose-300 text-rose-700 font-semibold rounded text-[11px] uppercase tracking-wider hover:bg-rose-50 cursor-pointer"
+            class="hidden px-2 py-0.5 bg-white border border-rose-300 text-rose-700 font-semibold rounded text-[11px] uppercase tracking-wider hover:bg-rose-50 cursor-pointer"
           >
             Failed (<span id="metricFailed">0</span>)
           </button>
@@ -408,7 +398,7 @@
             href="#"
             target="_blank"
             rel="noopener noreferrer"
-            class="hidden items-center px-2.5 py-1 bg-white border border-[#1B1B1B] text-[#1B1B1B] font-bold rounded text-[11px] uppercase tracking-wider hover:bg-[#1B1B1B] hover:text-white transition-colors"
+            class="hidden items-center px-2 py-0.5 bg-white border border-[#1B1B1B] text-[#1B1B1B] font-bold rounded text-[11px] uppercase tracking-wider hover:bg-[#1B1B1B] hover:text-white transition-colors"
           >
             <span>Playlist: <span id="playlistPillTitle" class="underline">View</span> ↗</span>
           </a>
@@ -425,7 +415,7 @@
           <button
             type="button"
             onclick="copyAllVideoLinks()"
-            class="px-2.5 py-1 bg-white border border-[#D6D3CD] text-[#1B1B1B] rounded text-[10px] font-bold uppercase tracking-wider hover:bg-stone-100 cursor-pointer"
+            class="px-2 py-0.5 bg-white border border-[#D6D3CD] text-[#1B1B1B] rounded text-[10px] font-bold uppercase tracking-wider hover:bg-stone-100 cursor-pointer"
           >
             Copy Links
           </button>
@@ -433,7 +423,7 @@
           <button
             type="button"
             id="downloadCsvBtn"
-            class="px-2.5 py-1 bg-white border border-[#D6D3CD] text-[#1B1B1B] rounded text-[10px] font-bold uppercase tracking-wider hover:bg-stone-100 cursor-pointer"
+            class="px-2 py-0.5 bg-white border border-[#D6D3CD] text-[#1B1B1B] rounded text-[10px] font-bold uppercase tracking-wider hover:bg-stone-100 cursor-pointer"
           >
             CSV
           </button>
@@ -456,18 +446,18 @@
         <table class="w-full text-left border-collapse text-xs">
           <thead>
             <tr class="border-b border-[#D6D3CD] bg-[#F6F4F0] font-mono-code text-[10px] font-bold uppercase tracking-wider text-[#78716C]">
-              <th class="py-2.5 px-3 w-10 text-center border-r border-[#D6D3CD]">#</th>
-              <th class="py-2.5 px-4 border-r border-[#D6D3CD]">TITLE &amp; BATCH</th>
-              <th class="py-2.5 px-3 w-28 text-center border-r border-[#D6D3CD]">DATE</th>
-              <th class="py-2.5 px-3 w-24 text-center border-r border-[#D6D3CD]">FORMAT</th>
-              <th class="py-2.5 px-4 w-72 border-r border-[#D6D3CD]">STATUS</th>
-              <th class="py-2.5 px-4 w-44 text-center">ACTIONS</th>
+              <th class="py-2 px-3 w-10 text-center border-r border-[#D6D3CD]">#</th>
+              <th class="py-2 px-4 border-r border-[#D6D3CD]">TITLE &amp; BATCH</th>
+              <th class="py-2 px-3 w-28 text-center border-r border-[#D6D3CD]">DATE</th>
+              <th class="py-2 px-3 w-24 text-center border-r border-[#D6D3CD]">FORMAT</th>
+              <th class="py-2 px-4 w-72 border-r border-[#D6D3CD]">STATUS</th>
+              <th class="py-2 px-4 w-44 text-center">ACTIONS</th>
             </tr>
           </thead>
           <tbody id="trackingTableBody" class="divide-y divide-[#EBE7DF]">
             <tr id="emptyRow" class="text-[#A8A29E]">
-              <td colspan="6" class="py-14 text-center font-mono-code text-xs">
-                no videos in queue. paste a google drive folder link above and click start upload.
+              <td colspan="6" class="py-12 text-center font-mono-code text-xs">
+                no videos in queue. paste a google drive folder link above and click scan.
               </td>
             </tr>
           </tbody>
@@ -478,16 +468,96 @@
       <button
         type="button"
         onclick="clearCompletedVideos()"
-        class="w-full py-2.5 border border-[#D6D3CD] hover:border-[#1B1B1B] bg-[#F6F4F0] hover:bg-white text-[#78716C] hover:text-[#1B1B1B] font-mono-code text-[11px] font-bold uppercase tracking-widest rounded transition-all cursor-pointer text-center"
+        class="w-full py-2 border border-[#D6D3CD] hover:border-[#1B1B1B] bg-[#F6F4F0] hover:bg-white text-[#78716C] hover:text-[#1B1B1B] font-mono-code text-[10px] font-bold uppercase tracking-widest rounded transition-all cursor-pointer text-center"
       >
         CLEAR ALL
       </button>
     </div>
   </main>
 
-  <!-- 5. Video Player Modal with Poster & Play Button -->
-  <div id="videoModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-4">
-    <div class="bg-[#F6F4F0] rounded border border-[#1B1B1B] max-w-4xl w-full overflow-hidden shadow-2xl flex flex-col">
+  <!-- 4. Scan & File Review Selection Modal (Select Files & Check Duplicates) -->
+  <div id="scanReviewModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4">
+    <div class="bg-[#F6F4F0] rounded-xl border border-[#1B1B1B] max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden font-mono-code text-xs">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between px-5 py-3 border-b border-[#D6D3CD] bg-white shrink-0">
+        <div>
+          <div class="flex items-center gap-2">
+            <h3 class="text-sm font-bold uppercase tracking-wider text-[#1B1B1B]" id="scanModalTitle">Scan &amp; Select Videos</h3>
+            <span id="scanModalCountBadge" class="px-2 py-0.2 bg-[#1B1B1B] text-white rounded text-[10px] font-bold">0 found</span>
+          </div>
+          <p class="text-[10px] text-[#78716C] mt-0.5" id="scanModalSubtitle">Review discovered videos, edit titles, and select what to upload</p>
+        </div>
+        <button type="button" onclick="closeScanReviewModal()" class="text-[#78716C] hover:text-[#1B1B1B] text-xl font-bold cursor-pointer">&times;</button>
+      </div>
+
+      <!-- Selection & Duplicate Filter Controls Bar -->
+      <div class="px-5 py-2.5 bg-[#EDEAE5] border-b border-[#D6D3CD] flex items-center justify-between flex-wrap gap-2 text-[11px] shrink-0">
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="selectAllScanFiles(true)" class="px-2 py-1 bg-white border border-[#D6D3CD] rounded font-bold uppercase hover:bg-stone-100 cursor-pointer">
+            Select All
+          </button>
+          <button type="button" onclick="selectAllScanFiles(false)" class="px-2 py-1 bg-white border border-[#D6D3CD] rounded font-bold uppercase hover:bg-stone-100 cursor-pointer">
+            Deselect All
+          </button>
+          <button type="button" onclick="deselectDuplicateScanFiles()" class="px-2 py-1 bg-white border border-amber-300 text-amber-900 rounded font-bold uppercase hover:bg-amber-50 cursor-pointer" title="Uncheck all files that were already uploaded">
+            Deselect Duplicates
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <span class="font-bold text-[#1B1B1B]" id="scanSelectedSummary">0 / 0 Selected</span>
+        </div>
+      </div>
+
+      <!-- Files List Table Container -->
+      <div class="overflow-y-auto flex-1 p-4">
+        <div class="border border-[#D6D3CD] bg-white rounded overflow-hidden">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="border-b border-[#D6D3CD] bg-[#F6F4F0] text-[10px] font-bold uppercase tracking-wider text-[#78716C]">
+                <th class="py-2 px-3 w-8 text-center border-r border-[#D6D3CD]">
+                  <input type="checkbox" id="scanSelectAllCheckbox" onchange="toggleSelectAllCheckbox(this)" checked class="cursor-pointer accent-[#1B1B1B]" />
+                </th>
+                <th class="py-2 px-3 w-8 text-center border-r border-[#D6D3CD]">#</th>
+                <th class="py-2 px-4 border-r border-[#D6D3CD]">VIDEO TITLE (CLICK TO EDIT)</th>
+                <th class="py-2 px-3 w-24 text-center border-r border-[#D6D3CD]">SIZE</th>
+                <th class="py-2 px-3 w-28 text-center border-r border-[#D6D3CD]">DATE</th>
+                <th class="py-2 px-3 w-36 text-center">DUPLICATE CHECK</th>
+              </tr>
+            </thead>
+            <tbody id="scanReviewTableBody" class="divide-y divide-[#EBE7DF]">
+              <!-- Dynamically populated rows -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="px-5 py-3 border-t border-[#D6D3CD] bg-white flex items-center justify-between shrink-0">
+        <button
+          type="button"
+          onclick="closeScanReviewModal()"
+          class="px-3 py-1.5 bg-white border border-[#D6D3CD] text-[#78716C] hover:text-[#1B1B1B] rounded text-xs font-semibold uppercase cursor-pointer"
+        >
+          Cancel
+        </button>
+
+        <button
+          type="button"
+          id="startSelectedUploadBtn"
+          onclick="startSelectedUpload()"
+          class="px-5 py-2 bg-[#1B1B1B] hover:bg-black text-white rounded text-xs font-bold uppercase tracking-widest cursor-pointer flex items-center gap-1.5 shadow-md"
+        >
+          <span>START UPLOAD SELECTED (0) →</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Fixed Video Player Modal (Fixed Play Button Centering & Video Aspect Ratio) -->
+  <div id="videoModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs p-4">
+    <div class="bg-[#F6F4F0] rounded-xl border border-[#1B1B1B] max-w-4xl w-full overflow-hidden shadow-2xl flex flex-col">
       <!-- Modal Header -->
       <div class="flex items-center justify-between px-5 py-3 border-b border-[#D6D3CD] bg-white font-mono-code">
         <div class="space-y-0.5 overflow-hidden pr-3">
@@ -520,23 +590,26 @@
         </div>
       </div>
 
-      <!-- Video Player / Poster Area -->
-      <div class="relative aspect-video w-full bg-black flex items-center justify-center overflow-hidden">
-        <div id="modalPosterContainer" class="absolute inset-0 z-10 flex items-center justify-center cursor-pointer group select-none" onclick="startModalPlayback()">
-          <img id="modalPosterImg" src="" alt="Thumbnail" class="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300 opacity-90 group-hover:opacity-100" onerror="this.src='https://placehold.co/1280x720/1c1917/ffffff?text=Click+to+Play'" />
-          <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-black/40"></div>
+      <!-- Video Player Area with Perfectly Centered Play Button -->
+      <div class="relative w-full aspect-video bg-black flex items-center justify-center overflow-hidden">
+        
+        <!-- Centered Poster Overlay -->
+        <div id="modalPosterContainer" class="absolute inset-0 z-10 flex flex-col items-center justify-center cursor-pointer group select-none bg-black/40 hover:bg-black/30 transition-colors" onclick="startModalPlayback()">
+          <img id="modalPosterImg" src="" alt="Thumbnail" class="absolute inset-0 w-full h-full object-cover -z-10 opacity-90 group-hover:opacity-100 transition-opacity" onerror="this.src='https://placehold.co/1280x720/1c1917/ffffff?text=Click+to+Play'" />
           
-          <div class="relative z-20 flex flex-col items-center gap-3">
-            <div class="w-16 h-16 rounded-2xl bg-white text-[#1B1B1B] shadow-2xl flex items-center justify-center transform group-hover:scale-110 transition-all duration-200">
+          <!-- Perfectly Centered Play Button -->
+          <div class="relative flex flex-col items-center justify-center gap-2.5">
+            <div class="w-16 h-16 rounded-full bg-white text-[#1B1B1B] shadow-2xl flex items-center justify-center transform group-hover:scale-110 transition-all duration-200">
               <svg class="w-8 h-8 ml-1 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
             </div>
-            <span class="text-white font-mono-code text-[11px] uppercase tracking-wider bg-black/70 px-3 py-1 rounded border border-white/20">Click to Play</span>
+            <span class="text-white font-mono-code text-[10px] font-bold uppercase tracking-wider bg-black/75 backdrop-blur-xs px-3 py-1 rounded-full border border-white/20 shadow-md">Click to Play Video</span>
           </div>
 
-          <div class="absolute bottom-4 left-5 right-5 z-20 flex items-end justify-between pointer-events-none">
+          <!-- Bottom Poster Info Overlay -->
+          <div class="absolute bottom-3 left-4 right-4 z-20 flex items-end justify-between pointer-events-none">
             <div class="space-y-0.5 max-w-xl text-left">
-              <span id="posterBatchTag" class="text-xs font-bold font-mono-code text-amber-300 uppercase tracking-wider block"></span>
-              <h4 id="posterVideoTitle" class="text-base font-bold font-serif-editorial text-white drop-shadow-md line-clamp-1"></h4>
+              <span id="posterBatchTag" class="text-[11px] font-bold font-mono-code text-amber-300 uppercase tracking-wider block"></span>
+              <h4 id="posterVideoTitle" class="text-sm font-bold font-serif-editorial text-white drop-shadow-md line-clamp-1"></h4>
             </div>
           </div>
         </div>
@@ -768,6 +841,10 @@
     let eventSource = null;
     let currentState = null;
     let currentFilter = 'all';
+
+    // Scan Review State
+    let scannedFilesList = [];
+    let customFileTitlesMap = {};
 
     // Date Range Picker State
     let dateFilterRange = {
@@ -1061,19 +1138,19 @@
 
     function updateFilterPillsUI() {
       if (!filterPillAll) return;
-      filterPillAll.className = "px-2.5 py-1 bg-white border border-[#D6D3CD] text-[#1B1B1B] font-semibold rounded text-[11px] uppercase tracking-wider hover:bg-stone-50 cursor-pointer";
-      filterPillCompleted.className = "px-2.5 py-1 bg-white border border-[#D6D3CD] text-emerald-800 font-semibold rounded text-[11px] uppercase tracking-wider hover:bg-emerald-50 cursor-pointer";
-      filterPillPending.className = "px-2.5 py-1 bg-white border border-[#D6D3CD] text-orange-800 font-semibold rounded text-[11px] uppercase tracking-wider hover:bg-orange-50 cursor-pointer";
-      filterPillFailed.className = "px-2.5 py-1 bg-white border border-rose-300 text-rose-700 font-semibold rounded text-[11px] uppercase tracking-wider hover:bg-rose-50 cursor-pointer";
+      filterPillAll.className = "px-2 py-0.5 bg-white border border-[#D6D3CD] text-[#1B1B1B] font-semibold rounded text-[11px] uppercase tracking-wider hover:bg-stone-50 cursor-pointer";
+      filterPillCompleted.className = "px-2 py-0.5 bg-white border border-[#D6D3CD] text-emerald-800 font-semibold rounded text-[11px] uppercase tracking-wider hover:bg-emerald-50 cursor-pointer";
+      filterPillPending.className = "px-2 py-0.5 bg-white border border-[#D6D3CD] text-orange-800 font-semibold rounded text-[11px] uppercase tracking-wider hover:bg-orange-50 cursor-pointer";
+      filterPillFailed.className = "px-2 py-0.5 bg-white border border-rose-300 text-rose-700 font-semibold rounded text-[11px] uppercase tracking-wider hover:bg-rose-50 cursor-pointer";
 
       if (currentFilter === 'all') {
-        filterPillAll.className = "px-2.5 py-1 bg-[#1B1B1B] text-white font-bold rounded text-[11px] uppercase tracking-wider cursor-pointer";
+        filterPillAll.className = "px-2 py-0.5 bg-[#1B1B1B] text-white font-bold rounded text-[11px] uppercase tracking-wider cursor-pointer";
       } else if (currentFilter === 'completed') {
-        filterPillCompleted.className = "px-2.5 py-1 bg-emerald-700 text-white font-bold rounded text-[11px] uppercase tracking-wider cursor-pointer";
+        filterPillCompleted.className = "px-2 py-0.5 bg-emerald-700 text-white font-bold rounded text-[11px] uppercase tracking-wider cursor-pointer";
       } else if (currentFilter === 'pending') {
-        filterPillPending.className = "px-2.5 py-1 bg-orange-700 text-white font-bold rounded text-[11px] uppercase tracking-wider cursor-pointer";
+        filterPillPending.className = "px-2 py-0.5 bg-orange-700 text-white font-bold rounded text-[11px] uppercase tracking-wider cursor-pointer";
       } else if (currentFilter === 'failed') {
-        filterPillFailed.className = "px-2.5 py-1 bg-rose-700 text-white font-bold rounded text-[11px] uppercase tracking-wider cursor-pointer";
+        filterPillFailed.className = "px-2 py-0.5 bg-rose-700 text-white font-bold rounded text-[11px] uppercase tracking-wider cursor-pointer";
       }
     }
 
@@ -1390,6 +1467,224 @@
         console.error('YouTube sync error:', err);
         showToast('Sync failed: ' + err.message, 'error');
       }
+    };
+
+    // ==========================================
+    // Scan & File Selection / Review Modal Engine
+    // ==========================================
+    window.openScanReviewModal = async function() {
+      const folder = folderInput.value.trim();
+      if (!folder) {
+        showToast('Please paste a Google Drive folder link or ID first.', 'error');
+        folderInput.focus();
+        return;
+      }
+
+      const scanBtn = document.getElementById('scanPreviewBtn');
+      if (scanBtn) {
+        scanBtn.disabled = true;
+        scanBtn.innerHTML = `<span>⏳ SCANNING...</span>`;
+      }
+      showToast('Scanning Google Drive folder for videos...', 'info');
+
+      try {
+        const startDate = startDateInput ? startDateInput.value : '';
+        const endDate = endDateInput ? endDateInput.value : '';
+
+        const res = await fetch('/api/scan-preview', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(window.gAccessToken ? { 'Authorization': `Bearer ${window.gAccessToken}` } : {})
+          },
+          body: JSON.stringify({
+            folderUrl: folder,
+            startDate,
+            endDate
+          })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          scannedFilesList = data.files || [];
+          customFileTitlesMap = {};
+
+          if (scannedFilesList.length === 0) {
+            showToast('No video files found in the folder.', 'error');
+            return;
+          }
+
+          document.getElementById('scanModalTitle').textContent = `Discovered Videos in "${data.folderName}"`;
+          document.getElementById('scanModalCountBadge').textContent = `${scannedFilesList.length} files found`;
+          
+          renderScanReviewTable();
+          document.getElementById('scanReviewModal').classList.remove('hidden');
+          showToast(`Found ${scannedFilesList.length} video(s)! Choose which to upload.`, 'success');
+        } else {
+          showToast('Scan error: ' + (data.error || 'Failed to scan folder'), 'error');
+        }
+      } catch (err) {
+        showToast('Error scanning Drive: ' + err.message, 'error');
+      } finally {
+        if (scanBtn) {
+          scanBtn.disabled = false;
+          scanBtn.innerHTML = `<span>⚡ SCAN &amp; SELECT</span>`;
+        }
+      }
+    };
+
+    window.closeScanReviewModal = function() {
+      document.getElementById('scanReviewModal').classList.add('hidden');
+    };
+
+    function renderScanReviewTable() {
+      const tbody = document.getElementById('scanReviewTableBody');
+      if (!tbody) return;
+
+      tbody.innerHTML = '';
+      let selectedCount = 0;
+
+      scannedFilesList.forEach((file, idx) => {
+        const tr = document.createElement('tr');
+        tr.id = `scan-row-${file.id}`;
+        tr.className = 'hover:bg-[#F6F4F0] transition-colors text-[#1B1B1B]';
+
+        // Auto-check non-duplicates by default; duplicates can be unselected or renamed
+        const isChecked = !file.isDuplicate;
+        if (isChecked) selectedCount++;
+
+        const currentTitle = customFileTitlesMap[file.id] || file.customTitle || file.name;
+
+        let duplicateBadgeHtml = '';
+        if (file.isDuplicate) {
+          duplicateBadgeHtml = `
+            <div class="space-y-1">
+              <span class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                <span>⚠️ Duplicate</span>
+              </span>
+              <button onclick="promptRenameFile('${file.id}')" class="text-[10px] text-orange-700 hover:underline block font-semibold cursor-pointer">
+                ✏️ Rename Title
+              </button>
+            </div>
+          `;
+        } else {
+          duplicateBadgeHtml = `
+            <span class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+              <span>✔ Ready</span>
+            </span>
+          `;
+        }
+
+        const fileDate = file.createdTime ? formatDateToDMY(new Date(file.createdTime)) : formatDateToDMY(new Date());
+
+        tr.innerHTML = `
+          <td class="py-2.5 px-3 text-center border-r border-[#D6D3CD]">
+            <input type="checkbox" id="scan-chk-${file.id}" value="${file.id}" ${isChecked ? 'checked' : ''} onchange="updateScanSelectedSummary()" class="cursor-pointer scan-file-checkbox accent-[#1B1B1B]" />
+          </td>
+          <td class="py-2.5 px-3 text-center text-[#78716C] border-r border-[#D6D3CD] text-[11px]">${idx + 1}</td>
+          <td class="py-2.5 px-4 border-r border-[#D6D3CD]">
+            <div class="space-y-0.5">
+              <div class="flex items-center gap-2 group">
+                <span id="scan-title-disp-${file.id}" class="font-bold text-[#1B1B1B] text-xs leading-snug cursor-pointer hover:text-orange-700" onclick="promptRenameFile('${file.id}')" title="Click to rename before uploading">
+                  ${escapeHtml(currentTitle)}
+                </span>
+                <button onclick="promptRenameFile('${file.id}')" class="opacity-0 group-hover:opacity-100 text-[#78716C] hover:text-[#1B1B1B] cursor-pointer" title="Edit Title">
+                  ✏️
+                </button>
+              </div>
+              <div class="text-[9px] text-[#78716C]">
+                <span>Batch: ${escapeHtml(file.batch || 'Batch')}</span> • <span>${escapeHtml(file.name)}</span>
+              </div>
+            </div>
+          </td>
+          <td class="py-2.5 px-3 text-center font-mono-code border-r border-[#D6D3CD] text-[11px] text-[#78716C]">
+            ${formatBytes(file.size)}
+          </td>
+          <td class="py-2.5 px-3 text-center font-mono-code border-r border-[#D6D3CD] text-[11px] text-[#78716C]">
+            ${fileDate}
+          </td>
+          <td class="py-2.5 px-3 text-center">
+            ${duplicateBadgeHtml}
+          </td>
+        `;
+
+        tbody.appendChild(tr);
+      });
+
+      updateScanSelectedSummary();
+    }
+
+    window.promptRenameFile = function(fileId) {
+      const file = scannedFilesList.find(f => f.id === fileId);
+      if (!file) return;
+
+      const current = customFileTitlesMap[fileId] || file.customTitle || file.name;
+      const newTitle = prompt('Enter customized YouTube title for this video:', current);
+      if (newTitle && newTitle.trim() && newTitle.trim() !== current) {
+        customFileTitlesMap[fileId] = newTitle.trim();
+        file.customTitle = newTitle.trim();
+        file.isDuplicate = false; // Resolved by user rename
+        const disp = document.getElementById(`scan-title-disp-${fileId}`);
+        if (disp) disp.textContent = newTitle.trim();
+        
+        // Auto check the renamed file
+        const chk = document.getElementById(`scan-chk-${fileId}`);
+        if (chk) chk.checked = true;
+
+        renderScanReviewTable();
+        showToast('Title updated for upload queue.', 'success');
+      }
+    };
+
+    window.selectAllScanFiles = function(select) {
+      const checkboxes = document.querySelectorAll('.scan-file-checkbox');
+      checkboxes.forEach(c => c.checked = select);
+      const mainChk = document.getElementById('scanSelectAllCheckbox');
+      if (mainChk) mainChk.checked = select;
+      updateScanSelectedSummary();
+    };
+
+    window.deselectDuplicateScanFiles = function() {
+      scannedFilesList.forEach(f => {
+        if (f.isDuplicate) {
+          const chk = document.getElementById(`scan-chk-${f.id}`);
+          if (chk) chk.checked = false;
+        }
+      });
+      updateScanSelectedSummary();
+      showToast('Deselected duplicate videos.', 'info');
+    };
+
+    window.toggleSelectAllCheckbox = function(mainChk) {
+      selectAllScanFiles(mainChk.checked);
+    };
+
+    function updateScanSelectedSummary() {
+      const checkboxes = document.querySelectorAll('.scan-file-checkbox:checked');
+      const count = checkboxes.length;
+      const total = scannedFilesList.length;
+
+      const summaryEl = document.getElementById('scanSelectedSummary');
+      if (summaryEl) summaryEl.textContent = `${count} / ${total} Selected`;
+
+      const btn = document.getElementById('startSelectedUploadBtn');
+      if (btn) {
+        btn.innerHTML = `<span>START UPLOAD SELECTED (${count}) →</span>`;
+        btn.disabled = count === 0;
+      }
+    }
+
+    window.startSelectedUpload = function() {
+      const checkboxes = document.querySelectorAll('.scan-file-checkbox:checked');
+      const selectedFileIds = Array.from(checkboxes).map(c => c.value);
+
+      if (selectedFileIds.length === 0) {
+        showToast('Please select at least one video to upload.', 'error');
+        return;
+      }
+
+      closeScanReviewModal();
+      startProcessing(false, selectedFileIds, customFileTitlesMap);
     };
 
     let currentSearchQuery = '';
@@ -1758,7 +2053,7 @@
 
       const completed = currentState.files.filter(f => f.status === 'completed');
       if (completed.length === 0) {
-        showToast('No completed videos to copy.', 'error');
+        showToast('No completed videos found to copy.', 'error');
         return;
       }
 
@@ -1814,8 +2109,8 @@
       if (!currentState || !currentState.files || currentState.files.length === 0) {
         trackingTableBody.innerHTML = `
           <tr id="emptyRow" class="text-[#A8A29E]">
-            <td colspan="6" class="py-14 text-center font-mono-code text-xs">
-              no videos in queue. paste a google drive folder link above and click start upload.
+            <td colspan="6" class="py-12 text-center font-mono-code text-xs">
+              no videos in queue. paste a google drive folder link above and click scan.
             </td>
           </tr>
         `;
@@ -2212,12 +2507,12 @@
 
       if (state.isProcessing || state.status === 'processing' || state.status === 'scanning') {
         startButton.disabled = true;
-        buttonText.textContent = state.status === 'scanning' ? 'SCANNING FOLDER...' : 'UPLOADING VIDEOS...';
+        buttonText.textContent = state.status === 'scanning' ? 'SCANNING...' : 'UPLOADING...';
         if (stopBtn) stopBtn.classList.remove('hidden');
         if (bgNoticeBanner) bgNoticeBanner.classList.remove('hidden');
       } else {
         startButton.disabled = false;
-        buttonText.textContent = 'START CLOUD UPLOAD →';
+        buttonText.textContent = 'DIRECT UPLOAD';
         if (stopBtn) stopBtn.classList.add('hidden');
         if (bgNoticeBanner) bgNoticeBanner.classList.add('hidden');
       }
@@ -2258,7 +2553,7 @@
       }
     }
 
-    window.startProcessing = async function(force = false) {
+    window.startProcessing = async function(force = false, selectedFileIds = null, customTitles = null) {
       const folder = folderInput.value.trim();
       if (!folder) {
         showToast('Please enter a Google Drive folder URL or ID', 'error');
@@ -2272,10 +2567,10 @@
       const endDate = endDateInput ? endDateInput.value : '';
 
       startButton.disabled = true;
-      buttonText.textContent = 'SCANNING FOLDER...';
+      buttonText.textContent = 'SCANNING...';
       const stopBtn = document.getElementById('stopProcessBtn');
       if (stopBtn) stopBtn.classList.remove('hidden');
-      showToast('Scanning Drive folder...', 'info');
+      showToast('Connecting to folder and starting queue...', 'info');
 
       try {
         const res = await fetch('/api/process-folder', {
@@ -2291,31 +2586,33 @@
             startDate,
             endDate,
             clientId,
-            force
+            force,
+            selectedFileIds: selectedFileIds || null,
+            customTitles: customTitles || null
           })
         });
 
         const data = await res.json();
         if (data.success) {
-          showToast(`Found ${data.totalFiles} video(s)! Starting upload.`, 'success');
+          showToast(`Found ${data.totalFiles || 'video'} file(s)! Starting upload.`, 'success');
           loadJobStatus();
         } else if (data.isJobRunning) {
           if (confirm('A previous upload job is running. Stop it and upload this folder now?')) {
-            window.startProcessing(true);
+            window.startProcessing(true, selectedFileIds, customTitles);
           } else {
             startButton.disabled = false;
-            buttonText.textContent = 'START CLOUD UPLOAD →';
+            buttonText.textContent = 'DIRECT UPLOAD';
           }
         } else {
           showToast('Failed to start: ' + (data.error || 'Unknown error'), 'error');
           startButton.disabled = false;
-          buttonText.textContent = 'START CLOUD UPLOAD →';
+          buttonText.textContent = 'DIRECT UPLOAD';
           if (stopBtn) stopBtn.classList.add('hidden');
         }
       } catch (err) {
         showToast('Error connecting: ' + err.message, 'error');
         startButton.disabled = false;
-        buttonText.textContent = 'START CLOUD UPLOAD →';
+        buttonText.textContent = 'DIRECT UPLOAD';
         if (stopBtn) stopBtn.classList.add('hidden');
       }
     };

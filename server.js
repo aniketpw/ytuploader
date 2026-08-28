@@ -1211,6 +1211,128 @@ app.post('/api/resume', async (req, res) => {
 });
 
 /**
+ * Drive Scan & File Preview Endpoint (Review Files & Detect Duplicates before Upload)
+ */
+app.post('/api/scan-preview', async (req, res) => {
+  const folderInput = req.body.folderInput || req.body.folderUrl || '';
+  const startDate = req.body.startDate || '';
+  const endDate = req.body.endDate || '';
+
+  if (!folderInput) {
+    return res.status(400).json({ success: false, error: 'Google Drive Folder link or ID is required.' });
+  }
+
+  const folderIds = extractFolderIds(folderInput);
+  if (folderIds.length === 0) {
+    return res.status(400).json({ success: false, error: 'Invalid Google Drive Folder link or ID format.' });
+  }
+
+  const auth = getOAuth2Client(req);
+  if (!auth) {
+    return res.status(500).json({
+      success: false,
+      error: 'Google OAuth2 access token missing. Please click Connect Google.'
+    });
+  }
+
+  try {
+    const drive = google.drive({ version: 'v3', auth });
+
+    let startDateIso = null;
+    let endDateIso = null;
+    if (startDate || endDate) {
+      const istOffset = '+05:30';
+      if (startDate) {
+        const startObj = new Date(startDate + 'T00:00:00' + istOffset);
+        if (!isNaN(startObj.getTime())) startDateIso = startObj.toISOString();
+      }
+      if (endDate) {
+        const endObj = new Date(endDate + 'T23:59:59.999' + istOffset);
+        if (!isNaN(endObj.getTime())) endDateIso = endObj.toISOString();
+      }
+    }
+
+    const discoveredMap = new Map();
+    let autoDetectedFolderName = null;
+
+    for (const fId of folderIds) {
+      const scanResult = await scanDriveFolderRecursively(drive, fId, startDateIso, endDateIso);
+      if (!autoDetectedFolderName && scanResult.rootFolderName) {
+        autoDetectedFolderName = scanResult.rootFolderName;
+      }
+      for (const vid of scanResult.videos) {
+        if (!discoveredMap.has(vid.id)) {
+          discoveredMap.set(vid.id, vid);
+        }
+      }
+    }
+
+    const rawFiles = Array.from(discoveredMap.values());
+    const history = loadUploadedHistory();
+
+    const formattedFiles = rawFiles.map((f, idx) => {
+      const cleanOriginalName = (f.name || 'Video').replace(/\.[^/.]+$/, '');
+      const prefixParts = [];
+      if (f.batch && f.batch !== 'Batch' && f.batch !== 'Root') {
+        prefixParts.push(f.batch);
+      }
+      if (f.subject && f.subject !== 'General' && f.subject !== 'Video' && f.subject !== f.batch) {
+        prefixParts.push(f.subject);
+      }
+
+      let combinedTitle = cleanOriginalName;
+      if (prefixParts.length > 0) {
+        const prefix = prefixParts.join(' - ');
+        if (!cleanOriginalName.toLowerCase().startsWith(prefix.toLowerCase())) {
+          combinedTitle = `${prefix} | ${cleanOriginalName}`;
+        }
+      }
+      if (combinedTitle.length > 98) {
+        combinedTitle = combinedTitle.substring(0, 95) + '...';
+      }
+
+      const isDuplicate = history.some(h => 
+        (h.id && h.id === f.id) || 
+        (h.customTitle && h.customTitle.trim().toLowerCase() === combinedTitle.trim().toLowerCase()) ||
+        (h.name && h.name.trim().toLowerCase() === f.name.trim().toLowerCase())
+      );
+
+      const existingRecord = isDuplicate ? history.find(h => 
+        (h.id && h.id === f.id) || 
+        (h.customTitle && h.customTitle.trim().toLowerCase() === combinedTitle.trim().toLowerCase()) ||
+        (h.name && h.name.trim().toLowerCase() === f.name.trim().toLowerCase())
+      ) : null;
+
+      return {
+        index: idx + 1,
+        id: f.id,
+        name: f.name,
+        originalName: f.name,
+        customTitle: combinedTitle,
+        batch: f.batch || autoDetectedFolderName || 'Batch',
+        subject: f.subject || 'Lecture',
+        folderPath: f.folderPath || '',
+        size: parseInt(f.size || '0', 10),
+        createdTime: f.createdTime,
+        isDuplicate: Boolean(isDuplicate),
+        existingVideoId: existingRecord?.videoId || null,
+        existingYoutubeUrl: existingRecord?.youtubeUrl || null
+      };
+    });
+
+    return res.json({
+      success: true,
+      folderName: autoDetectedFolderName || 'Batch Folder',
+      totalFiles: formattedFiles.length,
+      files: formattedFiles
+    });
+  } catch (err) {
+    console.error('Scan preview error:', err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
  * Core Processing Endpoint
  */
 app.post(['/api/process', '/api/process-folder'], async (req, res) => {
@@ -1337,13 +1459,19 @@ app.post(['/api/process', '/api/process-folder'], async (req, res) => {
         }
       }
 
-      const rawFiles = Array.from(discoveredMap.values());
+      let rawFiles = Array.from(discoveredMap.values());
+
+      // If user selected specific files from the scan preview
+      if (req.body.selectedFileIds && Array.isArray(req.body.selectedFileIds) && req.body.selectedFileIds.length > 0) {
+        const idSet = new Set(req.body.selectedFileIds);
+        rawFiles = rawFiles.filter(f => idSet.has(f.id));
+      }
 
       if (rawFiles.length === 0) {
         jobState.status = 'completed';
         jobState.finishedAt = new Date().toISOString();
-        addJobLog('No video files found in the given Google Drive folder or its subfolders.', 'warn');
-        broadcastSSE({ type: 'no_files_found', message: 'No video files found in the given Google Drive folder.' });
+        addJobLog('No video files found matching the selection in the given Google Drive folder.', 'warn');
+        broadcastSSE({ type: 'no_files_found', message: 'No video files found matching the selection.' });
         persistJobState();
         return;
       }
@@ -1370,6 +1498,8 @@ app.post(['/api/process', '/api/process-folder'], async (req, res) => {
         }
       }
 
+      const customTitlesMap = (req.body.customTitles && typeof req.body.customTitles === 'object') ? req.body.customTitles : {};
+
       jobState.status = 'processing';
       const newFiles = rawFiles.map((f, idx) => {
         // Build clear smart title combining Folder / Subject and original filename
@@ -1384,7 +1514,9 @@ app.post(['/api/process', '/api/process-folder'], async (req, res) => {
         }
 
         let combinedTitle = cleanOriginalName;
-        if (prefixParts.length > 0) {
+        if (customTitlesMap[f.id]) {
+          combinedTitle = customTitlesMap[f.id];
+        } else if (prefixParts.length > 0) {
           const prefix = prefixParts.join(' - ');
           if (!cleanOriginalName.toLowerCase().startsWith(prefix.toLowerCase())) {
             combinedTitle = `${prefix} | ${cleanOriginalName}`;
