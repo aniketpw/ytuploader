@@ -788,89 +788,292 @@
     </div>
   </div>
 
-  <!-- Google Auth & API Keys Modal -->
-  <div id="authConfigModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-    <div class="bg-[#F6F4F0] border border-[#1B1B1B] max-w-lg w-full p-5 shadow-2xl space-y-4 font-mono-code">
-      <div class="flex items-center justify-between border-b border-[#D6D3CD] pb-2.5">
+  <!-- Google Auth & API Keys Modal — Guided Setup Wizard -->
+  <div id="authConfigModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
+    <div class="bg-[#F6F4F0] border border-[#1B1B1B] max-w-xl w-full shadow-2xl font-mono-code my-4">
+
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between border-b border-[#D6D3CD] px-5 py-3">
         <div>
-          <h3 class="text-sm font-bold uppercase tracking-wider text-[#1B1B1B]">Google Authentication</h3>
-          <p class="text-[10px] text-[#78716C]">Connect Google account for unlimited upload</p>
+          <h3 class="text-sm font-bold uppercase tracking-wider text-[#1B1B1B]">Connect Google Account</h3>
+          <p class="text-[10px] text-[#78716C]">Upload videos from Drive to YouTube — your account, your quota</p>
         </div>
         <button type="button" onclick="closeAuthModal()" class="text-[#78716C] hover:text-[#1B1B1B] text-lg font-bold cursor-pointer">&times;</button>
       </div>
 
-      <!-- Quick Connect Token -->
-      <div class="p-3 bg-emerald-50 border border-emerald-300 text-xs space-y-2">
-        <div class="flex items-center justify-between font-bold text-emerald-900 uppercase text-[10px]">
-          <span>Option A: Instant Bearer Token</span>
-          <span class="bg-emerald-200 px-1.5 py-0.2">Fast</span>
-        </div>
-        <div class="flex gap-2">
-          <input
-            type="password"
-            id="directAccessTokenInput"
-            placeholder="Paste Google Access Token (ya29...)"
-            class="flex-1 p-2 text-xs border border-emerald-400 bg-white text-[#1B1B1B] focus:outline-none"
-          />
-          <button
-            type="button"
-            onclick="saveDirectToken()"
-            class="px-3 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs uppercase tracking-wider cursor-pointer whitespace-nowrap"
-          >
-            Connect
-          </button>
-        </div>
-      </div>
+      <!-- LANDING VIEW: Choose Path -->
+      <div id="authLanding" class="p-5 space-y-3">
 
-      <!-- OAuth Client ID -->
-      <div class="p-3 bg-white border border-[#D6D3CD] text-xs space-y-2">
-        <div class="flex items-center justify-between font-bold text-[#1B1B1B] uppercase text-[10px]">
-          <span>Option B: Google Cloud OAuth Client ID</span>
-          <span id="keyCountText" class="text-stone-500">0 key(s)</span>
-        </div>
-
-        <div class="p-2 bg-[#EDEAE5] border border-[#D6D3CD] text-[10px] space-y-1">
-          <div class="flex items-center justify-between font-bold">
-            <span>Authorized Origin:</span>
-            <button type="button" onclick="copyOriginUrl()" class="px-1.5 py-0.5 bg-white border border-[#D6D3CD] text-[9px] uppercase cursor-pointer">
-              Copy
-            </button>
+        <!-- Already Have Client ID — Quick Connect -->
+        <div class="p-4 bg-white border-2 border-[#1B1B1B] hover:bg-stone-50 cursor-pointer transition-colors" onclick="showAuthQuickConnect()">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="font-bold text-[#1B1B1B] text-xs uppercase tracking-wide">🚀 Quick Connect</div>
+              <p class="text-[10px] text-[#78716C] mt-0.5">I already have a Google OAuth Client ID</p>
+            </div>
+            <span class="text-lg text-[#78716C]">→</span>
           </div>
-          <div class="text-[10px] truncate" id="originUrlDisplay">https://...</div>
         </div>
 
-        <textarea
-          id="clientIdsList"
-          rows="2"
-          placeholder="Paste OAuth Client ID..."
-          class="w-full p-2 text-xs border border-[#D6D3CD] bg-[#F6F4F0] text-[#1B1B1B] focus:outline-none focus:border-[#1B1B1B]"
-        ></textarea>
+        <!-- Setup From Scratch — Guided Wizard -->
+        <div class="p-4 bg-amber-50 border-2 border-amber-400 hover:bg-amber-100 cursor-pointer transition-colors" onclick="showSetupWizard(1)">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="font-bold text-[#1B1B1B] text-xs uppercase tracking-wide">⚡ Setup Your Own API <span class="text-[9px] font-bold bg-amber-200 text-amber-900 px-1.5 py-0.5 ml-1.5">FREE • 5 MIN</span></div>
+              <p class="text-[10px] text-[#78716C] mt-0.5">Get your own 10,000 daily quota — step-by-step guided setup</p>
+            </div>
+            <span class="text-lg text-[#78716C]">→</span>
+          </div>
+        </div>
 
-        <div class="flex items-center justify-between pt-1">
-          <span class="text-[9px] text-[#78716C]">Google Console &rarr; OAuth Client</span>
-          <button
-            type="button"
-            onclick="saveAndAuthorize()"
-            class="px-3 py-1 bg-[#1B1B1B] hover:bg-black text-white font-bold text-xs uppercase tracking-wider cursor-pointer"
-          >
-            Sign In
-          </button>
+        <!-- Direct Token -->
+        <div class="p-3 bg-emerald-50 border border-emerald-300 text-xs space-y-2">
+          <div class="flex items-center justify-between font-bold text-emerald-900 uppercase text-[10px]">
+            <span>Advanced: Direct Bearer Token</span>
+            <span class="bg-emerald-200 px-1.5 py-0.2 text-[9px]">Dev Only</span>
+          </div>
+          <div class="flex gap-2">
+            <input type="password" id="directAccessTokenInput" placeholder="Paste Google Access Token (ya29...)" class="flex-1 p-2 text-xs border border-emerald-400 bg-white text-[#1B1B1B] focus:outline-none" />
+            <button type="button" onclick="saveDirectToken()" class="px-3 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs uppercase tracking-wider cursor-pointer whitespace-nowrap">Connect</button>
+          </div>
+        </div>
+
+        <!-- Disconnect -->
+        <div class="flex items-center justify-between pt-2 border-t border-[#D6D3CD]">
+          <button type="button" onclick="logoutGoogle()" class="text-xs text-rose-600 hover:underline font-bold uppercase cursor-pointer">Disconnect</button>
+          <button type="button" onclick="closeAuthModal()" class="px-3 py-1 bg-[#1B1B1B] text-white text-xs font-bold uppercase cursor-pointer">Close</button>
+        </div>
+      </div>
+
+      <!-- QUICK CONNECT VIEW (Already Has Client ID) -->
+      <div id="authQuickConnect" class="p-5 space-y-3 hidden">
+        <button type="button" onclick="showAuthLanding()" class="text-[10px] text-[#78716C] hover:text-[#1B1B1B] font-bold uppercase cursor-pointer">← Back</button>
+
+        <div class="p-3 bg-white border border-[#D6D3CD] text-xs space-y-2">
+          <div class="flex items-center justify-between font-bold text-[#1B1B1B] uppercase text-[10px]">
+            <span>Paste Your OAuth Client ID</span>
+            <span id="keyCountText" class="text-stone-500">0 key(s)</span>
+          </div>
+
+          <div class="p-2 bg-[#EDEAE5] border border-[#D6D3CD] text-[10px] space-y-1">
+            <div class="flex items-center justify-between font-bold">
+              <span>Your Authorized Origin (add this in Google Console):</span>
+              <button type="button" onclick="copyOriginUrl()" class="px-1.5 py-0.5 bg-white border border-[#D6D3CD] text-[9px] uppercase cursor-pointer">Copy</button>
+            </div>
+            <div class="text-[10px] truncate font-bold text-[#1B1B1B]" id="originUrlDisplay">https://...</div>
+          </div>
+
+          <textarea id="clientIdsList" rows="2" placeholder="Paste your OAuth Client ID here (e.g. 123456789-abc.apps.googleusercontent.com)" class="w-full p-2 text-xs border border-[#D6D3CD] bg-[#F6F4F0] text-[#1B1B1B] focus:outline-none focus:border-[#1B1B1B]"></textarea>
+
+          <div class="flex items-center justify-between pt-1">
+            <button type="button" onclick="saveClientIds()" class="px-3 py-1 bg-white border border-[#D6D3CD] text-[#1B1B1B] text-xs font-bold uppercase cursor-pointer">Save</button>
+            <button type="button" onclick="saveAndAuthorize()" class="px-4 py-1.5 bg-[#1B1B1B] hover:bg-black text-white font-bold text-xs uppercase tracking-wider cursor-pointer">Save & Sign In →</button>
+          </div>
         </div>
       </div>
 
-      <div class="flex items-center justify-between pt-2 border-t border-[#D6D3CD]">
-        <button type="button" onclick="logoutGoogle()" class="text-xs text-rose-600 hover:underline font-bold uppercase cursor-pointer">
-          Disconnect
-        </button>
-        <div class="flex items-center gap-2">
-          <button type="button" onclick="saveClientIds()" class="px-3.5 py-1 bg-white border border-[#D6D3CD] text-[#1B1B1B] text-xs font-bold uppercase cursor-pointer">
-            Save
-          </button>
-          <button type="button" onclick="closeAuthModal()" class="px-3 py-1 bg-[#1B1B1B] text-white text-xs font-bold uppercase cursor-pointer">
-            Close
-          </button>
+      <!-- GUIDED SETUP WIZARD -->
+      <div id="authSetupWizard" class="hidden">
+
+        <!-- Progress Bar -->
+        <div class="px-5 pt-4 pb-2">
+          <button type="button" onclick="showAuthLanding()" class="text-[10px] text-[#78716C] hover:text-[#1B1B1B] font-bold uppercase cursor-pointer mb-2">← Back to Options</button>
+          <div class="flex items-center gap-1">
+            <div id="wizStep1Bar" class="flex-1 h-1.5 bg-[#1B1B1B] transition-colors"></div>
+            <div id="wizStep2Bar" class="flex-1 h-1.5 bg-[#D6D3CD] transition-colors"></div>
+            <div id="wizStep3Bar" class="flex-1 h-1.5 bg-[#D6D3CD] transition-colors"></div>
+            <div id="wizStep4Bar" class="flex-1 h-1.5 bg-[#D6D3CD] transition-colors"></div>
+            <div id="wizStep5Bar" class="flex-1 h-1.5 bg-[#D6D3CD] transition-colors"></div>
+          </div>
+          <div class="text-[10px] text-[#78716C] mt-1 font-bold uppercase" id="wizStepLabel">Step 1 of 5</div>
         </div>
-      </div>
+
+        <!-- STEP 1: Create Google Cloud Project -->
+        <div id="wizardStep1" class="px-5 pb-5 space-y-3">
+          <div>
+            <h4 class="text-xs font-bold text-[#1B1B1B] uppercase">Step 1 — Create a Google Cloud Project</h4>
+            <p class="text-[10px] text-[#78716C] mt-0.5">This is a one-time setup. Takes 30 seconds.</p>
+          </div>
+
+          <div class="space-y-2 text-[11px] text-[#1B1B1B]">
+            <div class="flex items-start gap-2 p-2 bg-white border border-[#D6D3CD]">
+              <span class="font-bold text-amber-600 shrink-0">1.</span>
+              <span>Click the button below to open Google Cloud Console</span>
+            </div>
+            <div class="flex items-start gap-2 p-2 bg-white border border-[#D6D3CD]">
+              <span class="font-bold text-amber-600 shrink-0">2.</span>
+              <span>Sign in with your Google account (if not already)</span>
+            </div>
+            <div class="flex items-start gap-2 p-2 bg-white border border-[#D6D3CD]">
+              <span class="font-bold text-amber-600 shrink-0">3.</span>
+              <span>Click <b>"Select a project"</b> (top bar) → <b>"New Project"</b></span>
+            </div>
+            <div class="flex items-start gap-2 p-2 bg-white border border-[#D6D3CD]">
+              <span class="font-bold text-amber-600 shrink-0">4.</span>
+              <span>Enter any name (e.g. <b>"My YouTube Uploader"</b>) → Click <b>"Create"</b></span>
+            </div>
+            <div class="flex items-start gap-2 p-2 bg-white border border-[#D6D3CD]">
+              <span class="font-bold text-amber-600 shrink-0">5.</span>
+              <span>Wait 5 seconds for the project to be created, then select it from the top bar</span>
+            </div>
+          </div>
+
+          <a href="https://console.cloud.google.com/projectcreate" target="_blank" rel="noopener" class="block w-full text-center px-4 py-2.5 bg-white border-2 border-[#1B1B1B] text-[#1B1B1B] text-xs font-bold uppercase tracking-wider hover:bg-stone-50 cursor-pointer">
+            Open Google Cloud Console ↗
+          </a>
+
+          <div class="flex justify-end pt-1">
+            <button type="button" onclick="showSetupWizard(2)" class="px-5 py-1.5 bg-[#1B1B1B] text-white text-xs font-bold uppercase cursor-pointer">Done → Next Step</button>
+          </div>
+        </div>
+
+        <!-- STEP 2: Enable APIs -->
+        <div id="wizardStep2" class="px-5 pb-5 space-y-3 hidden">
+          <div>
+            <h4 class="text-xs font-bold text-[#1B1B1B] uppercase">Step 2 — Enable YouTube & Drive APIs</h4>
+            <p class="text-[10px] text-[#78716C] mt-0.5">Turn on the APIs your project needs. Click both links below.</p>
+          </div>
+
+          <div class="space-y-2 text-[11px] text-[#1B1B1B]">
+            <div class="flex items-start gap-2 p-2 bg-white border border-[#D6D3CD]">
+              <span class="font-bold text-amber-600 shrink-0">1.</span>
+              <span>Click each link below → Click the blue <b>"Enable"</b> button on the page</span>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <a href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" rel="noopener" class="flex items-center justify-between p-2.5 bg-white border-2 border-[#1B1B1B] hover:bg-stone-50 cursor-pointer text-xs font-bold text-[#1B1B1B] uppercase">
+              <span>① Enable YouTube Data API v3 ↗</span>
+              <span class="text-amber-600">Required</span>
+            </a>
+            <a href="https://console.cloud.google.com/apis/library/drive.googleapis.com" target="_blank" rel="noopener" class="flex items-center justify-between p-2.5 bg-white border-2 border-[#1B1B1B] hover:bg-stone-50 cursor-pointer text-xs font-bold text-[#1B1B1B] uppercase">
+              <span>② Enable Google Drive API ↗</span>
+              <span class="text-amber-600">Required</span>
+            </a>
+          </div>
+
+          <div class="flex justify-between pt-1">
+            <button type="button" onclick="showSetupWizard(1)" class="px-4 py-1.5 bg-white border border-[#D6D3CD] text-[#1B1B1B] text-xs font-bold uppercase cursor-pointer">← Back</button>
+            <button type="button" onclick="showSetupWizard(3)" class="px-5 py-1.5 bg-[#1B1B1B] text-white text-xs font-bold uppercase cursor-pointer">Done → Next Step</button>
+          </div>
+        </div>
+
+        <!-- STEP 3: OAuth Consent Screen -->
+        <div id="wizardStep3" class="px-5 pb-5 space-y-3 hidden">
+          <div>
+            <h4 class="text-xs font-bold text-[#1B1B1B] uppercase">Step 3 — Configure OAuth Consent Screen</h4>
+            <p class="text-[10px] text-[#78716C] mt-0.5">Tell Google what your app does. Simple form, 1 minute.</p>
+          </div>
+
+          <div class="space-y-2 text-[11px] text-[#1B1B1B]">
+            <div class="flex items-start gap-2 p-2 bg-white border border-[#D6D3CD]">
+              <span class="font-bold text-amber-600 shrink-0">1.</span>
+              <span>Click button below to open OAuth Consent Screen</span>
+            </div>
+            <div class="flex items-start gap-2 p-2 bg-white border border-[#D6D3CD]">
+              <span class="font-bold text-amber-600 shrink-0">2.</span>
+              <span>Select <b>"External"</b> → Click <b>"Create"</b></span>
+            </div>
+            <div class="flex items-start gap-2 p-2 bg-white border border-[#D6D3CD]">
+              <span class="font-bold text-amber-600 shrink-0">3.</span>
+              <span>Fill in: <b>App Name</b> (anything) and <b>User Support Email</b> (your email)</span>
+            </div>
+            <div class="flex items-start gap-2 p-2 bg-white border border-[#D6D3CD]">
+              <span class="font-bold text-amber-600 shrink-0">4.</span>
+              <span>Scroll to bottom → Add your email in <b>"Developer contact"</b> → Click <b>"Save and Continue"</b></span>
+            </div>
+            <div class="flex items-start gap-2 p-2 bg-white border border-[#D6D3CD]">
+              <span class="font-bold text-amber-600 shrink-0">5.</span>
+              <span>On the Scopes page → Just click <b>"Save and Continue"</b> (skip it)</span>
+            </div>
+            <div class="flex items-start gap-2 p-2 bg-white border border-[#D6D3CD]">
+              <span class="font-bold text-amber-600 shrink-0">6.</span>
+              <span>On the Test Users page → Click <b>"Add Users"</b> → Add <b>your own Gmail</b> → Click <b>"Save and Continue"</b></span>
+            </div>
+          </div>
+
+          <a href="https://console.cloud.google.com/apis/credentials/consent" target="_blank" rel="noopener" class="block w-full text-center px-4 py-2.5 bg-white border-2 border-[#1B1B1B] text-[#1B1B1B] text-xs font-bold uppercase tracking-wider hover:bg-stone-50 cursor-pointer">
+            Open OAuth Consent Screen ↗
+          </a>
+
+          <div class="flex justify-between pt-1">
+            <button type="button" onclick="showSetupWizard(2)" class="px-4 py-1.5 bg-white border border-[#D6D3CD] text-[#1B1B1B] text-xs font-bold uppercase cursor-pointer">← Back</button>
+            <button type="button" onclick="showSetupWizard(4)" class="px-5 py-1.5 bg-[#1B1B1B] text-white text-xs font-bold uppercase cursor-pointer">Done → Next Step</button>
+          </div>
+        </div>
+
+        <!-- STEP 4: Create OAuth Client ID -->
+        <div id="wizardStep4" class="px-5 pb-5 space-y-3 hidden">
+          <div>
+            <h4 class="text-xs font-bold text-[#1B1B1B] uppercase">Step 4 — Create OAuth Client ID</h4>
+            <p class="text-[10px] text-[#78716C] mt-0.5">This generates the key your app needs. Almost done!</p>
+          </div>
+
+          <div class="space-y-2 text-[11px] text-[#1B1B1B]">
+            <div class="flex items-start gap-2 p-2 bg-white border border-[#D6D3CD]">
+              <span class="font-bold text-amber-600 shrink-0">1.</span>
+              <span>Click button below to open Credentials page</span>
+            </div>
+            <div class="flex items-start gap-2 p-2 bg-white border border-[#D6D3CD]">
+              <span class="font-bold text-amber-600 shrink-0">2.</span>
+              <span>Click <b>"+ Create Credentials"</b> → Choose <b>"OAuth client ID"</b></span>
+            </div>
+            <div class="flex items-start gap-2 p-2 bg-white border border-[#D6D3CD]">
+              <span class="font-bold text-amber-600 shrink-0">3.</span>
+              <span>Application type: <b>"Web application"</b></span>
+            </div>
+            <div class="flex items-start gap-2 p-2 bg-amber-50 border-2 border-amber-400">
+              <span class="font-bold text-amber-600 shrink-0">4.</span>
+              <span>Under <b>"Authorized JavaScript origins"</b> → Click <b>"+ Add URI"</b> → Paste this exact URL:</span>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 p-2.5 bg-[#1B1B1B] border border-[#1B1B1B]">
+            <code class="flex-1 text-xs text-amber-400 font-bold truncate" id="wizOriginUrl">http://localhost:3000</code>
+            <button type="button" onclick="copyWizOriginUrl()" class="px-2 py-1 bg-white text-[#1B1B1B] text-[10px] font-bold uppercase cursor-pointer shrink-0">Copy</button>
+          </div>
+
+          <div class="space-y-2 text-[11px] text-[#1B1B1B]">
+            <div class="flex items-start gap-2 p-2 bg-white border border-[#D6D3CD]">
+              <span class="font-bold text-amber-600 shrink-0">5.</span>
+              <span>Click <b>"Create"</b> → A popup will show your <b>Client ID</b> — copy it!</span>
+            </div>
+          </div>
+
+          <a href="https://console.cloud.google.com/apis/credentials/oauthclient" target="_blank" rel="noopener" class="block w-full text-center px-4 py-2.5 bg-white border-2 border-[#1B1B1B] text-[#1B1B1B] text-xs font-bold uppercase tracking-wider hover:bg-stone-50 cursor-pointer">
+            Open Credentials Page ↗
+          </a>
+
+          <div class="flex justify-between pt-1">
+            <button type="button" onclick="showSetupWizard(3)" class="px-4 py-1.5 bg-white border border-[#D6D3CD] text-[#1B1B1B] text-xs font-bold uppercase cursor-pointer">← Back</button>
+            <button type="button" onclick="showSetupWizard(5)" class="px-5 py-1.5 bg-[#1B1B1B] text-white text-xs font-bold uppercase cursor-pointer">I Copied It → Final Step</button>
+          </div>
+        </div>
+
+        <!-- STEP 5: Paste Client ID & Connect -->
+        <div id="wizardStep5" class="px-5 pb-5 space-y-3 hidden">
+          <div>
+            <h4 class="text-xs font-bold text-[#1B1B1B] uppercase">Step 5 — Paste Client ID & Connect! 🎉</h4>
+            <p class="text-[10px] text-[#78716C] mt-0.5">You're done! Paste the Client ID you just copied.</p>
+          </div>
+
+          <div class="p-3 bg-emerald-50 border-2 border-emerald-500 space-y-2">
+            <label class="block text-[10px] font-bold text-emerald-900 uppercase">Your OAuth Client ID</label>
+            <textarea id="wizClientIdInput" rows="2" placeholder="Paste your Client ID here (e.g. 123456789-abcdef.apps.googleusercontent.com)" class="w-full p-2.5 text-xs border-2 border-emerald-400 bg-white text-[#1B1B1B] focus:outline-none focus:border-emerald-600 font-bold"></textarea>
+          </div>
+
+          <div class="p-2.5 bg-amber-50 border border-amber-300 text-[10px] text-amber-900">
+            <span class="font-bold">✦ What happens next:</span> Your Client ID connects to <b>your own</b> Google Cloud project. All API quota (10,000 units/day) is yours alone. No one else shares it!
+          </div>
+
+          <div class="flex justify-between pt-1">
+            <button type="button" onclick="showSetupWizard(4)" class="px-4 py-1.5 bg-white border border-[#D6D3CD] text-[#1B1B1B] text-xs font-bold uppercase cursor-pointer">← Back</button>
+            <button type="button" onclick="wizardFinishAndConnect()" class="px-6 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold uppercase tracking-wider cursor-pointer">✔ Connect & Sign In</button>
+          </div>
+        </div>
+
+      </div> <!-- end authSetupWizard -->
+
     </div>
   </div>
 
@@ -1347,15 +1550,87 @@
     window.openAuthModal = function() {
       const modal = document.getElementById('authConfigModal');
       const originDisplay = document.getElementById('originUrlDisplay');
-      if (originDisplay) {
-        originDisplay.textContent = window.location.origin;
-      }
+      const wizOrigin = document.getElementById('wizOriginUrl');
+      const currentOrigin = window.location.origin;
+
+      if (originDisplay) originDisplay.textContent = currentOrigin;
+      if (wizOrigin) wizOrigin.textContent = currentOrigin;
+
+      loadClientIds();
+      showAuthLanding();
       if (modal) modal.classList.remove('hidden');
     };
 
     window.closeAuthModal = function() {
       const modal = document.getElementById('authConfigModal');
       if (modal) modal.classList.add('hidden');
+    };
+
+    window.showAuthLanding = function() {
+      const landing = document.getElementById('authLanding');
+      const quick = document.getElementById('authQuickConnect');
+      const wizard = document.getElementById('authSetupWizard');
+      if (landing) landing.classList.remove('hidden');
+      if (quick) quick.classList.add('hidden');
+      if (wizard) wizard.classList.add('hidden');
+    };
+
+    window.showAuthQuickConnect = function() {
+      const landing = document.getElementById('authLanding');
+      const quick = document.getElementById('authQuickConnect');
+      const wizard = document.getElementById('authSetupWizard');
+      if (landing) landing.classList.add('hidden');
+      if (quick) quick.classList.remove('hidden');
+      if (wizard) wizard.classList.add('hidden');
+      loadClientIds();
+    };
+
+    window.showSetupWizard = function(step = 1) {
+      const landing = document.getElementById('authLanding');
+      const quick = document.getElementById('authQuickConnect');
+      const wizard = document.getElementById('authSetupWizard');
+      if (landing) landing.classList.add('hidden');
+      if (quick) quick.classList.add('hidden');
+      if (wizard) wizard.classList.remove('hidden');
+
+      for (let i = 1; i <= 5; i++) {
+        const stepEl = document.getElementById(`wizardStep${i}`);
+        const barEl = document.getElementById(`wizStep${i}Bar`);
+        if (stepEl) {
+          if (i === step) stepEl.classList.remove('hidden');
+          else stepEl.classList.add('hidden');
+        }
+        if (barEl) {
+          if (i <= step) barEl.style.backgroundColor = '#1B1B1B';
+          else barEl.style.backgroundColor = '#D6D3CD';
+        }
+      }
+
+      const label = document.getElementById('wizStepLabel');
+      if (label) label.textContent = `Step ${step} of 5`;
+
+      const wizOrigin = document.getElementById('wizOriginUrl');
+      if (wizOrigin) wizOrigin.textContent = window.location.origin;
+    };
+
+    window.copyWizOriginUrl = function() {
+      copyToClipboard(window.location.origin, 'Authorized Origin');
+    };
+
+    window.wizardFinishAndConnect = function() {
+      const input = document.getElementById('wizClientIdInput');
+      if (!input) return;
+      const val = input.value.trim();
+      if (!val) {
+        showToast('Please paste your OAuth Client ID.', 'error');
+        input.focus();
+        return;
+      }
+      localStorage.setItem('yt_client_ids', val);
+      const textarea = document.getElementById('clientIdsList');
+      if (textarea) textarea.value = val;
+      showToast('✔ Client ID saved! Opening Google Sign-in...', 'success');
+      launchOAuthPopup();
     };
 
     window.copyOriginUrl = function() {
@@ -1402,15 +1677,23 @@
     window.loadClientIds = function() {
       const saved = localStorage.getItem('yt_client_ids');
       const textarea = document.getElementById('clientIdsList');
+      const wizInput = document.getElementById('wizClientIdInput');
       const countText = document.getElementById('keyCountText');
       if (saved && textarea) {
         textarea.value = saved;
         const count = saved.split('\n').filter(s => s.trim()).length;
         if (countText) countText.textContent = `${count} key(s)`;
       }
+      if (saved && wizInput && !wizInput.value) {
+        wizInput.value = saved;
+      }
       const originDisplay = document.getElementById('originUrlDisplay');
       if (originDisplay) {
         originDisplay.textContent = window.location.origin;
+      }
+      const wizOrigin = document.getElementById('wizOriginUrl');
+      if (wizOrigin) {
+        wizOrigin.textContent = window.location.origin;
       }
     };
 
