@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full bg-slate-950 text-slate-100 antialiased">
+<html lang="en" class="h-full bg-[#fbfbf9] text-stone-900 antialiased">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Drive → YouTube Pro Cloud Portal</title>
+  <title>Drive → YouTube Video Portal</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Google Identity Services for OAuth -->
@@ -14,21 +14,19 @@
   
   <script>
     tailwind.config = {
-      darkMode: 'class',
       theme: {
         extend: {
           fontFamily: {
-            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
-            mono: ['"JetBrains Mono"', 'monospace']
+            sans: ['"Plus Jakarta Sans"', 'system-ui', '-apple-system', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace']
           },
           colors: {
-            brand: {
-              50: '#eef2ff',
-              100: '#e0e7ff',
-              400: '#818cf8',
-              500: '#6366f1',
-              600: '#4f46e5',
-              700: '#4338ca',
+            terracotta: {
+              50: '#fff7ed',
+              100: '#ffedd5',
+              500: '#f97316',
+              600: '#ea580c',
+              700: '#c2410c'
             }
           }
         }
@@ -37,82 +35,84 @@
   </script>
   
   <style>
-    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    body { 
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      background-color: #fbfbf9;
+    }
     .font-mono { font-family: 'JetBrains Mono', monospace; }
     
-    /* Custom Modern Scrollbar */
+    /* Clean Editorial Scrollbar */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
-    ::-webkit-scrollbar-thumb { background: rgba(51, 65, 85, 0.8); border-radius: 9999px; }
-    ::-webkit-scrollbar-thumb:hover { background: rgba(99, 102, 241, 0.6); }
+    ::-webkit-scrollbar-track { background: #f5f5f0; }
+    ::-webkit-scrollbar-thumb { background: #d6d3d1; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #a8a29e; }
     
-    /* Subtle Glassmorphism */
-    .glass-card {
-      background: rgba(15, 23, 42, 0.75);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border: 1px solid rgba(51, 65, 85, 0.5);
+    .editorial-card {
+      background: #ffffff;
+      border: 1px solid #e7e5e4;
+      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.02);
     }
     
-    .glass-header {
-      background: rgba(10, 15, 30, 0.85);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border-bottom: 1px solid rgba(51, 65, 85, 0.6);
+    .editorial-input {
+      background: #ffffff;
+      border: 1px solid #d6d3d1;
+      color: #1c1917;
+      transition: all 0.15s ease-in-out;
     }
-    
-    .glow-indigo:hover {
-      box-shadow: 0 0 25px -5px rgba(99, 102, 241, 0.4);
+    .editorial-input:focus {
+      outline: none;
+      border-color: #ea580c;
+      box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.12);
     }
   </style>
 </head>
-<body class="min-h-full flex flex-col bg-[#0b0f19] text-slate-200 selection:bg-indigo-500 selection:text-white">
+<body class="min-h-full flex flex-col bg-[#fbfbf9] text-stone-900 selection:bg-orange-500 selection:text-white">
 
-  <!-- 1. Top Modern Header Bar -->
-  <header class="sticky top-0 z-40 glass-header px-6 py-3.5 shadow-2xl">
+  <!-- 1. Top Clean Editorial Header Bar -->
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-stone-200/90 px-6 py-3 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
     <div class="max-w-[1680px] mx-auto flex items-center justify-between gap-4">
       
       <!-- Brand & Title -->
-      <div class="flex items-center gap-3.5">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-500 text-white flex items-center justify-center shadow-lg shadow-indigo-500/30 ring-1 ring-white/20">
-          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-stone-900 text-white flex items-center justify-center shadow-xs">
+          <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
             <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/>
           </svg>
         </div>
         <div>
-          <div class="flex items-center gap-2.5">
-            <h1 class="text-base font-extrabold text-white tracking-tight">Drive <span class="text-indigo-400">→</span> YouTube Portal</h1>
-            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/30 uppercase tracking-widest">
-              PRO STREAM ENGINE
+          <div class="flex items-center gap-2">
+            <h1 class="text-[15px] font-bold text-stone-900 tracking-tight">Drive <span class="text-stone-400 font-normal">→</span> YouTube Portal</h1>
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-stone-100 text-stone-700 border border-stone-200 uppercase tracking-wider">
+              PORTAL
             </span>
           </div>
-          <p class="text-[11px] text-slate-400 font-medium">Cloud-to-Cloud Fast Direct Pipeline • 0 MB Local Bandwidth</p>
+          <p class="text-[11px] text-stone-500 font-medium">Cloud Direct Upload • 0 MB Local Bandwidth</p>
         </div>
       </div>
 
-      <!-- Top Header Actions & Status Badges -->
+      <!-- Top Header Status Badges & Auth -->
       <div class="flex items-center gap-2.5">
         <!-- Google Auth Not Connected Button -->
         <button
           type="button"
           id="navAuthBtn"
           onclick="handleConnectClick()"
-          class="flex items-center gap-2 px-3.5 h-9 rounded-lg text-xs font-semibold bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-700 shadow-md transition-all cursor-pointer hover:border-slate-600"
+          class="flex items-center gap-2 px-3 h-8.5 rounded-lg text-xs font-semibold bg-white hover:bg-stone-50 text-stone-800 border border-stone-300 shadow-2xs transition-all cursor-pointer hover:border-stone-400"
           title="Google Account is not connected. Click to connect."
         >
           <span class="relative flex h-2 w-2">
             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
             <span class="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
           </span>
-          <span>Google Auth: <span class="text-rose-400 font-bold">Not Connected</span></span>
-          <span class="text-[11px] bg-indigo-500/20 text-indigo-300 font-bold px-2 py-0.5 rounded border border-indigo-500/30 ml-0.5">Connect</span>
+          <span>Google Auth: <span class="text-rose-600 font-bold">Not Connected</span></span>
+          <span class="text-[11px] bg-stone-100 text-stone-800 font-bold px-1.5 py-0.5 rounded border border-stone-200 ml-0.5 hover:bg-stone-200">Connect</span>
         </button>
 
         <!-- Connected Badge -->
-        <div id="navConnectedBadge" class="hidden items-center gap-2 px-3.5 h-9 rounded-lg text-xs font-semibold bg-emerald-950/40 text-emerald-300 border border-emerald-500/30 shadow-md">
-          <span class="w-2 h-2 rounded-full bg-emerald-400 inline-block shadow-sm shadow-emerald-400"></span>
-          <span>Google Account Connected</span>
-          <button type="button" onclick="openAuthModal()" class="text-xs text-slate-400 hover:text-white underline ml-1.5 cursor-pointer font-medium">Settings</button>
+        <div id="navConnectedBadge" class="hidden items-center gap-2 px-3 h-8.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-2xs">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
+          <span>Google Connected</span>
+          <button type="button" onclick="openAuthModal()" class="text-xs text-emerald-700 hover:text-emerald-950 underline ml-1 cursor-pointer font-semibold">Settings</button>
         </div>
 
         <!-- Verify Channel Button -->
@@ -120,57 +120,57 @@
           href="https://www.youtube.com/verify"
           target="_blank"
           rel="noopener noreferrer"
-          class="flex items-center gap-1.5 px-3.5 h-9 rounded-lg text-xs font-semibold bg-amber-950/30 hover:bg-amber-900/40 text-amber-300 border border-amber-500/30 shadow-md transition-all"
-          title="Verify your YouTube channel with phone number to unlock >15 min video uploads"
+          class="flex items-center gap-1.5 px-3 h-8.5 rounded-lg text-xs font-semibold bg-amber-50 hover:bg-amber-100/80 text-amber-900 border border-amber-200 shadow-2xs transition-all"
+          title="Verify your YouTube account with phone number to unlock >15 min video uploads"
         >
-          <span class="w-2 h-2 rounded-full bg-amber-400 inline-block"></span>
+          <span class="w-2 h-2 rounded-full bg-amber-500 inline-block"></span>
           <span>Verify Channel (&gt;15 min)</span>
-          <svg class="w-3.5 h-3.5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg class="w-3 h-3 text-amber-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
           </svg>
         </a>
 
         <!-- SSE Connection Status Badge -->
-        <div id="connectionBadge" class="flex items-center gap-2 px-3.5 h-9 rounded-lg text-xs font-semibold bg-slate-900/80 text-emerald-400 border border-emerald-500/30 shadow-md">
-          <span class="w-2 h-2 rounded-full bg-emerald-400 inline-block animate-pulse shadow-sm shadow-emerald-400"></span>
-          <span id="sseStatusText">Live Cloud SSE</span>
+        <div id="connectionBadge" class="flex items-center gap-2 px-3 h-8.5 rounded-lg text-xs font-semibold bg-white text-emerald-700 border border-emerald-300 shadow-2xs">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+          <span id="sseStatusText">Live SSE Connected</span>
         </div>
       </div>
     </div>
   </header>
 
   <!-- Main Content Container -->
-  <main class="flex-1 max-w-[1680px] w-full mx-auto px-6 py-5 space-y-4.5">
+  <main class="flex-1 max-w-[1680px] w-full mx-auto px-6 py-4 space-y-4">
 
     <!-- Background Notice Banner -->
-    <div id="bgNoticeBanner" class="hidden glass-card rounded-xl px-4 py-3 flex items-center justify-between text-xs text-slate-200 shadow-xl border-indigo-500/40 bg-indigo-950/30">
-      <div class="flex items-center gap-3">
-        <span class="relative flex h-3 w-3">
-          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-          <span class="relative inline-flex rounded-full h-3 w-3 bg-indigo-500"></span>
+    <div id="bgNoticeBanner" class="hidden editorial-card rounded-xl px-4 py-2.5 flex items-center justify-between text-xs text-stone-800 bg-orange-50/60 border-orange-200 shadow-2xs">
+      <div class="flex items-center gap-2.5">
+        <span class="relative flex h-2.5 w-2.5">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-orange-600"></span>
         </span>
-        <span class="font-semibold text-white tracking-wide" id="bgStatusText">Upload task is currently executing in background...</span>
+        <span class="font-semibold text-stone-900" id="bgStatusText">Upload task is currently in progress in background...</span>
       </div>
-      <button type="button" id="cancelJobBtn" onclick="cancelProcessingJob()" class="px-3 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 font-bold text-rose-300 cursor-pointer shadow-md transition-all text-xs flex items-center gap-1.5">
+      <button type="button" id="cancelJobBtn" onclick="cancelProcessingJob()" class="px-2.5 py-1 rounded bg-white hover:bg-rose-50 border border-rose-200 font-bold text-rose-600 cursor-pointer shadow-2xs transition-colors text-xs flex items-center gap-1">
         <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
         <span>Stop Current Task</span>
       </button>
     </div>
 
     <!-- 2. Metrics Filter Pills Row & Top Date Range Picker -->
-    <div class="flex items-center justify-between gap-3 flex-wrap select-none pt-1">
-      <div class="flex items-center gap-2 overflow-x-auto pb-1">
-        <span class="font-bold text-slate-400 text-xs uppercase tracking-wider whitespace-nowrap mr-1">Filter Stats:</span>
+    <div class="flex items-center justify-between gap-3 flex-wrap select-none">
+      <div class="flex items-center gap-2 overflow-x-auto pb-0.5">
+        <span class="font-bold text-stone-500 text-xs uppercase tracking-wider whitespace-nowrap mr-1">Filter Stats:</span>
 
         <!-- 1. Total Pill -->
         <button
           type="button"
           id="filterPillAll"
           onclick="setTableFilter('all')"
-          class="inline-flex items-center h-8.5 px-4 rounded-lg bg-indigo-600 text-white font-bold shadow-lg shadow-indigo-600/30 whitespace-nowrap cursor-pointer transition-all border border-indigo-500"
+          class="inline-flex items-center h-8 px-3.5 rounded-lg border border-stone-900 bg-stone-900 text-white font-bold shadow-2xs whitespace-nowrap cursor-pointer transition-all"
           title="Click to view all videos"
         >
-          Total - <span id="metricTotal" class="ml-1.5 font-extrabold text-white">0</span>
+          Total - <span id="metricTotal" class="ml-1.5 font-bold">0</span>
         </button>
 
         <!-- 2. Uploaded Pill -->
@@ -178,7 +178,7 @@
           type="button"
           id="filterPillCompleted"
           onclick="setTableFilter('completed')"
-          class="inline-flex items-center h-8.5 px-4 rounded-lg bg-slate-900/90 text-emerald-400 font-semibold border border-emerald-500/40 hover:bg-emerald-950/30 whitespace-nowrap cursor-pointer transition-all shadow-md"
+          class="inline-flex items-center h-8 px-3.5 rounded-lg border border-emerald-300 bg-white text-emerald-700 font-semibold shadow-2xs whitespace-nowrap cursor-pointer hover:bg-emerald-50 transition-all"
           title="Click to view uploaded videos only"
         >
           Uploaded - <span id="metricUploaded" class="ml-1.5 font-bold">0 (0.00%)</span>
@@ -189,7 +189,7 @@
           type="button"
           id="filterPillPending"
           onclick="setTableFilter('pending')"
-          class="inline-flex items-center h-8.5 px-4 rounded-lg bg-slate-900/90 text-indigo-300 font-semibold border border-indigo-500/40 hover:bg-indigo-950/30 whitespace-nowrap cursor-pointer transition-all shadow-md"
+          class="inline-flex items-center h-8 px-3.5 rounded-lg border border-orange-300 bg-white text-orange-700 font-semibold shadow-2xs whitespace-nowrap cursor-pointer hover:bg-orange-50 transition-all"
           title="Click to view in-progress videos only"
         >
           In Progress - <span id="metricPending" class="ml-1.5 font-bold">0 (0.00%)</span>
@@ -201,11 +201,11 @@
           href="#"
           target="_blank"
           rel="noopener noreferrer"
-          class="hidden items-center h-8.5 px-4 rounded-lg bg-purple-950/40 hover:bg-purple-900/50 border border-purple-500/40 font-bold text-purple-300 shadow-md whitespace-nowrap gap-2 transition-all cursor-pointer"
+          class="hidden items-center h-8 px-3.5 rounded-lg border border-stone-300 bg-stone-100 hover:bg-stone-200 font-bold text-stone-800 shadow-2xs whitespace-nowrap gap-1.5 transition-colors cursor-pointer"
           title="Click to open full YouTube Playlist"
         >
-          <svg class="w-3.5 h-3.5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/></svg>
-          <span>Playlist: <span id="playlistPillTitle" class="underline decoration-purple-400/50 underline-offset-2">View Playlist</span> ↗</span>
+          <svg class="w-3.5 h-3.5 text-stone-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/></svg>
+          <span>Playlist: <span id="playlistPillTitle" class="underline">View Playlist</span> ↗</span>
         </a>
 
         <!-- 5. Failed Pill -->
@@ -213,75 +213,75 @@
           type="button"
           id="filterPillFailed"
           onclick="setTableFilter('failed')"
-          class="hidden inline-flex items-center h-8.5 px-4 rounded-lg bg-slate-900/90 font-semibold text-rose-400 border border-rose-500/40 hover:bg-rose-950/30 whitespace-nowrap cursor-pointer transition-all shadow-md"
+          class="hidden inline-flex items-center h-8 px-3.5 rounded-lg border border-rose-300 bg-white font-semibold text-rose-700 shadow-2xs whitespace-nowrap cursor-pointer hover:bg-rose-50 transition-all"
           title="Click to view failed videos only"
         >
           Failed - <span id="metricFailed" class="ml-1.5 font-bold">0</span>
         </button>
 
         <!-- 6. Privacy Pill -->
-        <div class="inline-flex items-center h-8.5 px-4 rounded-lg bg-slate-900/80 border border-slate-800 font-semibold text-slate-300 shadow-md whitespace-nowrap">
-          Privacy: <span class="ml-1.5 font-bold text-amber-400">Unlisted (100%)</span>
+        <div class="inline-flex items-center h-8 px-3.5 rounded-lg border border-stone-200 bg-white font-semibold text-stone-700 shadow-2xs whitespace-nowrap">
+          Privacy: <span class="ml-1.5 font-bold text-stone-900">Unlisted (100%)</span>
         </div>
       </div>
 
       <!-- Top Interactive Date Range Picker -->
       <div class="relative flex items-center gap-2 shrink-0">
-        <span class="text-xs font-semibold text-slate-400 whitespace-nowrap">Date Filter:</span>
+        <span class="text-xs font-semibold text-stone-600 whitespace-nowrap">Pick date range:</span>
         <div class="relative" id="calendarWrapper">
           <button
             type="button"
             id="dateRangeInputBtn"
             onclick="toggleCalendarPopover(event)"
-            class="h-8.5 px-3.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-indigo-500/60 rounded-lg text-xs font-medium text-slate-200 shadow-md flex items-center gap-2.5 cursor-pointer transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+            class="h-8.5 px-3 bg-white border border-stone-300 hover:border-stone-400 rounded-lg text-xs font-semibold text-stone-800 shadow-2xs flex items-center gap-2 cursor-pointer transition-all focus:outline-none focus:ring-2 focus:ring-stone-400/20"
             title="Click to select custom date range or single date"
           >
-            <svg class="w-3.5 h-3.5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg class="w-3.5 h-3.5 text-stone-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
             </svg>
-            <span id="dateRangeInputText" class="font-bold text-white">All Dates</span>
-            <svg class="w-3 h-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <span id="dateRangeInputText" class="font-bold text-stone-900">All Dates</span>
+            <svg class="w-3 h-3 text-stone-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
             </svg>
           </button>
 
           <!-- Calendar Popover dropdown -->
-          <div id="calendarPopover" class="hidden absolute right-0 top-11 z-50 glass-card bg-slate-900/95 border border-slate-700 rounded-2xl shadow-2xl p-4.5 w-[320px] select-none text-slate-200">
+          <div id="calendarPopover" class="hidden absolute right-0 top-10 z-50 bg-white border border-stone-200 rounded-xl shadow-xl p-4 w-[300px] select-none text-stone-800">
             <!-- Calendar Navigation Header -->
-            <div class="flex items-center justify-between pb-3 mb-2.5 border-b border-slate-800">
-              <button type="button" onclick="navigateMonth(-1)" class="w-8 h-8 rounded-lg hover:bg-slate-800 flex items-center justify-center text-slate-300 font-bold cursor-pointer transition-colors text-sm" title="Previous Month">
+            <div class="flex items-center justify-between pb-2.5 mb-2 border-b border-stone-100">
+              <button type="button" onclick="navigateMonth(-1)" class="w-7 h-7 rounded hover:bg-stone-100 flex items-center justify-center text-stone-600 font-bold cursor-pointer transition-colors text-sm" title="Previous Month">
                 ‹
               </button>
-              <span id="calendarMonthYearLabel" class="text-sm font-bold text-white tracking-wide">August 2026</span>
-              <button type="button" onclick="navigateMonth(1)" class="w-8 h-8 rounded-lg hover:bg-slate-800 flex items-center justify-center text-slate-300 font-bold cursor-pointer transition-colors text-sm" title="Next Month">
+              <span id="calendarMonthYearLabel" class="text-sm font-bold text-stone-900">August 2026</span>
+              <button type="button" onclick="navigateMonth(1)" class="w-7 h-7 rounded hover:bg-stone-100 flex items-center justify-center text-stone-600 font-bold cursor-pointer transition-colors text-sm" title="Next Month">
                 ›
               </button>
             </div>
 
             <!-- Weekday Row -->
-            <div class="grid grid-cols-7 text-center text-[11px] font-bold text-slate-400 mb-2">
+            <div class="grid grid-cols-7 text-center text-[11px] font-bold text-stone-400 mb-1.5">
               <span>Mo</span>
               <span>Tu</span>
               <span>We</span>
               <span>Th</span>
               <span>Fr</span>
-              <span class="text-rose-400">Sa</span>
-              <span class="text-rose-400">Su</span>
+              <span class="text-rose-500">Sa</span>
+              <span class="text-rose-500">Su</span>
             </div>
 
             <!-- Calendar Days Grid -->
-            <div id="calendarDaysGrid" class="grid grid-cols-7 gap-1 text-center text-xs">
+            <div id="calendarDaysGrid" class="grid grid-cols-7 gap-y-1 text-center text-xs">
               <!-- Populated dynamically -->
             </div>
 
             <!-- Quick Presets -->
-            <div class="pt-3.5 mt-3 border-t border-slate-800 flex items-center justify-between text-xs">
+            <div class="pt-3 mt-3 border-t border-stone-100 flex items-center justify-between text-xs">
               <div class="flex items-center gap-1.5">
-                <button type="button" onclick="applyPresetRange('today')" class="px-2.5 py-1 rounded-md bg-slate-800 hover:bg-indigo-600 hover:text-white text-slate-300 font-medium cursor-pointer transition-all">Today</button>
-                <button type="button" onclick="applyPresetRange('yesterday')" class="px-2.5 py-1 rounded-md bg-slate-800 hover:bg-indigo-600 hover:text-white text-slate-300 font-medium cursor-pointer transition-all">Yesterday</button>
-                <button type="button" onclick="applyPresetRange('last7')" class="px-2.5 py-1 rounded-md bg-slate-800 hover:bg-indigo-600 hover:text-white text-slate-300 font-medium cursor-pointer transition-all">7 Days</button>
+                <button type="button" onclick="applyPresetRange('today')" class="px-2 py-0.5 rounded bg-stone-100 hover:bg-stone-200 text-stone-700 font-medium cursor-pointer transition-colors">Today</button>
+                <button type="button" onclick="applyPresetRange('yesterday')" class="px-2 py-0.5 rounded bg-stone-100 hover:bg-stone-200 text-stone-700 font-medium cursor-pointer transition-colors">Yesterday</button>
+                <button type="button" onclick="applyPresetRange('last7')" class="px-2 py-0.5 rounded bg-stone-100 hover:bg-stone-200 text-stone-700 font-medium cursor-pointer transition-colors">7 Days</button>
               </div>
-              <button type="button" onclick="applyPresetRange('all')" class="text-rose-400 hover:text-rose-300 hover:underline font-bold cursor-pointer">Reset All</button>
+              <button type="button" onclick="applyPresetRange('all')" class="text-rose-600 hover:underline font-bold cursor-pointer">Reset All</button>
             </div>
           </div>
         </div>
@@ -289,32 +289,32 @@
     </div>
 
     <!-- Quota Alert Banner -->
-    <div id="quotaAlertBanner" class="hidden glass-card bg-amber-950/40 border border-amber-500/40 rounded-2xl p-4.5 shadow-xl flex items-center justify-between flex-wrap gap-4">
-      <div class="flex items-center gap-3.5">
-        <div class="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-400 flex items-center justify-center shrink-0">
+    <div id="quotaAlertBanner" class="hidden editorial-card bg-amber-50/80 border border-amber-200 rounded-xl p-4 shadow-2xs flex items-center justify-between flex-wrap gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-amber-100 border border-amber-300 text-amber-800 flex items-center justify-center shrink-0">
           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
         </div>
         <div>
           <div class="flex items-center gap-2">
-            <h4 class="text-sm font-bold text-amber-300">YouTube Daily Upload Limit Reached (~10-15 videos/day)</h4>
-            <span class="px-2 py-0.5 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-full text-[10px] font-bold uppercase">Queue Paused</span>
+            <h4 class="text-xs font-bold text-amber-900">YouTube Daily Upload Limit Reached (~10-15 videos/day)</h4>
+            <span class="px-2 py-0.2 bg-amber-200 text-amber-900 rounded text-[10px] font-bold uppercase">Queue Paused</span>
           </div>
-          <p class="text-xs text-amber-200/80 mt-0.5">YouTube API has paused uploads for today. You can convert all remaining or failed videos into instant <strong>Secure Google Drive Player</strong> embed links without waiting!</p>
+          <p class="text-xs text-amber-800/90 mt-0.5">YouTube API has paused uploads for today. You can convert remaining or failed videos into instant <strong>Secure Google Drive Player</strong> embed links!</p>
         </div>
       </div>
-      <div class="flex items-center gap-2.5">
+      <div class="flex items-center gap-2">
         <button
           type="button"
           onclick="convertAllToDrivePlayer()"
-          class="h-9 px-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold shadow-lg shadow-indigo-600/30 transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+          class="h-8.5 px-3 bg-stone-900 hover:bg-black text-white rounded-lg text-xs font-bold shadow-2xs transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
         >
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
-          <span>⚡ Convert Remaining to Drive Player (Instant)</span>
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+          <span>⚡ Convert Remaining to Drive Player</span>
         </button>
         <button
           type="button"
           onclick="dismissQuotaBanner()"
-          class="h-9 px-3 bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700 rounded-lg text-xs font-semibold cursor-pointer"
+          class="h-8.5 px-2.5 bg-white text-stone-700 hover:bg-stone-100 border border-stone-300 rounded-lg text-xs font-semibold cursor-pointer"
         >
           Dismiss
         </button>
@@ -322,63 +322,63 @@
     </div>
 
     <!-- 3. Inputs & Controls Dashboard Card -->
-    <div class="glass-card rounded-2xl p-5 shadow-2xl space-y-4">
+    <div class="editorial-card rounded-xl p-4.5 space-y-4">
       
       <!-- Processing Modes Options -->
       <div>
-        <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2.5">Select Processing Mode:</label>
+        <label class="block text-[11px] font-bold uppercase tracking-wider text-stone-500 mb-2">Select Processing Mode:</label>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
           
           <!-- Mode 1: YouTube Upload -->
-          <label id="modeCard-youtube" onclick="selectProcessingMode('youtube')" class="relative flex items-start p-3.5 rounded-xl border-2 border-indigo-500 bg-indigo-950/30 shadow-lg cursor-pointer transition-all">
-            <input type="radio" name="processingMode" value="youtube" checked onchange="updateProcessingModeCards()" class="mt-1 text-indigo-600 focus:ring-indigo-500 cursor-pointer accent-indigo-500" />
-            <div class="ml-3 text-xs">
-              <span class="font-bold text-white block text-sm">Option 1: YouTube Upload</span>
-              <span class="text-slate-400 block mt-1 leading-relaxed">Upload to YouTube Unlisted. Uses your daily 10,000 API quota (approx 6-10 videos/day).</span>
+          <label id="modeCard-youtube" onclick="selectProcessingMode('youtube')" class="relative flex items-start p-3 rounded-lg border-2 border-stone-900 bg-stone-50 shadow-2xs cursor-pointer transition-all">
+            <input type="radio" name="processingMode" value="youtube" checked onchange="updateProcessingModeCards()" class="mt-0.5 text-stone-900 focus:ring-stone-900 cursor-pointer accent-stone-900" />
+            <div class="ml-2.5 text-xs">
+              <span class="font-bold text-stone-900 block text-xs">Option 1: YouTube Upload</span>
+              <span class="text-stone-500 block mt-0.5 leading-relaxed">Upload to YouTube Unlisted. Uses your daily 10,000 API quota (approx 6-10 videos/day).</span>
             </div>
           </label>
 
           <!-- Mode 2: Auto-Queue -->
-          <label id="modeCard-queue" onclick="selectProcessingMode('queue')" class="relative flex items-start p-3.5 rounded-xl border-2 border-slate-800 bg-slate-900/60 hover:bg-slate-800/60 cursor-pointer transition-all">
-            <input type="radio" name="processingMode" value="queue" onchange="updateProcessingModeCards()" class="mt-1 text-indigo-600 focus:ring-indigo-500 cursor-pointer accent-indigo-500" />
-            <div class="ml-3 text-xs">
-              <span class="font-bold text-slate-200 block text-sm">Option 2: Smart Auto-Queue</span>
-              <span class="text-slate-400 block mt-1 leading-relaxed">Uploads to YouTube. If quota is reached, it will pause automatically and save progress.</span>
+          <label id="modeCard-queue" onclick="selectProcessingMode('queue')" class="relative flex items-start p-3 rounded-lg border-2 border-stone-200 bg-white hover:bg-stone-50/80 cursor-pointer transition-all">
+            <input type="radio" name="processingMode" value="queue" onchange="updateProcessingModeCards()" class="mt-0.5 text-stone-900 focus:ring-stone-900 cursor-pointer accent-stone-900" />
+            <div class="ml-2.5 text-xs">
+              <span class="font-bold text-stone-800 block text-xs">Option 2: Smart Auto-Queue</span>
+              <span class="text-stone-500 block mt-0.5 leading-relaxed">Uploads to YouTube. If quota is reached, it will pause automatically and save progress.</span>
             </div>
           </label>
 
           <!-- Mode 3: Drive Secure Direct Player -->
-          <label id="modeCard-drive_secure" onclick="selectProcessingMode('drive_secure')" class="relative flex items-start p-3.5 rounded-xl border-2 border-slate-800 bg-slate-900/60 hover:bg-slate-800/60 cursor-pointer transition-all">
-            <input type="radio" name="processingMode" value="drive_secure" onchange="updateProcessingModeCards()" class="mt-1 text-indigo-600 focus:ring-indigo-500 cursor-pointer accent-indigo-500" />
-            <div class="ml-3 text-xs">
-              <span class="font-bold text-slate-200 block text-sm">Option 3: Secure Drive Player</span>
-              <span class="text-slate-400 block mt-1 leading-relaxed">Bypass YouTube (No quota limit!). Generates a protected Google Drive embed link.</span>
+          <label id="modeCard-drive_secure" onclick="selectProcessingMode('drive_secure')" class="relative flex items-start p-3 rounded-lg border-2 border-stone-200 bg-white hover:bg-stone-50/80 cursor-pointer transition-all">
+            <input type="radio" name="processingMode" value="drive_secure" onchange="updateProcessingModeCards()" class="mt-0.5 text-stone-900 focus:ring-stone-900 cursor-pointer accent-stone-900" />
+            <div class="ml-2.5 text-xs">
+              <span class="font-bold text-stone-800 block text-xs">Option 3: Secure Drive Player</span>
+              <span class="text-stone-500 block mt-0.5 leading-relaxed">Bypass YouTube (No quota limit!). Generates a protected Google Drive embed link.</span>
             </div>
           </label>
         </div>
       </div>
 
       <!-- Main Input Controls Grid -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-3.5 items-end pt-1">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 items-end">
         <!-- Drive Link/ID Input (Col 5) -->
-        <div class="lg:col-span-5 space-y-1.5">
-          <label class="block text-xs font-bold text-slate-300">
-            Google Drive Folder Link / ID <span class="text-slate-500 font-normal">(Recursive subfolders auto-scanned)</span>
+        <div class="lg:col-span-5 space-y-1">
+          <label class="block text-xs font-bold text-stone-700">
+            Google Drive Folder Link / ID <span class="text-stone-400 font-normal">(Recursive subfolders auto-scanned)</span>
           </label>
           <div class="relative flex items-center">
             <input
               type="text"
               id="folderInput"
               placeholder="Paste Drive Folder Link (e.g. 27-LNE51MP 2026)..."
-              class="w-full h-10 pl-3.5 pr-10 border border-slate-700 rounded-xl text-xs text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition-all bg-slate-900/90"
+              class="w-full h-9 pl-3 pr-9 editorial-input rounded-lg text-xs placeholder:text-stone-400"
             />
             <button
               type="button"
               onclick="pasteFromClipboard()"
-              class="absolute right-3 text-slate-400 hover:text-indigo-400 transition-colors cursor-pointer"
+              class="absolute right-2.5 text-stone-400 hover:text-stone-700 transition-colors cursor-pointer"
               title="Paste from clipboard"
             >
-              <svg class="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
             </button>
@@ -386,43 +386,43 @@
         </div>
 
         <!-- Playlist Name Input (Col 2) -->
-        <div class="lg:col-span-2 space-y-1.5">
-          <label class="block text-xs font-bold text-slate-300">
-            Playlist Name <span class="text-slate-500 font-normal">(Optional)</span>
+        <div class="lg:col-span-2 space-y-1">
+          <label class="block text-xs font-bold text-stone-700">
+            Playlist Name <span class="text-stone-400 font-normal">(Optional)</span>
           </label>
           <input
             type="text"
             id="playlistNameInput"
             placeholder="e.g. 27-LNE51MP"
-            class="w-full h-10 px-3.5 border border-slate-700 rounded-xl text-xs text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition-all bg-slate-900/90"
+            class="w-full h-9 px-3 editorial-input rounded-lg text-xs placeholder:text-stone-400"
           />
         </div>
 
         <!-- Date Range Filter Picker for Scanning (Col 3) -->
-        <div class="lg:col-span-3 space-y-1.5">
+        <div class="lg:col-span-3 space-y-1">
           <div class="flex items-center justify-between">
-            <label class="block text-xs font-bold text-slate-300">Scan Date Filter</label>
+            <label class="block text-xs font-bold text-stone-700">Scan Date Filter</label>
             <div class="flex items-center gap-1.5 text-[10px]">
-              <button type="button" onclick="setDatePreset('all')" class="text-indigo-400 hover:underline font-bold cursor-pointer">All Time</button>
-              <span class="text-slate-600">|</span>
-              <button type="button" onclick="setDatePreset('today')" class="text-slate-400 hover:text-indigo-400 cursor-pointer">Today</button>
-              <span class="text-slate-600">|</span>
-              <button type="button" onclick="setDatePreset('yesterday')" class="text-slate-400 hover:text-indigo-400 cursor-pointer">Yesterday</button>
-              <span class="text-slate-600">|</span>
-              <button type="button" onclick="setDatePreset('clear')" class="text-rose-400 hover:underline cursor-pointer">Clear</button>
+              <button type="button" onclick="setDatePreset('all')" class="text-orange-600 hover:underline font-bold cursor-pointer">All Time</button>
+              <span class="text-stone-300">|</span>
+              <button type="button" onclick="setDatePreset('today')" class="text-stone-600 hover:text-stone-900 cursor-pointer">Today</button>
+              <span class="text-stone-300">|</span>
+              <button type="button" onclick="setDatePreset('yesterday')" class="text-stone-600 hover:text-stone-900 cursor-pointer">Yesterday</button>
+              <span class="text-stone-300">|</span>
+              <button type="button" onclick="setDatePreset('clear')" class="text-rose-600 hover:underline cursor-pointer">Clear</button>
             </div>
           </div>
           <div class="flex items-center gap-1.5">
             <input
               type="date"
               id="startDateInput"
-              class="w-1/2 h-10 px-2.5 border border-slate-700 rounded-xl text-xs text-slate-200 bg-slate-900/90 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500"
+              class="w-1/2 h-9 px-2 editorial-input rounded-lg text-xs text-stone-700"
             />
-            <span class="text-slate-500 text-xs">-</span>
+            <span class="text-stone-400 text-xs">-</span>
             <input
               type="date"
               id="endDateInput"
-              class="w-1/2 h-10 px-2.5 border border-slate-700 rounded-xl text-xs text-slate-200 bg-slate-900/90 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500"
+              class="w-1/2 h-9 px-2 editorial-input rounded-lg text-xs text-stone-700"
             />
           </div>
         </div>
@@ -433,9 +433,9 @@
             type="button"
             id="startButton"
             onclick="startProcessing()"
-            class="flex-1 h-10 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white rounded-xl text-xs font-bold shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed glow-indigo"
+            class="flex-1 h-9 bg-stone-900 hover:bg-black text-white rounded-lg text-xs font-bold shadow-2xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg class="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
@@ -446,10 +446,10 @@
             type="button"
             id="stopProcessBtn"
             onclick="cancelProcessingJob()"
-            class="hidden h-10 px-3.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-rose-600/30 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+            class="hidden h-9 px-3 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold shadow-2xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
             title="Stop / Cancel current background upload"
           >
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
             </svg>
             <span>Stop</span>
@@ -458,10 +458,10 @@
           <button
             type="button"
             id="downloadCsvBtn"
-            class="h-10 px-3.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold border border-slate-700 shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+            class="h-9 px-3 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-lg text-xs font-bold border border-stone-300 shadow-2xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
             title="Download CSV report of uploaded videos"
           >
-            <svg class="w-4 h-4 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg class="w-3.5 h-3.5 text-stone-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
             </svg>
             <span>CSV</span>
@@ -471,33 +471,33 @@
     </div>
 
     <!-- 4. Clean Enterprise Table & Search Toolbar -->
-    <div class="glass-card rounded-2xl overflow-hidden shadow-2xl border border-slate-800 space-y-0">
+    <div class="editorial-card rounded-xl overflow-hidden shadow-2xs space-y-0">
       
       <!-- Table Search & Action Toolbar -->
-      <div class="p-3.5 border-b border-slate-800 bg-slate-900/60 flex items-center justify-between gap-3 flex-wrap">
+      <div class="p-2.5 border-b border-stone-200 bg-stone-50/80 flex items-center justify-between gap-3 flex-wrap">
         <!-- Search & Source Filters (Left) -->
-        <div class="flex items-center gap-3 flex-1 min-w-[320px]">
+        <div class="flex items-center gap-2.5 flex-1 min-w-[320px]">
           <!-- Real-Time Search Input Box -->
-          <div class="relative flex-1 max-w-md">
+          <div class="relative flex-1 max-w-sm">
             <input
               type="text"
               id="tableSearchInput"
               placeholder="Search videos by title, batch, or subject..."
               oninput="handleTableSearch()"
-              class="w-full h-9 pl-9 pr-3.5 text-xs bg-slate-950/80 border border-slate-700 rounded-xl text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition-all"
+              class="w-full h-8.5 pl-8 pr-3 text-xs bg-white border border-stone-300 rounded-lg text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-1 focus:ring-stone-900 focus:border-stone-900 transition-all"
             />
-            <svg class="w-4 h-4 text-slate-500 absolute left-3 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg class="w-3.5 h-3.5 text-stone-400 absolute left-2.5 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
             </svg>
           </div>
 
           <!-- Source Filter Segmented Buttons (All / YouTube / Drive) -->
-          <div class="flex items-center bg-slate-950/80 p-1 rounded-xl border border-slate-800 text-xs shrink-0 whitespace-nowrap">
+          <div class="flex items-center bg-stone-200/70 p-0.5 rounded-lg border border-stone-300 text-xs shrink-0 whitespace-nowrap">
             <button
               type="button"
               id="sourceFilterAll"
               onclick="setSourceFilter('all')"
-              class="h-7.5 px-3 rounded-lg text-xs font-bold bg-indigo-600 text-white shadow-md cursor-pointer transition-all whitespace-nowrap flex items-center gap-1"
+              class="h-7.5 px-3 rounded-md text-xs font-bold bg-white text-stone-900 shadow-2xs cursor-pointer transition-all whitespace-nowrap flex items-center gap-1"
             >
               <span>All (<span id="sourceCountAll">0</span>)</span>
             </button>
@@ -505,18 +505,18 @@
               type="button"
               id="sourceFilterYouTube"
               onclick="setSourceFilter('youtube')"
-              class="h-7.5 px-3 rounded-lg text-xs font-semibold text-slate-400 hover:text-white cursor-pointer transition-all whitespace-nowrap flex items-center gap-1.5"
+              class="h-7.5 px-3 rounded-md text-xs font-semibold text-stone-600 hover:text-stone-900 cursor-pointer transition-all whitespace-nowrap flex items-center gap-1.5"
             >
-              <svg class="w-3.5 h-3.5 text-rose-500 shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+              <svg class="w-3.5 h-3.5 text-rose-600 shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
               <span>YouTube (<span id="sourceCountYouTube">0</span>)</span>
             </button>
             <button
               type="button"
               id="sourceFilterDrive"
               onclick="setSourceFilter('drive')"
-              class="h-7.5 px-3 rounded-lg text-xs font-semibold text-slate-400 hover:text-white cursor-pointer transition-all whitespace-nowrap flex items-center gap-1.5"
+              class="h-7.5 px-3 rounded-md text-xs font-semibold text-stone-600 hover:text-stone-900 cursor-pointer transition-all whitespace-nowrap flex items-center gap-1.5"
             >
-              <svg class="w-3.5 h-3.5 text-indigo-400 shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+              <svg class="w-3.5 h-3.5 text-stone-700 shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
               <span>Drive (<span id="sourceCountDrive">0</span>)</span>
             </button>
           </div>
@@ -528,10 +528,10 @@
           <button
             type="button"
             onclick="copyAllVideoLinks()"
-            class="h-8.5 px-3.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 rounded-lg text-xs font-semibold shadow-md transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+            class="h-8.5 px-3 bg-white hover:bg-stone-50 text-stone-700 border border-stone-300 rounded-lg text-xs font-semibold shadow-2xs transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
             title="Copy all embed links"
           >
-            <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg class="w-3.5 h-3.5 text-stone-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
             </svg>
             <span>Copy All Links</span>
@@ -541,23 +541,23 @@
           <button
             type="button"
             onclick="syncYouTubeUploads()"
-            class="h-8.5 px-3.5 bg-rose-950/40 hover:bg-rose-900/50 text-rose-300 border border-rose-500/40 rounded-lg text-xs font-semibold shadow-md transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+            class="h-8.5 px-3 bg-white hover:bg-stone-50 text-stone-700 hover:text-rose-600 border border-stone-300 rounded-lg text-xs font-semibold shadow-2xs transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
             title="Fetch all live uploaded videos from your YouTube channel"
           >
-            <svg class="w-3.5 h-3.5 text-rose-400 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+            <svg class="w-3.5 h-3.5 text-rose-600 shrink-0" viewBox="0 0 24 24" fill="currentColor">
               <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
             </svg>
-            <span>Sync Channel</span>
+            <span>Sync YouTube</span>
           </button>
 
           <!-- Clear / Clean Table Button -->
           <button
             type="button"
             onclick="clearCompletedVideos()"
-            class="h-8.5 px-3.5 bg-slate-800 hover:bg-rose-950/40 text-slate-300 hover:text-rose-400 border border-slate-700 hover:border-rose-500/40 rounded-lg text-xs font-semibold shadow-md transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+            class="h-8.5 px-3 bg-white hover:bg-stone-50 text-stone-700 hover:text-rose-600 border border-stone-300 rounded-lg text-xs font-semibold shadow-2xs transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
             title="Clean / Remove all completed videos from this dashboard"
           >
-            <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg class="w-3.5 h-3.5 text-stone-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
             </svg>
             <span>Clean Table</span>
@@ -569,25 +569,23 @@
       <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse text-xs">
           <thead>
-            <tr class="bg-slate-900/90 border-b border-slate-800 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              <th class="py-3.5 px-3.5 w-12 text-center border-r border-slate-800/80">#</th>
-              <th class="py-3.5 px-4.5 border-r border-slate-800/80">File Name &amp; Batch <span class="font-normal text-[10px] text-slate-500 lowercase">(click ✏️ to edit live)</span></th>
-              <th class="py-3.5 px-3.5 w-28 text-center border-r border-slate-800/80">Date</th>
-              <th class="py-3.5 px-3.5 w-32 text-center border-r border-slate-800/80">Format &amp; Source</th>
-              <th class="py-3.5 px-4.5 w-76 border-r border-slate-800/80">Thumbnail &amp; Status</th>
-              <th class="py-3.5 px-4.5 w-48 text-center">Actions</th>
+            <tr class="bg-stone-50 border-b border-stone-200 text-[11px] font-bold uppercase tracking-wider text-stone-600">
+              <th class="py-3 px-3 w-12 text-center border-r border-stone-200">#</th>
+              <th class="py-3 px-4 border-r border-stone-200">File Name &amp; Batch <span class="font-normal text-[10px] text-stone-400 lowercase">(click ✏️ to edit live)</span></th>
+              <th class="py-3 px-3 w-28 text-center border-r border-stone-200">Date</th>
+              <th class="py-3 px-3 w-32 text-center border-r border-stone-200">Format &amp; Source</th>
+              <th class="py-3 px-4 w-72 border-r border-stone-200">Thumbnail &amp; Status</th>
+              <th class="py-3 px-4 w-44 text-center">Action</th>
             </tr>
           </thead>
-          <tbody id="trackingTableBody" class="divide-y divide-slate-800/60 font-medium">
-            <tr id="emptyRow" class="text-slate-500">
-              <td colspan="6" class="py-20 text-center">
-                <div class="flex flex-col items-center justify-center gap-3">
-                  <div class="w-12 h-12 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-600 shadow-inner">
-                    <svg class="w-6 h-6 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                  <p class="text-xs font-semibold text-slate-400">No videos in queue. Paste a Google Drive folder link above and click "Start Process".</p>
+          <tbody id="trackingTableBody" class="divide-y divide-stone-100 font-medium">
+            <tr id="emptyRow" class="text-stone-400">
+              <td colspan="6" class="py-16 text-center">
+                <div class="flex flex-col items-center justify-center gap-2">
+                  <svg class="w-8 h-8 text-stone-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                  <p class="text-xs font-semibold text-stone-500">No videos in queue. Paste Google Drive folder link above and click "Start Process".</p>
                 </div>
               </td>
             </tr>
@@ -597,28 +595,28 @@
     </div>
   </main>
 
-  <!-- 5. Modern Smart Video Player Modal with Poster & Play Button -->
-  <div id="videoModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4">
-    <div class="glass-card bg-slate-900 border border-slate-700 rounded-2xl max-w-4xl w-full overflow-hidden shadow-2xl flex flex-col">
+  <!-- 5. Modern Video Player Modal with Poster & Play Button -->
+  <div id="videoModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-4">
+    <div class="bg-white rounded-xl max-w-4xl w-full overflow-hidden shadow-2xl border border-stone-200 flex flex-col">
       <!-- Modal Header -->
-      <div class="flex items-center justify-between px-5 py-3.5 border-b border-slate-800 bg-slate-950/60">
+      <div class="flex items-center justify-between px-5 py-3 border-b border-stone-200 bg-stone-50">
         <div class="space-y-1 overflow-hidden pr-3">
           <div class="flex items-center gap-2">
-            <span id="modalSourceBadge" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-rose-950/50 text-rose-400 border border-rose-500/30">
+            <span id="modalSourceBadge" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-600 border border-rose-200">
               <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
               <span>YouTube (Unlisted)</span>
             </span>
-            <span id="modalBatchTag" class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-950/50 text-indigo-300 border border-indigo-500/30">Batch</span>
-            <span id="modalSubjectTag" class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-800 text-slate-300 border border-slate-700">Subject</span>
+            <span id="modalBatchTag" class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-stone-100 text-stone-800 border border-stone-200">Batch</span>
+            <span id="modalSubjectTag" class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-stone-100 text-stone-700 border border-stone-200">Subject</span>
           </div>
-          <h3 id="modalVideoTitle" class="text-sm font-bold text-white truncate">Lecture Preview</h3>
+          <h3 id="modalVideoTitle" class="text-sm font-bold text-stone-900 truncate">Lecture Preview</h3>
         </div>
 
         <div class="flex items-center gap-2 shrink-0">
           <button
             type="button"
             onclick="openEditModalFromPlayer()"
-            class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-indigo-400 border border-slate-700 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-md transition-all cursor-pointer"
+            class="px-2.5 py-1.5 bg-white hover:bg-stone-50 text-stone-800 border border-stone-300 rounded text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
             title="Edit Title, Batch, or Change Thumbnail"
           >
             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -627,36 +625,36 @@
             <span>Edit / Thumbnail</span>
           </button>
 
-          <a id="modalYtLink" href="#" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-md transition-all cursor-pointer">
+          <a id="modalYtLink" href="#" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer">
             <span>Open Link ↗</span>
           </a>
 
-          <button onclick="closeVideoModal()" class="w-8 h-8 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer text-xl font-bold">
+          <button onclick="closeVideoModal()" class="w-8 h-8 rounded hover:bg-stone-200 text-stone-500 flex items-center justify-center transition-colors cursor-pointer text-lg font-bold">
             &times;
           </button>
         </div>
       </div>
 
       <!-- Video Player / Poster Container Area -->
-      <div class="relative aspect-video w-full bg-black flex items-center justify-center overflow-hidden">
+      <div class="relative aspect-video w-full bg-stone-950 flex items-center justify-center overflow-hidden">
         <!-- 1. Initial Thumbnail Poster View with Play Button -->
         <div id="modalPosterContainer" class="absolute inset-0 z-10 flex items-center justify-center cursor-pointer group select-none" onclick="startModalPlayback()">
-          <img id="modalPosterImg" src="" alt="Thumbnail" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100" onerror="this.src='https://placehold.co/1280x720/0f172a/ffffff?text=Click+to+Play'" />
-          <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/50"></div>
+          <img id="modalPosterImg" src="" alt="Thumbnail" class="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300 opacity-90 group-hover:opacity-100" onerror="this.src='https://placehold.co/1280x720/1c1917/ffffff?text=Click+to+Play'" />
+          <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-black/40"></div>
           
           <!-- Centered Play Button Overlay -->
           <div class="relative z-20 flex flex-col items-center gap-3">
-            <div class="w-20 h-20 rounded-2xl bg-indigo-600 text-white shadow-2xl flex items-center justify-center transform group-hover:scale-110 transition-all duration-300 border-2 border-white/40 shadow-indigo-500/50">
-              <svg class="w-10 h-10 ml-1 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            <div class="w-18 h-18 rounded-2xl bg-white text-stone-900 shadow-2xl flex items-center justify-center transform group-hover:scale-110 transition-all duration-200 border border-stone-200">
+              <svg class="w-9 h-9 ml-1 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
             </div>
-            <span class="text-white font-bold text-xs bg-slate-900/90 backdrop-blur-md px-4 py-1.5 rounded-full border border-slate-700 shadow-xl">Click to Play Video</span>
+            <span class="text-white font-bold text-xs bg-black/70 backdrop-blur-xs px-4 py-1.5 rounded-full border border-white/20 shadow-md">Click to Play Video</span>
           </div>
 
           <!-- Bottom Video Info Overlay on Poster -->
           <div class="absolute bottom-4 left-5 right-5 z-20 flex items-end justify-between pointer-events-none">
-            <div class="space-y-1 max-w-xl text-left">
-              <span id="posterBatchTag" class="text-xs font-extrabold text-amber-400 uppercase tracking-wider block"></span>
-              <h4 id="posterVideoTitle" class="text-base font-bold text-white drop-shadow-lg line-clamp-1"></h4>
+            <div class="space-y-0.5 max-w-xl text-left">
+              <span id="posterBatchTag" class="text-xs font-bold text-amber-300 uppercase tracking-wider block"></span>
+              <h4 id="posterVideoTitle" class="text-base font-bold text-white drop-shadow-md line-clamp-1"></h4>
             </div>
           </div>
         </div>
@@ -668,92 +666,93 @@
   </div>
 
   <!-- 6. Video Details & Thumbnail Studio Modal -->
-  <div id="editVideoModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4">
-    <div class="glass-card bg-slate-900 border border-slate-700 rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-4.5">
-      <div class="flex items-center justify-between border-b border-slate-800 pb-3.5">
-        <div class="flex items-center gap-2.5">
-          <div class="w-8 h-8 rounded-lg bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center font-bold text-sm">
+  <div id="editVideoModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-4">
+    <div class="bg-white rounded-xl max-w-xl w-full p-5 shadow-2xl border border-stone-200 space-y-4">
+      <div class="flex items-center justify-between border-b border-stone-200 pb-3">
+        <div class="flex items-center gap-2">
+          <div class="w-7 h-7 rounded bg-stone-100 text-stone-800 border border-stone-200 flex items-center justify-center font-bold text-xs">
             ✏️
           </div>
           <div>
-            <h3 class="text-sm font-bold text-white">Edit Video &amp; Thumbnail Studio</h3>
-            <p class="text-[11px] text-slate-400">Update YouTube title, batch, and set custom thumbnails</p>
+            <h3 class="text-sm font-bold text-stone-900">Edit Video &amp; Thumbnail Studio</h3>
+            <p class="text-[11px] text-stone-500">Update YouTube title, batch, and set custom thumbnails</p>
           </div>
         </div>
-        <button type="button" onclick="closeEditModal()" class="text-slate-400 hover:text-white text-xl font-bold cursor-pointer">&times;</button>
+        <button type="button" onclick="closeEditModal()" class="text-stone-400 hover:text-stone-600 text-lg font-bold cursor-pointer">&times;</button>
       </div>
 
       <input type="hidden" id="editModalFileId" value="" />
       <input type="hidden" id="editModalVideoId" value="" />
 
       <!-- Video Title Input -->
-      <div class="space-y-1.5">
-        <label class="block text-xs font-bold text-slate-300">Video Title (Syncs with YouTube):</label>
+      <div class="space-y-1">
+        <label class="block text-xs font-bold text-stone-800">Video Title (Syncs with YouTube):</label>
         <input
           type="text"
           id="editModalTitleInput"
-          class="w-full h-9.5 px-3.5 text-xs font-semibold border border-slate-700 rounded-xl text-white bg-slate-950/80 focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500"
+          class="w-full h-9 px-3 text-xs font-semibold editorial-input rounded-md text-stone-900"
           placeholder="Enter video title..."
         />
       </div>
 
       <!-- Batch & Subject Row -->
       <div class="grid grid-cols-2 gap-3">
-        <div class="space-y-1.5">
-          <label class="block text-xs font-semibold text-slate-300">Batch Name:</label>
+        <div class="space-y-1">
+          <label class="block text-xs font-semibold text-stone-700">Batch Name:</label>
           <input
             type="text"
             id="editModalBatchInput"
-            class="w-full h-9 px-3.5 text-xs border border-slate-700 rounded-xl text-white bg-slate-950/80 focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500"
+            class="w-full h-8.5 px-3 text-xs editorial-input rounded-md text-stone-900"
             placeholder="e.g. 27-LNE51MP 2026"
           />
         </div>
-        <div class="space-y-1.5">
-          <label class="block text-xs font-semibold text-slate-300">Subject / Category:</label>
+        <div class="space-y-1">
+          <label class="block text-xs font-semibold text-stone-700">Subject / Category:</label>
           <input
             type="text"
             id="editModalSubjectInput"
-            class="w-full h-9 px-3.5 text-xs border border-slate-700 rounded-xl text-white bg-slate-950/80 focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500"
+            class="w-full h-8.5 px-3 text-xs editorial-input rounded-md text-stone-900"
             placeholder="e.g. Physics / Lecture"
           />
         </div>
       </div>
 
       <!-- Thumbnail Management Box -->
-      <div class="p-4 rounded-xl bg-slate-950/70 border border-slate-800 space-y-3.5">
+      <div class="p-3.5 rounded-lg bg-stone-50 border border-stone-200 space-y-3">
         <div class="flex items-center justify-between">
-          <label class="text-xs font-bold text-white flex items-center gap-1.5">
-            <span>Thumbnail Studio (16:9 HD)</span>
+          <label class="text-xs font-bold text-stone-900 flex items-center gap-1.5">
+            <span>Thumbnail Studio (16:9)</span>
+            <span class="text-[10px] font-normal text-stone-500">Live preview &amp; YouTube uploader</span>
           </label>
           <button
             type="button"
             onclick="generateSmartThumbnail()"
-            class="px-3 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg text-[11px] font-bold shadow-md transition-all cursor-pointer flex items-center gap-1"
+            class="px-2.5 py-1 bg-stone-900 hover:bg-black text-white rounded text-[11px] font-bold shadow-2xs transition-colors cursor-pointer flex items-center gap-1"
             title="Auto-generate a clean professional thumbnail banner"
           >
             <span>⚡ 1-Click Auto Thumbnail</span>
           </button>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-12 gap-3.5 items-center">
+        <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
           <!-- Thumbnail Live Preview (Col 5) -->
           <div class="sm:col-span-5">
-            <div class="relative aspect-video w-full rounded-lg border border-slate-700 overflow-hidden bg-black shadow-md group">
-              <img id="editModalThumbPreview" src="https://placehold.co/640x360/0f172a/ffffff?text=Preview" alt="Thumbnail Preview" class="w-full h-full object-cover" />
-              <div class="absolute bottom-1 right-1 bg-black/80 px-1.5 py-0.5 rounded text-[9px] text-white font-mono border border-white/20">16:9 HD</div>
+            <div class="relative aspect-video w-full rounded border border-stone-300 overflow-hidden bg-stone-900 shadow-2xs group">
+              <img id="editModalThumbPreview" src="https://placehold.co/640x360/1c1917/ffffff?text=Preview" alt="Thumbnail Preview" class="w-full h-full object-cover" />
+              <div class="absolute bottom-1 right-1 bg-black/70 px-1.5 py-0.5 rounded text-[9px] text-white font-mono">16:9 HD</div>
             </div>
           </div>
 
           <!-- Thumbnail Options (Col 7) -->
-          <div class="sm:col-span-7 space-y-2.5 text-xs">
+          <div class="sm:col-span-7 space-y-2 text-xs">
             <div>
-              <span class="text-[11px] font-semibold text-slate-400 block mb-1">Option A: Upload Image File</span>
+              <span class="text-[11px] font-semibold text-stone-700 block mb-1">Option A: Upload Image File</span>
               <button
                 type="button"
                 onclick="document.getElementById('thumbnailFileInput').click()"
-                class="w-full h-8.5 px-3 bg-slate-900 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-700 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                class="w-full h-8 px-3 bg-white hover:bg-stone-50 text-stone-700 hover:text-stone-900 border border-stone-300 rounded text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
               >
-                <svg class="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg class="w-3.5 h-3.5 text-stone-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                 </svg>
                 <span>Choose Image (JPG / PNG)</span>
@@ -761,13 +760,13 @@
             </div>
 
             <div>
-              <span class="text-[11px] font-semibold text-slate-400 block mb-1">Option B: Image URL</span>
+              <span class="text-[11px] font-semibold text-stone-700 block mb-1">Option B: Image URL</span>
               <input
                 type="text"
                 id="editModalThumbUrlInput"
                 oninput="handleCustomThumbUrlInput()"
                 placeholder="Paste image link https://..."
-                class="w-full h-8.5 px-3 text-xs border border-slate-700 rounded-lg bg-slate-900 text-white focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500"
+                class="w-full h-8 px-2 text-xs editorial-input rounded text-stone-900"
               />
             </div>
           </div>
@@ -775,27 +774,27 @@
       </div>
 
       <!-- Action Buttons -->
-      <div class="flex items-center justify-between pt-2 border-t border-slate-800">
+      <div class="flex items-center justify-between pt-2 border-t border-stone-200">
         <button
           type="button"
           onclick="deleteCurrentVideoFromEditModal()"
-          class="px-3.5 py-2 text-xs text-rose-400 hover:bg-rose-950/40 border border-rose-500/40 rounded-lg font-semibold cursor-pointer transition-colors flex items-center gap-1.5"
+          class="px-3 py-1.5 text-xs text-rose-600 hover:bg-rose-50 border border-rose-200 rounded font-semibold cursor-pointer transition-colors"
         >
-          <span>🗑️ Remove Video</span>
+          🗑️ Remove Video
         </button>
 
         <div class="flex items-center gap-2">
           <button
             type="button"
             onclick="closeEditModal()"
-            class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold cursor-pointer"
+            class="px-3.5 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded text-xs font-semibold cursor-pointer"
           >
             Cancel
           </button>
           <button
             type="button"
             onclick="saveVideoEditModal()"
-            class="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold shadow-lg shadow-indigo-600/30 transition-all cursor-pointer flex items-center gap-1.5"
+            class="px-4 py-1.5 bg-stone-900 hover:bg-black text-white rounded text-xs font-bold shadow-2xs transition-colors cursor-pointer flex items-center gap-1.5"
           >
             <span>Save &amp; Apply</span>
           </button>
@@ -805,61 +804,61 @@
   </div>
 
   <!-- Google Auth & API Keys Modal -->
-  <div id="authConfigModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4">
-    <div class="glass-card bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4.5">
-      <div class="flex items-center justify-between border-b border-slate-800 pb-3.5">
+  <div id="authConfigModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-stone-200 space-y-4">
+      <div class="flex items-center justify-between border-b border-stone-100 pb-3">
         <div class="flex items-center gap-2.5">
-          <div class="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold">G</div>
+          <div class="w-8 h-8 rounded-lg bg-stone-900 text-white flex items-center justify-center font-bold">G</div>
           <div>
-            <h3 class="text-sm font-bold text-white">Google OAuth &amp; Multi-Key Rotation</h3>
-            <p class="text-[11px] text-slate-400">Connect Google account for unlimited uploads</p>
+            <h3 class="text-sm font-bold text-stone-900">Google OAuth &amp; Multi-Key Rotation</h3>
+            <p class="text-[11px] text-stone-500">Connect Google account for unlimited uploads</p>
           </div>
         </div>
-        <button type="button" onclick="closeAuthModal()" class="text-slate-400 hover:text-white text-xl font-bold cursor-pointer">&times;</button>
+        <button type="button" onclick="closeAuthModal()" class="text-stone-400 hover:text-stone-600 text-lg font-bold cursor-pointer">&times;</button>
       </div>
 
       <!-- Quick Connect Tabs / Options -->
-      <div class="space-y-3.5">
+      <div class="space-y-3">
         <!-- Direct Access Token Input (Guaranteed Instant Connect) -->
-        <div class="p-3.5 rounded-xl bg-emerald-950/30 border border-emerald-500/40 text-xs space-y-2">
-          <div class="flex items-center justify-between font-bold text-emerald-300">
+        <div class="p-3 rounded-lg bg-emerald-50/70 border border-emerald-200 text-xs space-y-2">
+          <div class="flex items-center justify-between font-bold text-emerald-900">
             <span>Option A: Instant Token Connect (Zero-Setup)</span>
-            <span class="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/30 font-bold">Recommended</span>
+            <span class="text-[10px] text-emerald-700 font-semibold">Recommended</span>
           </div>
           <div class="flex gap-2">
             <input
               type="password"
               id="directAccessTokenInput"
               placeholder="Paste Google Access Token (ya29...)"
-              class="flex-1 p-2 text-xs font-mono border border-emerald-500/40 rounded-lg bg-slate-950 text-emerald-300 focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500"
+              class="flex-1 p-2 text-xs font-mono border border-emerald-300 rounded bg-white text-stone-900 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
             />
             <button
               type="button"
               onclick="saveDirectToken()"
-              class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg text-xs transition-colors cursor-pointer whitespace-nowrap shadow-md"
+              class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded text-xs transition-colors cursor-pointer whitespace-nowrap"
             >
-              Connect
+              Connect Token
             </button>
           </div>
-          <p class="text-[10px] text-emerald-300/80">Paste any valid OAuth Bearer access token from Google OAuth Playground to connect instantly without creating OAuth credentials.</p>
+          <p class="text-[10px] text-emerald-700">Paste any valid OAuth Bearer access token from Google OAuth Playground to connect instantly without creating OAuth credentials.</p>
         </div>
 
         <!-- OAuth Client ID (Popup Sign-In) -->
-        <div class="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 text-xs space-y-2.5">
-          <div class="flex items-center justify-between font-bold text-slate-200">
+        <div class="p-3 rounded-lg bg-stone-50 border border-stone-200 text-xs space-y-2.5">
+          <div class="flex items-center justify-between font-bold text-stone-800">
             <span>Option B: Google Cloud OAuth 2.0 Web Client ID</span>
-            <span id="keyCountText" class="text-[10px] font-semibold text-indigo-400">0 key(s) active</span>
+            <span id="keyCountText" class="text-[10px] font-semibold text-stone-600">0 key(s) active</span>
           </div>
 
           <!-- Quick Origin Setup Helper -->
-          <div class="p-2.5 rounded-lg bg-amber-950/30 border border-amber-500/30 text-xs space-y-1">
-            <div class="flex items-center justify-between font-bold text-amber-300">
+          <div class="p-2.5 rounded bg-amber-50/80 border border-amber-200 text-xs space-y-1">
+            <div class="flex items-center justify-between font-bold text-amber-900">
               <span class="text-[11px]">Authorized JavaScript Origin:</span>
-              <button type="button" onclick="copyOriginUrl()" class="px-2 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-[10px] font-bold cursor-pointer transition-colors border border-amber-500/30">
-                Copy Origin
+              <button type="button" onclick="copyOriginUrl()" class="px-2 py-0.5 rounded bg-amber-200/80 hover:bg-amber-300 text-amber-900 text-[10px] font-bold cursor-pointer transition-colors">
+                Copy Origin URL
               </button>
             </div>
-            <div class="font-mono text-[11px] text-amber-300 bg-slate-900/80 px-2 py-1 rounded border border-amber-500/20 truncate" id="originUrlDisplay">
+            <div class="font-mono text-[11px] text-amber-800 bg-white/80 px-2 py-1 rounded border border-amber-200/60 truncate" id="originUrlDisplay">
               https://...
             </div>
           </div>
@@ -868,15 +867,15 @@
             id="clientIdsList"
             rows="2"
             placeholder="Paste your OAuth Client ID (e.g. 123456789-xxx.apps.googleusercontent.com)..."
-            class="w-full p-2.5 text-xs font-mono border border-slate-700 rounded-lg bg-slate-900 text-white focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500"
+            class="w-full p-2 text-xs font-mono border border-stone-300 rounded bg-white text-stone-900 focus:ring-2 focus:ring-stone-400/20 focus:border-stone-900"
           ></textarea>
 
           <div class="flex items-center justify-between pt-1">
-            <span class="text-[10px] text-slate-500">Google Cloud Console &rarr; Credentials &rarr; OAuth Client</span>
+            <span class="text-[10px] text-stone-500">Add origin in Google Cloud Console &rarr; Credentials &rarr; OAuth Client</span>
             <button
               type="button"
               onclick="saveAndAuthorize()"
-              class="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md transition-colors cursor-pointer"
+              class="px-3.5 py-1.5 rounded bg-stone-900 hover:bg-black text-white font-bold text-xs shadow-2xs transition-colors cursor-pointer"
             >
               Save &amp; Sign In
             </button>
@@ -884,15 +883,15 @@
         </div>
 
         <!-- Sync YouTube Uploads -->
-        <div class="p-3.5 rounded-xl bg-rose-950/30 border border-rose-500/30 flex items-center justify-between">
+        <div class="p-3 rounded-lg bg-rose-50/60 border border-rose-100 flex items-center justify-between">
           <div>
-            <div class="text-xs font-bold text-rose-300">Sync YouTube Uploads</div>
-            <div class="text-[11px] text-slate-400">Fetch all previously uploaded channel videos</div>
+            <div class="text-xs font-bold text-stone-900">Sync YouTube Uploads</div>
+            <div class="text-[11px] text-stone-500">Fetch all previously uploaded channel videos</div>
           </div>
           <button
             type="button"
             onclick="syncYouTubeUploads()"
-            class="px-3.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-md transition-colors cursor-pointer flex items-center gap-1.5"
+            class="px-3.5 py-1.5 rounded bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-2xs transition-colors cursor-pointer flex items-center gap-1.5"
           >
             <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
               <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
@@ -902,15 +901,15 @@
         </div>
       </div>
 
-      <div class="flex items-center justify-between pt-2 border-t border-slate-800">
-        <button type="button" onclick="logoutGoogle()" class="text-xs text-rose-400 hover:underline font-semibold cursor-pointer">
+      <div class="flex items-center justify-between pt-2 border-t border-stone-100">
+        <button type="button" onclick="logoutGoogle()" class="text-xs text-rose-600 hover:underline font-semibold cursor-pointer">
           Disconnect Account
         </button>
         <div class="flex items-center gap-2">
-          <button type="button" onclick="saveClientIds()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-bold border border-slate-700 shadow-md transition-colors cursor-pointer">
+          <button type="button" onclick="saveClientIds()" class="px-4 py-1.5 bg-stone-900 hover:bg-black text-white rounded text-xs font-bold shadow-2xs transition-colors cursor-pointer">
             Save Keys
           </button>
-          <button type="button" onclick="closeAuthModal()" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold cursor-pointer">
+          <button type="button" onclick="closeAuthModal()" class="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded text-xs font-semibold cursor-pointer">
             Close
           </button>
         </div>
@@ -919,7 +918,7 @@
   </div>
 
   <!-- Toast Notification Container -->
-  <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-24 opacity-0 transition-all duration-300 ease-out flex items-center gap-3 px-4.5 py-3 glass-card bg-slate-900/95 text-white rounded-xl shadow-2xl text-xs font-semibold border border-slate-700 select-none">
+  <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 ease-out flex items-center gap-2.5 px-4 py-2.5 bg-stone-900 text-white rounded-lg shadow-xl text-xs font-medium border border-stone-800 select-none">
     <span id="toastIcon"></span>
     <span id="toastMessage">Notification message</span>
   </div>
@@ -1074,7 +1073,6 @@
       const lastDayOfMonth = new Date(calendarDisplayYear, calendarDisplayMonth + 1, 0);
       const daysInMonth = lastDayOfMonth.getDate();
 
-      // Monday-first index: 0 = Mon, ..., 6 = Sun
       let startDayIndex = firstDayOfMonth.getDay() - 1;
       if (startDayIndex < 0) startDayIndex = 6;
 
@@ -1082,7 +1080,6 @@
       const prevMonthYear = calendarDisplayMonth === 0 ? calendarDisplayYear - 1 : calendarDisplayYear;
       const prevMonth = calendarDisplayMonth === 0 ? 11 : calendarDisplayMonth - 1;
 
-      // Previous month overflow days
       for (let i = startDayIndex - 1; i >= 0; i--) {
         const dayNum = prevMonthLastDay - i;
         const ymd = `${prevMonthYear}-${String(prevMonth + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
@@ -1091,7 +1088,6 @@
         grid.appendChild(createCalendarDayButton(dayNum, ymd, true, isWeekend));
       }
 
-      // Current month days
       for (let d = 1; d <= daysInMonth; d++) {
         const ymd = `${calendarDisplayYear}-${String(calendarDisplayMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
         const dayOfWeek = (startDayIndex + d - 1) % 7;
@@ -1099,7 +1095,6 @@
         grid.appendChild(createCalendarDayButton(d, ymd, false, isWeekend));
       }
 
-      // Next month overflow days
       const totalRendered = startDayIndex + daysInMonth;
       const remainingCells = (7 - (totalRendered % 7)) % 7;
       const nextMonthYear = calendarDisplayMonth === 11 ? calendarDisplayYear + 1 : calendarDisplayYear;
@@ -1127,19 +1122,19 @@
       let classes = 'h-8 flex items-center justify-center text-xs font-semibold cursor-pointer transition-all relative ';
 
       if (isStart && isEnd) {
-        classes += 'bg-indigo-600 text-white rounded-lg font-bold shadow-lg shadow-indigo-600/40 z-10';
+        classes += 'bg-stone-900 text-white rounded-md font-bold shadow-xs z-10';
       } else if (isStart) {
-        classes += end ? 'bg-indigo-600 text-white rounded-l-lg font-bold z-10' : 'bg-indigo-600 text-white rounded-lg font-bold shadow-lg z-10';
+        classes += end ? 'bg-stone-900 text-white rounded-l-md font-bold z-10' : 'bg-stone-900 text-white rounded-md font-bold shadow-xs z-10';
       } else if (isEnd) {
-        classes += 'bg-indigo-600 text-white rounded-r-lg font-bold z-10';
+        classes += 'bg-stone-900 text-white rounded-r-md font-bold z-10';
       } else if (isInRange) {
-        classes += 'bg-indigo-950/80 text-indigo-200 font-semibold rounded-none border-y border-indigo-500/30';
+        classes += 'bg-stone-200 text-stone-900 font-semibold rounded-none';
       } else if (isOtherMonth) {
-        classes += 'text-slate-600 hover:text-slate-400 hover:bg-slate-800/40 rounded-lg';
+        classes += 'text-stone-300 hover:text-stone-500 hover:bg-stone-50 rounded-md';
       } else if (isWeekend) {
-        classes += 'text-rose-400 hover:bg-slate-800 rounded-lg';
+        classes += 'text-rose-500 hover:bg-stone-100 rounded-md';
       } else {
-        classes += 'text-slate-300 hover:bg-slate-800 rounded-lg';
+        classes += 'text-stone-700 hover:bg-stone-100 rounded-md';
       }
 
       btn.className = classes;
@@ -1239,19 +1234,19 @@
 
     function updateFilterPillsUI() {
       if (!filterPillAll) return;
-      filterPillAll.className = "inline-flex items-center h-8.5 px-4 rounded-lg bg-slate-900/90 text-slate-300 font-semibold border border-slate-800 hover:bg-slate-800 whitespace-nowrap cursor-pointer transition-all shadow-md";
-      filterPillCompleted.className = "inline-flex items-center h-8.5 px-4 rounded-lg bg-slate-900/90 text-emerald-400 font-semibold border border-emerald-500/40 hover:bg-emerald-950/30 whitespace-nowrap cursor-pointer transition-all shadow-md";
-      filterPillPending.className = "inline-flex items-center h-8.5 px-4 rounded-lg bg-slate-900/90 text-indigo-300 font-semibold border border-indigo-500/40 hover:bg-indigo-950/30 whitespace-nowrap cursor-pointer transition-all shadow-md";
-      filterPillFailed.className = "inline-flex items-center h-8.5 px-4 rounded-lg bg-slate-900/90 text-rose-400 font-semibold border border-rose-500/40 hover:bg-rose-950/30 whitespace-nowrap cursor-pointer transition-all shadow-md";
+      filterPillAll.className = "inline-flex items-center h-8 px-3.5 rounded-lg border border-stone-300 bg-white text-stone-800 font-semibold shadow-2xs whitespace-nowrap cursor-pointer hover:bg-stone-50 transition-all";
+      filterPillCompleted.className = "inline-flex items-center h-8 px-3.5 rounded-lg border border-emerald-300 bg-white text-emerald-700 font-semibold shadow-2xs whitespace-nowrap cursor-pointer hover:bg-emerald-50 transition-all";
+      filterPillPending.className = "inline-flex items-center h-8 px-3.5 rounded-lg border border-orange-300 bg-white text-orange-700 font-semibold shadow-2xs whitespace-nowrap cursor-pointer hover:bg-orange-50 transition-all";
+      filterPillFailed.className = "inline-flex items-center h-8 px-3.5 rounded-lg border border-rose-300 bg-white text-rose-700 font-semibold shadow-2xs whitespace-nowrap cursor-pointer hover:bg-rose-50 transition-all";
 
       if (currentFilter === 'all') {
-        filterPillAll.className = "inline-flex items-center h-8.5 px-4 rounded-lg bg-indigo-600 text-white font-bold shadow-lg shadow-indigo-600/30 whitespace-nowrap cursor-pointer transition-all border border-indigo-500";
+        filterPillAll.className = "inline-flex items-center h-8 px-3.5 rounded-lg border border-stone-900 bg-stone-900 text-white font-bold shadow-xs whitespace-nowrap cursor-pointer transition-all";
       } else if (currentFilter === 'completed') {
-        filterPillCompleted.className = "inline-flex items-center h-8.5 px-4 rounded-lg bg-emerald-600 text-white font-bold shadow-lg shadow-emerald-600/30 whitespace-nowrap cursor-pointer transition-all border border-emerald-500";
+        filterPillCompleted.className = "inline-flex items-center h-8 px-3.5 rounded-lg border border-emerald-600 bg-emerald-600 text-white font-bold shadow-xs whitespace-nowrap cursor-pointer transition-all";
       } else if (currentFilter === 'pending') {
-        filterPillPending.className = "inline-flex items-center h-8.5 px-4 rounded-lg bg-indigo-600 text-white font-bold shadow-lg shadow-indigo-600/30 whitespace-nowrap cursor-pointer transition-all border border-indigo-500";
+        filterPillPending.className = "inline-flex items-center h-8 px-3.5 rounded-lg border border-orange-600 bg-orange-600 text-white font-bold shadow-xs whitespace-nowrap cursor-pointer transition-all";
       } else if (currentFilter === 'failed') {
-        filterPillFailed.className = "inline-flex items-center h-8.5 px-4 rounded-lg bg-rose-600 text-white font-bold shadow-lg shadow-rose-600/30 whitespace-nowrap cursor-pointer transition-all border border-rose-500";
+        filterPillFailed.className = "inline-flex items-center h-8 px-3.5 rounded-lg border border-rose-600 bg-rose-600 text-white font-bold shadow-xs whitespace-nowrap cursor-pointer transition-all";
       }
     }
 
@@ -1284,17 +1279,17 @@
       if (!toastMessage || !toast) return;
       toastMessage.textContent = message;
       if (type === 'success') {
-        toastIcon.innerHTML = `<svg class="w-4.5 h-4.5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>`;
+        toastIcon.innerHTML = `<svg class="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>`;
       } else if (type === 'error') {
-        toastIcon.innerHTML = `<svg class="w-4.5 h-4.5 text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>`;
+        toastIcon.innerHTML = `<svg class="w-4 h-4 text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>`;
       } else {
-        toastIcon.innerHTML = `<svg class="w-4.5 h-4.5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`;
+        toastIcon.innerHTML = `<svg class="w-4 h-4 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`;
       }
-      toast.classList.remove('translate-y-24', 'opacity-0');
+      toast.classList.remove('translate-y-20', 'opacity-0');
       toast.classList.add('translate-y-0', 'opacity-100');
       setTimeout(() => {
         toast.classList.remove('translate-y-0', 'opacity-100');
-        toast.classList.add('translate-y-24', 'opacity-0');
+        toast.classList.add('translate-y-20', 'opacity-0');
       }, 4000);
     }
 
@@ -1359,9 +1354,9 @@
         const card = document.getElementById(m.id);
         if (!card) return;
         if (m.val === selectedMode) {
-          card.className = 'relative flex items-start p-3.5 rounded-xl border-2 border-indigo-500 bg-indigo-950/30 shadow-lg cursor-pointer transition-all';
+          card.className = 'relative flex items-start p-3 rounded-lg border-2 border-stone-900 bg-stone-50 shadow-2xs cursor-pointer transition-all';
         } else {
-          card.className = 'relative flex items-start p-3.5 rounded-xl border-2 border-slate-800 bg-slate-900/60 hover:bg-slate-800/60 cursor-pointer transition-all';
+          card.className = 'relative flex items-start p-3 rounded-lg border-2 border-stone-200 bg-white hover:bg-stone-50/80 cursor-pointer transition-all';
         }
       });
     };
@@ -1613,16 +1608,16 @@
       const ytBtn = document.getElementById('sourceFilterYouTube');
       const driveBtn = document.getElementById('sourceFilterDrive');
 
-      if (allBtn) allBtn.className = 'h-7.5 px-3 rounded-lg text-xs font-semibold text-slate-400 hover:text-white cursor-pointer transition-all whitespace-nowrap flex items-center gap-1';
-      if (ytBtn) ytBtn.className = 'h-7.5 px-3 rounded-lg text-xs font-semibold text-slate-400 hover:text-white cursor-pointer transition-all whitespace-nowrap flex items-center gap-1.5';
-      if (driveBtn) driveBtn.className = 'h-7.5 px-3 rounded-lg text-xs font-semibold text-slate-400 hover:text-white cursor-pointer transition-all whitespace-nowrap flex items-center gap-1.5';
+      if (allBtn) allBtn.className = 'h-7.5 px-3 rounded-md text-xs font-semibold text-stone-600 hover:text-stone-900 cursor-pointer transition-all whitespace-nowrap flex items-center gap-1';
+      if (ytBtn) ytBtn.className = 'h-7.5 px-3 rounded-md text-xs font-semibold text-stone-600 hover:text-stone-900 cursor-pointer transition-all whitespace-nowrap flex items-center gap-1.5';
+      if (driveBtn) driveBtn.className = 'h-7.5 px-3 rounded-md text-xs font-semibold text-stone-600 hover:text-stone-900 cursor-pointer transition-all whitespace-nowrap flex items-center gap-1.5';
 
       if (source === 'all' && allBtn) {
-        allBtn.className = 'h-7.5 px-3 rounded-lg text-xs font-bold bg-indigo-600 text-white shadow-md cursor-pointer transition-all whitespace-nowrap flex items-center gap-1';
+        allBtn.className = 'h-7.5 px-3 rounded-md text-xs font-bold bg-white text-stone-900 shadow-2xs cursor-pointer transition-all whitespace-nowrap flex items-center gap-1';
       } else if (source === 'youtube' && ytBtn) {
-        ytBtn.className = 'h-7.5 px-3 rounded-lg text-xs font-bold bg-rose-600 text-white shadow-md cursor-pointer transition-all whitespace-nowrap flex items-center gap-1.5';
+        ytBtn.className = 'h-7.5 px-3 rounded-md text-xs font-bold bg-white text-stone-900 shadow-2xs cursor-pointer transition-all whitespace-nowrap flex items-center gap-1.5';
       } else if (source === 'drive' && driveBtn) {
-        driveBtn.className = 'h-7.5 px-3 rounded-lg text-xs font-bold bg-indigo-600 text-white shadow-md cursor-pointer transition-all whitespace-nowrap flex items-center gap-1.5';
+        driveBtn.className = 'h-7.5 px-3 rounded-md text-xs font-bold bg-white text-stone-900 shadow-2xs cursor-pointer transition-all whitespace-nowrap flex items-center gap-1.5';
       }
 
       renderFilteredTable();
@@ -1668,7 +1663,7 @@
 
       modalIframe.src = '';
 
-      const thumbUrl = file.thumbnailUrl || (isYt && ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : 'https://placehold.co/1280x720/0f172a/ffffff?text=Click+to+Play');
+      const thumbUrl = file.thumbnailUrl || (isYt && ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : 'https://placehold.co/1280x720/1c1917/ffffff?text=Click+to+Play');
       if (modalPosterImg) modalPosterImg.src = thumbUrl;
       if (posterVideoTitle) posterVideoTitle.textContent = file.customTitle || file.name || 'Lecture Video';
       if (posterBatchTag) posterBatchTag.textContent = file.batch ? `PW • ${file.batch}` : 'PW LECTURE';
@@ -1678,7 +1673,7 @@
         modalYtLink.href = `https://youtu.be/${ytId}`;
         modalYtLink.textContent = 'Open YouTube ↗';
         if (modalSourceBadge) {
-          modalSourceBadge.className = 'inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-rose-950/60 text-rose-400 border border-rose-500/30';
+          modalSourceBadge.className = 'inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-600 border border-rose-200';
           modalSourceBadge.innerHTML = `<svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg><span>YouTube (Unlisted)</span>`;
         }
       } else {
@@ -1686,7 +1681,7 @@
         modalYtLink.href = `https://drive.google.com/file/d/${driveId}/view`;
         modalYtLink.textContent = 'Open Drive ↗';
         if (modalSourceBadge) {
-          modalSourceBadge.className = 'inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-950/60 text-indigo-400 border border-indigo-500/30';
+          modalSourceBadge.className = 'inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-stone-100 text-stone-800 border border-stone-200';
           modalSourceBadge.innerHTML = `<svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg><span>Google Drive</span>`;
         }
       }
@@ -1739,7 +1734,7 @@
       document.getElementById('editModalBatchInput').value = file.batch || '';
       document.getElementById('editModalSubjectInput').value = file.subject || '';
 
-      const thumbUrl = file.thumbnailUrl || (file.videoId ? `https://img.youtube.com/vi/${file.videoId}/hqdefault.jpg` : 'https://placehold.co/640x360/0f172a/ffffff?text=No+Thumbnail');
+      const thumbUrl = file.thumbnailUrl || (file.videoId ? `https://img.youtube.com/vi/${file.videoId}/hqdefault.jpg` : 'https://placehold.co/640x360/1c1917/ffffff?text=No+Thumbnail');
       document.getElementById('editModalThumbPreview').src = thumbUrl;
       document.getElementById('editModalThumbUrlInput').value = '';
 
@@ -1769,7 +1764,7 @@
 
       // 1. Dark Gradient Background
       const grad = ctx.createLinearGradient(0, 0, 1280, 720);
-      grad.addColorStop(0, '#0a0f1d');
+      grad.addColorStop(0, '#0f172a');
       grad.addColorStop(0.5, '#1e1b4b');
       grad.addColorStop(1, '#312e81');
       ctx.fillStyle = grad;
@@ -1792,14 +1787,14 @@
       }
 
       // 3. Left Brand Pillar
-      ctx.fillStyle = '#6366f1';
+      ctx.fillStyle = '#ea580c';
       ctx.fillRect(60, 80, 16, 560);
 
       // 4. Batch Header Tag
-      ctx.fillStyle = 'rgba(99, 102, 241, 0.2)';
-      ctx.strokeStyle = '#818cf8';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+      ctx.strokeStyle = '#ea580c';
       ctx.lineWidth = 2;
-      ctx.roundRect(100, 80, 380, 52, 12);
+      ctx.roundRect(100, 80, 380, 52, 10);
       ctx.fill();
       ctx.stroke();
 
@@ -1808,7 +1803,7 @@
       ctx.fillText(batch.toUpperCase(), 120, 115);
 
       // 5. Subject Tag
-      ctx.fillStyle = '#fbbf24';
+      ctx.fillStyle = '#f59e0b';
       ctx.font = '900 32px system-ui, -apple-system, sans-serif';
       ctx.fillText(subject.toUpperCase(), 100, 200);
 
@@ -1833,9 +1828,9 @@
 
       // 7. Watermark Badge
       ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-      ctx.strokeStyle = '#6366f1';
+      ctx.strokeStyle = '#ea580c';
       ctx.lineWidth = 2;
-      ctx.roundRect(960, 580, 240, 60, 14);
+      ctx.roundRect(960, 580, 240, 60, 12);
       ctx.fill();
       ctx.stroke();
 
@@ -2025,15 +2020,13 @@
 
       if (!currentState || !currentState.files || currentState.files.length === 0) {
         trackingTableBody.innerHTML = `
-          <tr id="emptyRow" class="text-slate-500">
-            <td colspan="6" class="py-20 text-center">
-              <div class="flex flex-col items-center justify-center gap-3">
-                <div class="w-12 h-12 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-600 shadow-inner">
-                  <svg class="w-6 h-6 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <p class="text-xs font-semibold text-slate-400">No videos in queue. Paste a Google Drive folder link above and click "Start Process".</p>
+          <tr id="emptyRow" class="text-stone-400">
+            <td colspan="6" class="py-16 text-center">
+              <div class="flex flex-col items-center justify-center gap-2">
+                <svg class="w-8 h-8 text-stone-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                <p class="text-xs font-semibold text-stone-500">No videos in queue. Paste Google Drive folder link above and click "Start Process".</p>
               </div>
             </td>
           </tr>
@@ -2096,8 +2089,8 @@
 
       if (filteredFiles.length === 0) {
         trackingTableBody.innerHTML = `
-          <tr class="text-slate-500">
-            <td colspan="6" class="py-14 text-center text-xs font-medium text-slate-400">
+          <tr class="text-stone-400">
+            <td colspan="6" class="py-12 text-center text-xs font-medium text-stone-500">
               No videos matching the active filters or search term.
             </td>
           </tr>
@@ -2109,7 +2102,7 @@
       filteredFiles.forEach((file, index) => {
         const row = document.createElement('tr');
         row.id = `file-row-${file.id}`;
-        row.className = 'hover:bg-slate-900/60 transition-colors text-slate-200 border-b border-slate-800/60';
+        row.className = 'hover:bg-stone-50/90 transition-colors text-stone-800 border-b border-stone-200';
 
         const displayTitle = file.customTitle || file.name || file.originalName || 'Lecture Video';
         const extMatch = (file.originalName || file.name || '').match(/\.([0-9a-z]+)$/i);
@@ -2121,12 +2114,12 @@
         const embedLabel = isYt ? 'YouTube Embed Link' : 'Drive Embed Link';
 
         const sourceBadgeHtml = isYt ? `
-          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-rose-950/50 text-rose-400 border border-rose-500/30 shadow-sm">
+          <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-600 border border-rose-200 shadow-2xs">
             <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
             <span>YouTube</span>
           </span>
         ` : `
-          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-950/50 text-indigo-400 border border-indigo-500/30 shadow-sm">
+          <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-stone-100 text-stone-800 border border-stone-200 shadow-2xs">
             <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
             <span>Drive</span>
           </span>
@@ -2134,21 +2127,21 @@
 
         let statusHtml = '';
         if (file.status === 'completed') {
-          const thumb = file.thumbnailUrl || (isYt && ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : 'https://placehold.co/120x68/0f172a/ffffff?text=Preview');
+          const thumb = file.thumbnailUrl || (isYt && ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : 'https://placehold.co/120x68/1c1917/ffffff?text=Preview');
           statusHtml = `
-            <div class="flex items-center gap-3">
-              <button onclick="openVideoModal('${file.id || ytId}')" class="relative group w-16 h-9 rounded-lg border border-slate-700 overflow-hidden shadow-md shrink-0 bg-black cursor-pointer" title="Click to open video preview">
-                <img src="${thumb}" alt="Preview" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" onerror="this.src='https://placehold.co/120x68/0f172a/ffffff?text=Preview'"/>
-                <div class="absolute inset-0 bg-black/40 group-hover:bg-indigo-600/50 flex items-center justify-center transition-colors">
-                  <span class="w-4 h-4 rounded-full bg-white text-slate-900 flex items-center justify-center text-[8px] font-bold shadow-md">▶</span>
+            <div class="flex items-center gap-2.5">
+              <button onclick="openVideoModal('${file.id || ytId}')" class="relative group w-16 h-9 rounded border border-stone-300 overflow-hidden shadow-2xs shrink-0 bg-stone-900 cursor-pointer" title="Click to open video preview">
+                <img src="${thumb}" alt="Preview" class="w-full h-full object-cover group-hover:scale-105 transition-transform" onerror="this.src='https://placehold.co/120x68/1c1917/ffffff?text=Preview'"/>
+                <div class="absolute inset-0 bg-black/30 group-hover:bg-stone-900/60 flex items-center justify-center transition-colors">
+                  <span class="w-4 h-4 rounded-full bg-white text-stone-900 flex items-center justify-center text-[7px] font-bold shadow-xs">▶</span>
                 </div>
               </button>
               <div class="space-y-0.5">
-                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950/50 text-emerald-300 border border-emerald-500/40">
-                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400"></span>
+                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                   <span>Uploaded 100%</span>
                 </span>
-                <div class="text-[9px] text-slate-500 font-mono">Stream Ready</div>
+                <div class="text-[9px] text-stone-400 font-mono">Stream Ready</div>
               </div>
             </div>
           `;
@@ -2156,20 +2149,20 @@
           const speedText = file.speedMBps ? `${file.speedMBps} MB/s` : 'Streaming...';
           const etaText = file.etaSeconds ? `${file.etaSeconds}s left` : '';
           statusHtml = `
-            <div class="space-y-1.5 max-w-[240px]">
-              <div class="flex items-center justify-between text-[11px] font-bold text-indigo-400">
-                <span class="flex items-center gap-1.5">
-                  <span class="w-2 h-2 rounded-full bg-indigo-400 animate-ping"></span>
+            <div class="space-y-1 max-w-[240px]">
+              <div class="flex items-center justify-between text-[11px] font-semibold text-stone-900">
+                <span class="flex items-center gap-1 text-orange-600">
+                  <span class="w-1.5 h-1.5 rounded-full bg-orange-600 animate-ping"></span>
                   <span>Uploading ${file.percentage || 0}%</span>
                 </span>
-                <span class="font-mono text-slate-400 text-[9px]" id="progress-bytes-${file.id}">
+                <span class="font-mono text-stone-500 text-[9px]" id="progress-bytes-${file.id}">
                   ${formatBytes(file.uploadedBytes || 0)} / ${formatBytes(file.totalBytes || file.size)}
                 </span>
               </div>
-              <div class="w-full bg-slate-900 rounded-full h-1.5 overflow-hidden border border-slate-800">
-                <div id="progress-bar-${file.id}" class="bg-gradient-to-r from-indigo-500 to-purple-500 h-full rounded-full transition-all duration-150" style="width: ${file.percentage || 0}%"></div>
+              <div class="w-full bg-stone-100 rounded-full h-1.5 overflow-hidden border border-stone-200">
+                <div id="progress-bar-${file.id}" class="bg-stone-900 h-full rounded-full transition-all duration-150" style="width: ${file.percentage || 0}%"></div>
               </div>
-              <div class="flex items-center justify-between text-[9px] text-slate-400 font-mono">
+              <div class="flex items-center justify-between text-[9px] text-stone-400 font-mono">
                 <span id="speed-${file.id}">⚡ ${speedText}</span>
                 <span id="eta-${file.id}">${etaText}</span>
               </div>
@@ -2179,25 +2172,25 @@
           statusHtml = `
             <div class="space-y-1">
               <div class="flex items-center gap-1.5 flex-wrap">
-                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-rose-950/50 text-rose-400 border border-rose-500/40">
+                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-600 border border-rose-200">
                   <span>Failed</span>
                 </span>
-                <button onclick="convertToDrive('${file.id}')" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[10px] font-bold bg-indigo-950/60 text-indigo-300 border border-indigo-500/40 hover:bg-indigo-900/60 transition-colors cursor-pointer shadow-sm" title="Convert to Instant Secure Drive Player Link">
+                <button onclick="convertToDrive('${file.id}')" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-stone-100 text-stone-800 border border-stone-200 hover:bg-stone-200 transition-colors cursor-pointer shadow-2xs" title="Convert to Instant Secure Drive Player Link">
                   <span>▶ Use Drive Player</span>
                 </button>
               </div>
-              <div class="text-[9px] text-rose-400 font-mono truncate max-w-[200px]" title="${escapeHtml(file.error)}">${escapeHtml(file.error || 'Upload error')}</div>
+              <div class="text-[9px] text-rose-500 font-mono truncate max-w-[190px]" title="${escapeHtml(file.error)}">${escapeHtml(file.error || 'Upload error')}</div>
             </div>
           `;
         } else {
           statusHtml = `
             <div class="space-y-1">
               <div class="flex items-center gap-1.5 flex-wrap">
-                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-medium bg-slate-900 text-slate-400 border border-slate-800">
-                  <span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-stone-100 text-stone-600 border border-stone-200">
+                  <span class="w-1.5 h-1.5 rounded-full bg-stone-400"></span>
                   <span>Queued</span>
                 </span>
-                <button onclick="convertToDrive('${file.id}')" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-semibold bg-slate-900 text-slate-400 border border-slate-800 hover:text-indigo-400 hover:border-indigo-500/40 transition-colors cursor-pointer" title="Convert to Instant Drive Player Link">
+                <button onclick="convertToDrive('${file.id}')" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-stone-50 text-stone-600 border border-stone-200 hover:text-stone-900 transition-colors cursor-pointer" title="Convert to Instant Drive Player Link">
                   <span>▶ Drive Link</span>
                 </button>
               </div>
@@ -2206,17 +2199,17 @@
         }
 
         const actionHtml = `
-          <div class="flex items-center justify-center gap-1.5">
-            <button onclick="openVideoModal('${file.id || ytId}')" class="h-7.5 px-2.5 bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center gap-1 cursor-pointer" title="Preview Video with Poster">
+          <div class="flex items-center justify-center gap-1">
+            <button onclick="openVideoModal('${file.id || ytId}')" class="h-7 px-2 bg-white hover:bg-stone-100 text-stone-700 border border-stone-300 rounded text-xs font-semibold shadow-2xs transition-colors flex items-center gap-1 cursor-pointer" title="Preview Video with Poster">
               <span>▶</span>
             </button>
-            <button onclick="copyToClipboard('${embedLink}', '${embedLabel}')" class="h-7.5 px-2.5 bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center gap-1 cursor-pointer" title="Copy ${embedLabel}">
-              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+            <button onclick="copyToClipboard('${embedLink}', '${embedLabel}')" class="h-7 px-2 bg-white hover:bg-stone-100 text-stone-700 border border-stone-300 rounded text-xs font-semibold shadow-2xs transition-colors flex items-center gap-1 cursor-pointer" title="Copy ${embedLabel}">
+              <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
             </button>
-            <button onclick="openEditModal('${file.id || ytId}')" class="h-7.5 px-2.5 bg-slate-900 hover:bg-indigo-950/50 text-indigo-400 border border-slate-700 hover:border-indigo-500/40 rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center gap-1 cursor-pointer" title="Edit Title, Batch, or Thumbnail">
+            <button onclick="openEditModal('${file.id || ytId}')" class="h-7 px-2 bg-white hover:bg-stone-100 text-stone-800 border border-stone-300 rounded text-xs font-semibold shadow-2xs transition-colors flex items-center gap-1 cursor-pointer" title="Edit Title, Batch, or Thumbnail">
               <span>✏️</span>
             </button>
-            <button onclick="deleteVideo('${file.id || ytId}')" class="h-7.5 px-2.5 bg-slate-900 hover:bg-rose-950/50 text-rose-400 border border-slate-700 hover:border-rose-500/40 rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center gap-1 cursor-pointer" title="Remove Video">
+            <button onclick="deleteVideo('${file.id || ytId}')" class="h-7 px-2 bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 rounded text-xs font-semibold shadow-2xs transition-colors flex items-center gap-1 cursor-pointer" title="Remove Video">
               <span>🗑️</span>
             </button>
           </div>
@@ -2231,47 +2224,47 @@
         const byteSizeBadge = showByteSize ? `<span>${formatBytes(rawBytes)}</span>` : '';
 
         row.innerHTML = `
-          <td class="py-3 px-3.5 text-center font-mono text-slate-500 border-r border-slate-800/80 text-xs">${index + 1}</td>
-          <td class="py-3 px-4.5 border-r border-slate-800/80">
-            <div id="title-text-${file.id}" class="space-y-1.5">
-              <div class="flex items-center gap-2 group">
-                <span class="font-bold text-white text-xs leading-snug cursor-pointer hover:text-indigo-400 transition-colors" onclick="openVideoModal('${file.id || ytId}')" title="${escapeHtml(displayTitle)}">
+          <td class="py-2.5 px-3 text-center font-mono text-stone-400 border-r border-stone-200 text-xs">${index + 1}</td>
+          <td class="py-2.5 px-4 border-r border-stone-200">
+            <div id="title-text-${file.id}" class="space-y-1">
+              <div class="flex items-center gap-1.5 group">
+                <span class="font-bold text-stone-900 text-xs leading-snug cursor-pointer hover:text-orange-600 transition-colors" onclick="openVideoModal('${file.id || ytId}')" title="${escapeHtml(displayTitle)}">
                   ${escapeHtml(displayTitle)}
                 </span>
-                <button onclick="openEditModal('${file.id}')" class="opacity-0 group-hover:opacity-100 p-0.5 text-indigo-400 hover:bg-indigo-950/50 rounded transition-all cursor-pointer" title="Edit Details Live">
+                <button onclick="openEditModal('${file.id}')" class="opacity-0 group-hover:opacity-100 p-0.5 text-stone-500 hover:text-stone-900 hover:bg-stone-100 rounded transition-all cursor-pointer" title="Edit Details Live">
                   <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
                   </svg>
                 </button>
               </div>
               <div class="flex items-center gap-1.5 flex-wrap">
-                <button onclick="copyToClipboard('${escapeHtml(displayTitle)}', 'Title')" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-bold bg-indigo-950/60 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-900/60 transition-colors cursor-pointer" title="Copy Title">
+                <button onclick="copyToClipboard('${escapeHtml(displayTitle)}', 'Title')" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-stone-100 text-stone-700 border border-stone-200 hover:bg-stone-200 transition-colors cursor-pointer" title="Copy Title">
                   <svg class="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
                   <span>Copy Title</span>
                 </button>
-                <span class="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-bold bg-slate-900 text-slate-300 border border-slate-800 uppercase tracking-wider">
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-stone-100 text-stone-700 border border-stone-200 uppercase tracking-wider">
                   ${escapeHtml(file.batch || 'Batch')}
                 </span>
-                <span class="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-semibold bg-slate-900 text-slate-400 border border-slate-800">
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold bg-stone-100 text-stone-600 border border-stone-200">
                   ${escapeHtml(file.subject || 'Lecture')}
                 </span>
               </div>
             </div>
           </td>
-          <td class="py-3 px-3.5 text-center font-mono border-r border-slate-800/80 text-xs whitespace-nowrap text-slate-400">
+          <td class="py-2.5 px-3 text-center font-mono border-r border-stone-200 text-xs whitespace-nowrap text-stone-700">
             ${fileDate}
           </td>
-          <td class="py-3 px-3.5 text-center border-r border-slate-800/80 whitespace-nowrap space-y-1.5">
+          <td class="py-2.5 px-3 text-center border-r border-stone-200 whitespace-nowrap space-y-1">
             <div>${sourceBadgeHtml}</div>
-            <div class="flex items-center justify-center gap-1 text-[9px] font-mono text-slate-500">
-              <span class="px-1.5 py-0.5 bg-slate-900 border border-slate-800 rounded font-bold text-slate-400">${ext}</span>
+            <div class="flex items-center justify-center gap-1 text-[9px] font-mono text-stone-500">
+              <span class="px-1.5 py-0.2 bg-stone-100 border border-stone-200 rounded font-bold text-stone-700">${ext}</span>
               ${byteSizeBadge}
             </div>
           </td>
-          <td class="py-3 px-4.5 border-r border-slate-800/80" id="status-cell-${file.id}">
+          <td class="py-2.5 px-4 border-r border-stone-200" id="status-cell-${file.id}">
             ${statusHtml}
           </td>
-          <td class="py-3 px-4.5 text-center">
+          <td class="py-2.5 px-4 text-center">
             ${actionHtml}
           </td>
         `;
@@ -2286,16 +2279,16 @@
       }
 
       if (connectionBadge) {
-        connectionBadge.className = 'flex items-center gap-2 px-3.5 h-9 rounded-lg text-xs font-medium bg-amber-950/30 text-amber-300 border border-amber-500/30';
-        connectionBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span><span>Connecting SSE...</span>`;
+        connectionBadge.className = 'flex items-center gap-1.5 px-3 h-8.5 rounded-lg text-xs font-medium bg-amber-50 text-amber-800 border border-amber-300';
+        connectionBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span><span>Connecting SSE...</span>`;
       }
 
       eventSource = new EventSource(`/api/events?clientId=${clientId}`);
 
       eventSource.onopen = () => {
         if (connectionBadge) {
-          connectionBadge.className = 'flex items-center gap-2 px-3.5 h-9 rounded-lg text-xs font-semibold bg-slate-900/80 text-emerald-400 border border-emerald-500/30 shadow-md';
-          connectionBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 inline-block shadow-sm shadow-emerald-400"></span><span>Live Cloud SSE</span>`;
+          connectionBadge.className = 'flex items-center gap-1.5 px-3 h-8.5 rounded-lg text-xs font-semibold bg-white text-emerald-700 border border-emerald-300 shadow-2xs';
+          connectionBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span><span>Live SSE Connected</span>`;
         }
       };
 
@@ -2310,7 +2303,7 @@
 
       eventSource.onerror = () => {
         if (connectionBadge) {
-          connectionBadge.className = 'flex items-center gap-2 px-3.5 h-9 rounded-lg text-xs font-medium bg-rose-950/30 text-rose-300 border border-rose-500/30';
+          connectionBadge.className = 'flex items-center gap-1.5 px-3 h-8.5 rounded-lg text-xs font-medium bg-rose-50 text-rose-700 border border-rose-200';
           connectionBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-500 inline-block"></span><span>Reconnecting SSE...</span>`;
         }
       };
