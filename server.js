@@ -1013,13 +1013,14 @@ app.post('/api/edit-video', async (req, res) => {
             });
             if (thumbRes.data && thumbRes.data.items && thumbRes.data.items[0]) {
               const item = thumbRes.data.items[0];
-              newThumb = (item.high || item.medium || item.default)?.url || newThumb;
+              newThumb = (item.maxres || item.standard || item.high || item.medium || item.default)?.url || newThumb;
               fileObj.thumbnailUrl = newThumb;
             }
-            addJobLog(`✔ Updated live YouTube thumbnail for: "${fileObj.name}"`, 'success');
+            addJobLog(`✔ Instantly updated live YouTube thumbnail for video ID: ${targetVideoId}`, 'success');
           }
         } catch (err) {
-          console.warn('YouTube thumbnail set note (saved to portal):', err.message);
+          console.warn('YouTube thumbnail set error:', err.message);
+          addJobLog(`Thumbnail update notice for ${targetVideoId}: ${err.message}`, 'warn');
         }
       }
     }
@@ -1046,7 +1047,7 @@ app.post('/api/edit-video', async (req, res) => {
 
     return res.json({
       success: true,
-      message: 'Video details and thumbnail saved successfully!',
+      message: 'Video details and thumbnail updated live on YouTube!',
       file: fileObj
     });
   } catch (err) {

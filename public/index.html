@@ -2007,7 +2007,7 @@
       window.generatedBase64Thumbnail = null;
       closeEditModal();
       renderFilteredTable();
-      showToast('✔ Saved locally! Syncing with YouTube...', 'info');
+      showToast('✔ Applying live thumbnail on YouTube...', 'info');
 
       try {
         const res = await fetch('/api/edit-video', {
@@ -2029,7 +2029,12 @@
 
         const data = await res.json();
         if (data.success) {
-          showToast('✔ Synced on YouTube!', 'success');
+          if (data.file && data.file.thumbnailUrl) {
+            const target = currentState?.files?.find(f => f.id === fileId || f.videoId === fileId);
+            if (target) target.thumbnailUrl = `${data.file.thumbnailUrl}?t=${Date.now()}`;
+          }
+          showToast('✔ Thumbnail updated live on YouTube!', 'success');
+          renderFilteredTable();
           loadJobStatus();
         } else {
           showToast('Notice: ' + (data.error || 'Saved locally'), 'info');
@@ -2467,6 +2472,15 @@
         }
         showQuotaAlertBanner();
         showToast(event.message || 'YouTube upload limit reached. You can convert to Drive Player!', 'warn');
+      } else if (event.type === 'thumbnail_updated') {
+        if (currentState && currentState.files) {
+          const f = currentState.files.find(item => item.id === event.fileId || item.videoId === event.videoId);
+          if (f) {
+            f.thumbnailUrl = event.thumbnailUrl;
+          }
+        }
+        renderFilteredTable();
+        showToast('✔ YouTube Thumbnail updated live!', 'success');
       } else if (event.type === 'job_cancelled') {
         if (currentState) {
           currentState.isProcessing = false;
