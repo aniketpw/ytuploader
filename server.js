@@ -468,10 +468,25 @@ async function scanDriveFolderRecursively(drive, rootFolderId, startDateIso, end
 
             if (startDateIso || endDateIso) {
               const fileTime = new Date(file.createdTime || file.modifiedTime || 0).getTime();
-              if (startDateIso && fileTime < new Date(startDateIso).getTime()) {
+              let matchedTime = fileTime;
+
+              // Also check if filename has explicit date (e.g. 2026-08-28 or 28-08-2026)
+              const ymdMatch = (file.name || '').match(/(\d{4})-(\d{2})-(\d{2})/);
+              if (ymdMatch) {
+                const fnameDate = new Date(`${ymdMatch[1]}-${ymdMatch[2]}-${ymdMatch[3]}T12:00:00+05:30`);
+                if (!isNaN(fnameDate.getTime())) matchedTime = fnameDate.getTime();
+              } else {
+                const dmyMatch = (file.name || '').match(/(\d{2})-(\d{2})-(\d{4})/);
+                if (dmyMatch) {
+                  const fnameDate = new Date(`${dmyMatch[3]}-${dmyMatch[2]}-${dmyMatch[1]}T12:00:00+05:30`);
+                  if (!isNaN(fnameDate.getTime())) matchedTime = fnameDate.getTime();
+                }
+              }
+
+              if (startDateIso && matchedTime < new Date(startDateIso).getTime() && fileTime < new Date(startDateIso).getTime()) {
                 passesDateFilter = false;
               }
-              if (endDateIso && fileTime > new Date(endDateIso).getTime()) {
+              if (endDateIso && matchedTime > new Date(endDateIso).getTime() && fileTime > new Date(endDateIso).getTime()) {
                 passesDateFilter = false;
               }
             }
@@ -512,6 +527,9 @@ async function scanDriveFolderRecursively(drive, rootFolderId, startDateIso, end
       } catch (err) {
         if (isAuthError(err)) {
           throw new Error(`Google Authentication Error (${err.message}). Please check your Google OAuth credentials or reconnect.`);
+        }
+        if (err.code === 'ENOTFOUND' || err.message.includes('getaddrinfo')) {
+          throw new Error(`Network Connection Error: Could not reach Google APIs. Please check your internet connection.`);
         }
         console.warn(`Query warning in folder ${current.folderId}:`, err.message);
         pageToken = null;
