@@ -481,6 +481,35 @@
             </tr>
           </tbody>
         </table>
+
+        <!-- Table Pagination Bar (15 items per page) -->
+        <div id="tablePaginationContainer" class="hidden items-center justify-between px-4 py-2.5 border-t border-[#D6D3CD] bg-[#F6F4F0] font-mono-code text-[11px] select-none">
+          <div class="text-[#78716C]" id="paginationInfoText">
+            Showing 1–15 of 16 videos
+          </div>
+
+          <div class="flex items-center gap-1.5" id="paginationControls">
+            <button
+              type="button"
+              id="prevPageBtn"
+              onclick="changeTablePage(-1)"
+              class="px-2.5 py-1 bg-white border border-[#D6D3CD] hover:bg-stone-100 text-[#1B1B1B] font-bold disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer uppercase text-[10px]"
+            >
+              ← Prev
+            </button>
+            
+            <div id="paginationPageNumbers" class="flex items-center gap-1"></div>
+
+            <button
+              type="button"
+              id="nextPageBtn"
+              onclick="changeTablePage(1)"
+              class="px-2.5 py-1 bg-white border border-[#D6D3CD] hover:bg-stone-100 text-[#1B1B1B] font-bold disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer uppercase text-[10px]"
+            >
+              Next →
+            </button>
+          </div>
+        </div>
       </div>
 
       <!-- Full-Width Flat CLEAR ALL button -->
@@ -861,6 +890,10 @@
     let currentState = null;
     let currentFilter = 'all';
 
+    // Table Pagination State (15 per page)
+    let tableCurrentPage = 1;
+    const TABLE_PAGE_SIZE = 15;
+
     // Scan Review State
     let scannedFilesList = [];
     let customFileTitlesMap = {};
@@ -933,6 +966,7 @@
 
     window.setTableFilter = function(filter) {
       currentFilter = filter;
+      tableCurrentPage = 1;
       updateFilterPillsUI();
       renderFilteredTable();
     };
@@ -1734,11 +1768,13 @@
     window.handleTableSearch = function() {
       const input = document.getElementById('tableSearchInput');
       currentSearchQuery = input ? input.value.trim().toLowerCase() : '';
+      tableCurrentPage = 1;
       renderFilteredTable();
     };
 
     window.setSourceFilter = function(source) {
       currentSourceFilter = source;
+      tableCurrentPage = 1;
       const allBtn = document.getElementById('sourceFilterAll');
       const ytBtn = document.getElementById('sourceFilterYouTube');
       const driveBtn = document.getElementById('sourceFilterDrive');
@@ -2217,11 +2253,70 @@
             </td>
           </tr>
         `;
+        const paginationContainer = document.getElementById('tablePaginationContainer');
+        if (paginationContainer) {
+          paginationContainer.classList.add('hidden');
+          paginationContainer.classList.remove('flex');
+        }
         return;
       }
 
+      const totalFiltered = filteredFiles.length;
+      const totalPages = Math.ceil(totalFiltered / TABLE_PAGE_SIZE) || 1;
+      if (tableCurrentPage > totalPages) tableCurrentPage = totalPages;
+      if (tableCurrentPage < 1) tableCurrentPage = 1;
+
+      const startIndex = (tableCurrentPage - 1) * TABLE_PAGE_SIZE;
+      const endIndex = Math.min(startIndex + TABLE_PAGE_SIZE, totalFiltered);
+      const pageFiles = filteredFiles.slice(startIndex, endIndex);
+
+      // Render Pagination Bar
+      const paginationContainer = document.getElementById('tablePaginationContainer');
+      const paginationInfoText = document.getElementById('paginationInfoText');
+      const prevPageBtn = document.getElementById('prevPageBtn');
+      const nextPageBtn = document.getElementById('nextPageBtn');
+      const paginationPageNumbers = document.getElementById('paginationPageNumbers');
+
+      if (paginationContainer) {
+        if (totalFiltered > TABLE_PAGE_SIZE) {
+          paginationContainer.classList.remove('hidden');
+          paginationContainer.classList.add('flex');
+          if (paginationInfoText) {
+            paginationInfoText.textContent = `Showing ${startIndex + 1}–${endIndex} of ${totalFiltered} videos`;
+          }
+          if (prevPageBtn) prevPageBtn.disabled = (tableCurrentPage <= 1);
+          if (nextPageBtn) nextPageBtn.disabled = (tableCurrentPage >= totalPages);
+
+          if (paginationPageNumbers) {
+            paginationPageNumbers.innerHTML = '';
+            for (let p = 1; p <= totalPages; p++) {
+              if (totalPages > 7 && Math.abs(p - tableCurrentPage) > 2 && p !== 1 && p !== totalPages) {
+                if (p === 2 || p === totalPages - 1) {
+                  const dots = document.createElement('span');
+                  dots.className = 'px-1 text-[#78716C]';
+                  dots.textContent = '...';
+                  paginationPageNumbers.appendChild(dots);
+                }
+                continue;
+              }
+              const pageBtn = document.createElement('button');
+              pageBtn.type = 'button';
+              pageBtn.className = p === tableCurrentPage 
+                ? 'h-6 min-w-[24px] px-1.5 bg-[#1B1B1B] text-white font-bold text-[10px] cursor-default' 
+                : 'h-6 min-w-[24px] px-1.5 bg-white hover:bg-stone-100 border border-[#D6D3CD] text-[#1B1B1B] font-bold text-[10px] cursor-pointer';
+              pageBtn.textContent = p;
+              pageBtn.onclick = () => goToTablePage(p);
+              paginationPageNumbers.appendChild(pageBtn);
+            }
+          }
+        } else {
+          paginationContainer.classList.add('hidden');
+          paginationContainer.classList.remove('flex');
+        }
+      }
+
       trackingTableBody.innerHTML = '';
-      filteredFiles.forEach((file, index) => {
+      pageFiles.forEach((file, index) => {
         const row = document.createElement('tr');
         row.id = `file-row-${file.id}`;
         row.className = 'hover:bg-[#F6F4F0] transition-colors text-[#1B1B1B]';
@@ -2327,7 +2422,7 @@
         const byteSizeBadge = rawBytes > 0 ? `<span class="text-[9px] text-[#78716C] block">${formatBytes(rawBytes)}</span>` : '';
 
         row.innerHTML = `
-          <td class="py-2 px-3 text-center font-mono-code text-[#A8A29E] border-r border-[#D6D3CD] text-[11px]">${index + 1}</td>
+          <td class="py-2 px-3 text-center font-mono-code text-[#A8A29E] border-r border-[#D6D3CD] text-[11px]">${startIndex + index + 1}</td>
           <td class="py-2 px-4 border-r border-[#D6D3CD]">
             <div id="title-text-${file.id}" class="space-y-0.5">
               <div class="font-bold text-[#1B1B1B] text-xs leading-snug cursor-pointer hover:text-orange-700 transition-colors" onclick="openVideoModal('${file.id || ytId}')">
@@ -2360,6 +2455,16 @@
         trackingTableBody.appendChild(row);
       });
     }
+
+    window.changeTablePage = function(delta) {
+      tableCurrentPage += delta;
+      renderFilteredTable();
+    };
+
+    window.goToTablePage = function(page) {
+      tableCurrentPage = page;
+      renderFilteredTable();
+    };
 
     function connectSSE() {
       if (eventSource) {
