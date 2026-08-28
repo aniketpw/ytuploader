@@ -231,11 +231,11 @@
         </p>
       </div>
 
-      <!-- Flat Row: Playlist Name + Date Filters + Action Buttons -->
+      <!-- Flat Row: Playlist Name + Visibility + Date Filters + Action Buttons -->
       <div class="grid grid-cols-1 md:grid-cols-12 gap-3 pt-1 items-end">
         
-        <!-- Playlist Name (Col 4) -->
-        <div class="md:col-span-4 space-y-1">
+        <!-- Playlist Name (Col 3) -->
+        <div class="md:col-span-3 space-y-1">
           <label class="block font-mono-code text-[10px] font-bold uppercase tracking-wider text-[#78716C]">
             PLAYLIST NAME <span class="font-normal lowercase">(optional)</span>
           </label>
@@ -247,8 +247,34 @@
           />
         </div>
 
-        <!-- Scan Date Filter Presets (Col 4) -->
-        <div class="md:col-span-4 space-y-1">
+        <!-- Visibility & Release (Col 3) -->
+        <div class="md:col-span-3 space-y-1">
+          <div class="flex items-center justify-between font-mono-code text-[10px]">
+            <label class="font-bold uppercase tracking-wider text-[#78716C]">VISIBILITY &amp; RELEASE</label>
+            <span class="text-emerald-700 font-bold text-[9px]" id="privacyStatusBadge">Unlisted</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <select
+              id="videoPrivacySelect"
+              onchange="handlePrivacySelectChange()"
+              class="flex-1 h-9 px-2 om-box-input font-mono-code text-xs text-[#1B1B1B] bg-white cursor-pointer"
+            >
+              <option value="unlisted" selected>Unlisted (Default)</option>
+              <option value="private">Private</option>
+              <option value="public">Public</option>
+              <option value="scheduled">Schedule Release ⏰</option>
+            </select>
+            <input
+              type="datetime-local"
+              id="scheduledReleaseTimeInput"
+              class="hidden flex-1 h-9 px-1.5 om-box-input font-mono-code text-[11px] text-[#1B1B1B] bg-white"
+              title="Select future date & time to release video"
+            />
+          </div>
+        </div>
+
+        <!-- Scan Date Filter Presets (Col 3) -->
+        <div class="md:col-span-3 space-y-1">
           <div class="flex items-center justify-between font-mono-code text-[10px]">
             <label class="font-bold uppercase tracking-wider text-[#78716C]">SCAN DATE FILTER</label>
             <div class="flex items-center gap-1 text-[10px]">
@@ -276,8 +302,8 @@
           </div>
         </div>
 
-        <!-- Flat Action Buttons (Col 4) -->
-        <div class="md:col-span-4 flex items-center gap-2">
+        <!-- Flat Action Buttons (Col 3) -->
+        <div class="md:col-span-3 flex items-center gap-2">
           
           <!-- Scan & Select Button -->
           <button
@@ -435,16 +461,27 @@
             type="button"
             onclick="copyAllVideoLinks()"
             class="px-2.5 py-1 bg-white border border-[#D6D3CD] text-[#1B1B1B] text-[10px] font-bold uppercase tracking-wider hover:bg-stone-100 cursor-pointer"
+            title="Copy list of all video links"
           >
             Copy Links
           </button>
 
           <button
             type="button"
+            onclick="copyNotionMarkdownTable()"
+            class="px-2.5 py-1 bg-white border border-[#D6D3CD] text-[#1B1B1B] text-[10px] font-bold uppercase tracking-wider hover:bg-stone-100 cursor-pointer flex items-center gap-1"
+            title="Copy formatted Markdown table ready to paste directly into Notion"
+          >
+            <span>📝 Notion</span>
+          </button>
+
+          <button
+            type="button"
             id="downloadCsvBtn"
             class="px-2.5 py-1 bg-white border border-[#D6D3CD] text-[#1B1B1B] text-[10px] font-bold uppercase tracking-wider hover:bg-stone-100 cursor-pointer"
+            title="Download full CSV report for Google Sheets & Excel"
           >
-            CSV
+            📊 Sheets / CSV
           </button>
         </div>
       </div>
@@ -550,6 +587,9 @@
           </button>
           <button type="button" onclick="deselectDuplicateScanFiles()" class="px-2 py-1 bg-white border border-amber-300 text-amber-900 font-bold uppercase hover:bg-amber-50 cursor-pointer" title="Uncheck all files that were already uploaded">
             Deselect Duplicates
+          </button>
+          <button type="button" onclick="bulkGenerateSmartThumbnails()" class="px-2.5 py-1 bg-amber-50 border border-amber-400 text-amber-900 font-bold uppercase hover:bg-amber-100 cursor-pointer flex items-center gap-1" title="Generate customized branded HD thumbnails for all scanned videos in 1 click">
+            <span>⚡ Smart Thumbnails for ALL</span>
           </button>
         </div>
 
@@ -823,6 +863,30 @@
               <p class="text-[10px] text-[#78716C] mt-0.5">Get your own 10,000 daily quota — step-by-step guided setup</p>
             </div>
             <span class="text-lg text-[#78716C]">→</span>
+          </div>
+        </div>
+
+        <!-- Description & Tags Presets -->
+        <div class="p-3 bg-white border border-[#D6D3CD] text-xs space-y-2">
+          <div class="flex items-center justify-between font-bold text-[#1B1B1B] uppercase text-[10px]">
+            <span>🏷️ Description &amp; Tags Template</span>
+            <span class="text-stone-500 font-normal lowercase">auto-added to uploads</span>
+          </div>
+          <div class="space-y-1.5">
+            <textarea
+              id="presetDescFooterInput"
+              rows="2"
+              placeholder="Default description footer (e.g. 📌 Telegram: https://t.me/pw_updates | 📚 App Notes)"
+              class="w-full p-2 text-xs border border-[#D6D3CD] bg-[#F6F4F0] text-[#1B1B1B] focus:outline-none focus:border-[#1B1B1B]"
+              onchange="saveMetadataPresets()"
+            ></textarea>
+            <input
+              type="text"
+              id="presetTagsInput"
+              placeholder="Default custom tags (comma separated, e.g. PW, JEE 2026, Physics, NEET)"
+              class="w-full p-2 text-xs border border-[#D6D3CD] bg-[#F6F4F0] text-[#1B1B1B] focus:outline-none focus:border-[#1B1B1B]"
+              onchange="saveMetadataPresets()"
+            />
           </div>
         </div>
 
@@ -1985,9 +2049,6 @@
               <span class="inline-flex items-center gap-1 px-1.5 py-0.2 text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
                 <span>⚠️ Duplicate</span>
               </span>
-              <button onclick="promptRenameFile('${file.id}')" class="text-[10px] text-orange-700 hover:underline block font-semibold cursor-pointer">
-                ✏️ Rename Title
-              </button>
             </div>
           `;
         } else {
@@ -1997,6 +2058,11 @@
             </span>
           `;
         }
+
+        const hasCustomThumb = window.bulkThumbnailsMap && window.bulkThumbnailsMap[file.id];
+        const thumbBadge = hasCustomThumb 
+          ? `<div class="mt-1"><span class="inline-flex items-center gap-1 px-1.5 py-0.2 text-[9px] font-bold bg-purple-50 text-purple-800 border border-purple-200">🖼️ Branded Thumb</span></div>` 
+          : '';
 
         const fileDate = file.createdTime ? formatDateToDMY(new Date(file.createdTime)) : formatDateToDMY(new Date());
 
@@ -2037,6 +2103,7 @@
           </td>
           <td class="py-2.5 px-3 text-center" id="scan-dup-cell-${file.id}">
             ${duplicateBadgeHtml}
+            ${thumbBadge}
           </td>
         `;
 
@@ -2045,6 +2112,181 @@
 
       updateScanSelectedSummary();
     }
+
+    window.bulkThumbnailsMap = {};
+
+    window.bulkGenerateSmartThumbnails = async function() {
+      if (!scannedFilesList || scannedFilesList.length === 0) {
+        showToast('No scanned videos found to generate thumbnails for.', 'info');
+        return;
+      }
+
+      showToast('🎨 Generating branded HD thumbnails for all videos...', 'info');
+
+      for (const file of scannedFilesList) {
+        const title = customFileTitlesMap[file.id] || file.customTitle || file.name || 'Physics Lecture';
+        const batch = file.batch || 'PW BATCH 2026';
+        const subject = file.subject || 'PHYSICS';
+
+        const canvas = document.createElement('canvas');
+        canvas.width = 1280;
+        canvas.height = 720;
+        const ctx = canvas.getContext('2d');
+
+        // Gradient Background
+        const grad = ctx.createLinearGradient(0, 0, 1280, 720);
+        grad.addColorStop(0, '#0f172a');
+        grad.addColorStop(0.5, '#1e1b4b');
+        grad.addColorStop(1, '#312e81');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 1280, 720);
+
+        // Grid accents
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+        ctx.lineWidth = 1;
+        for (let x = 0; x < 1280; x += 60) {
+          ctx.beginPath();
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x, 720);
+          ctx.stroke();
+        }
+
+        // Batch Badge
+        ctx.fillStyle = '#ea580c';
+        ctx.fillRect(100, 90, 480, 50);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 24px system-ui, -apple-system, sans-serif';
+        ctx.fillText(batch.toUpperCase(), 120, 125);
+
+        // Subject
+        ctx.fillStyle = '#f59e0b';
+        ctx.font = '900 32px system-ui, -apple-system, sans-serif';
+        ctx.fillText(subject.toUpperCase(), 100, 200);
+
+        // Video Title Word-wrapped
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 56px system-ui, -apple-system, sans-serif';
+        const words = title.split(' ');
+        let line = '';
+        let y = 290;
+        for (let i = 0; i < words.length; i++) {
+          const testLine = line + words[i] + ' ';
+          const metrics = ctx.measureText(testLine);
+          if (metrics.width > 1050 && i > 0) {
+            ctx.fillText(line, 100, y);
+            line = words[i] + ' ';
+            y += 75;
+          } else {
+            line = testLine;
+          }
+        }
+        ctx.fillText(line, 100, y);
+
+        // Bottom Brand
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+        ctx.strokeStyle = '#ea580c';
+        ctx.lineWidth = 2;
+        ctx.fillRect(960, 580, 240, 60);
+        ctx.strokeRect(960, 580, 240, 60);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 20px system-ui, -apple-system, sans-serif';
+        ctx.fillText('PW PORTAL HD', 995, 618);
+
+        const b64 = canvas.toDataURL('image/jpeg', 0.92);
+        window.bulkThumbnailsMap[file.id] = b64;
+      }
+
+      renderScanReviewTable();
+      showToast(`✔ Created ${scannedFilesList.length} branded thumbnails! Will auto-apply on upload.`, 'success');
+    };
+
+    window.copyNotionMarkdownTable = function() {
+      if (!currentState || !currentState.files || currentState.files.length === 0) {
+        showToast('No videos in library to copy.', 'error');
+        return;
+      }
+
+      let md = '| # | Title | Batch | Subject | Date | Size | YouTube Link | Drive / Embed |\n';
+      md += '|---|---|---|---|---|---|---|---|\n';
+
+      currentState.files.forEach((f, idx) => {
+        const title = (f.customTitle || f.name || 'Lecture Video').replace(/\|/g, '-');
+        const batch = (f.batch || 'Batch').replace(/\|/g, '-');
+        const subject = (f.subject || 'Lecture').replace(/\|/g, '-');
+        const dt = formatFileDateTime(f);
+        const dateStr = dt.time ? `${dt.date} ${dt.time}` : dt.date;
+        const sizeStr = formatBytes(f.totalBytes || f.size || 0);
+        const ytUrl = f.youtubeUrl || (f.videoId ? `https://youtu.be/${f.videoId}` : '-');
+        const ytLink = ytUrl !== '-' ? `[Watch Video](${ytUrl})` : '-';
+        const embedUrl = f.videoId ? `https://www.youtube.com/embed/${f.videoId}` : (f.id ? `https://drive.google.com/file/d/${f.id}/preview` : '');
+        const embedLink = embedUrl ? `[Embed Link](${embedUrl})` : '-';
+
+        md += `| ${idx + 1} | **${title}** | ${batch} | ${subject} | ${dateStr} | ${sizeStr} | ${ytLink} | ${embedLink} |\n`;
+      });
+
+      navigator.clipboard.writeText(md).then(() => {
+        showToast('✔ Formatted Notion Table copied to clipboard!', 'success');
+      }).catch(() => {
+        showToast('Failed to copy Notion table', 'error');
+      });
+    };
+
+    window.handlePrivacySelectChange = function() {
+      const select = document.getElementById('videoPrivacySelect');
+      const badge = document.getElementById('privacyStatusBadge');
+      const scheduleInput = document.getElementById('scheduledReleaseTimeInput');
+      if (!select) return;
+
+      const val = select.value;
+      if (badge) {
+        if (val === 'unlisted') {
+          badge.textContent = 'Unlisted';
+          badge.className = 'text-emerald-700 font-bold text-[9px]';
+        } else if (val === 'private') {
+          badge.textContent = 'Private';
+          badge.className = 'text-stone-700 font-bold text-[9px]';
+        } else if (val === 'public') {
+          badge.textContent = 'Public';
+          badge.className = 'text-rose-700 font-bold text-[9px]';
+        } else if (val === 'scheduled') {
+          badge.textContent = 'Scheduled';
+          badge.className = 'text-purple-700 font-bold text-[9px]';
+        }
+      }
+
+      if (scheduleInput) {
+        if (val === 'scheduled') {
+          scheduleInput.classList.remove('hidden');
+          if (!scheduleInput.value) {
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            tomorrow.setHours(18, 0, 0, 0);
+            const ymd = formatDateToYMD(tomorrow);
+            scheduleInput.value = `${ymd}T18:00`;
+          }
+        } else {
+          scheduleInput.classList.add('hidden');
+        }
+      }
+    };
+
+    window.saveMetadataPresets = function() {
+      const footerInput = document.getElementById('presetDescFooterInput');
+      const tagsInput = document.getElementById('presetTagsInput');
+      if (footerInput) localStorage.setItem('yt_desc_footer', footerInput.value.trim());
+      if (tagsInput) localStorage.setItem('yt_default_tags', tagsInput.value.trim());
+      showToast('✔ Description & Tags template saved!', 'success');
+    };
+
+    window.loadMetadataPresets = function() {
+      const footerInput = document.getElementById('presetDescFooterInput');
+      const tagsInput = document.getElementById('presetTagsInput');
+      const savedFooter = localStorage.getItem('yt_desc_footer');
+      const savedTags = localStorage.getItem('yt_default_tags');
+      if (footerInput && savedFooter) footerInput.value = savedFooter;
+      if (tagsInput && savedTags) tagsInput.value = savedTags;
+    };
 
     window.startInlineTitleEdit = function(fileId) {
       const container = document.getElementById(`scan-title-container-${fileId}`);
@@ -3185,6 +3427,15 @@
       const startDate = startDateInput ? startDateInput.value : '';
       const endDate = endDateInput ? endDateInput.value : '';
 
+      const privacySelect = document.getElementById('videoPrivacySelect');
+      const privacyStatus = privacySelect ? privacySelect.value : 'unlisted';
+      const releaseInput = document.getElementById('scheduledReleaseTimeInput');
+      const scheduledPublishAt = (privacyStatus === 'scheduled' && releaseInput && releaseInput.value) ? releaseInput.value : null;
+
+      const descriptionFooter = localStorage.getItem('yt_desc_footer') || '';
+      const customTags = (localStorage.getItem('yt_default_tags') || '').split(',').map(s=>s.trim()).filter(Boolean);
+      const customThumbnails = window.bulkThumbnailsMap || {};
+
       startButton.disabled = true;
       buttonText.textContent = 'SCANNING...';
       const stopBtn = document.getElementById('stopProcessBtn');
@@ -3206,6 +3457,11 @@
             endDate,
             clientId,
             force,
+            privacyStatus,
+            scheduledPublishAt,
+            descriptionFooter,
+            customTags,
+            customThumbnails,
             selectedFileIds: selectedFileIds || null,
             customTitles: customTitles || null
           })
@@ -3326,6 +3582,7 @@
       }
 
       loadClientIds();
+      loadMetadataPresets();
 
       const token = localStorage.getItem('oauth_access_token');
       const expiry = localStorage.getItem('oauth_token_expiry');

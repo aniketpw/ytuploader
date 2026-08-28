@@ -1441,6 +1441,12 @@ app.post(['/api/process', '/api/process-folder'], async (req, res) => {
   const history = loadUploadedHistory();
   const existingCompleted = history.length > 0 ? history : jobState.files.filter(f => f.status === 'completed');
 
+  const privacyStatus = req.body.privacyStatus || 'unlisted';
+  const scheduledPublishAt = req.body.scheduledPublishAt || null;
+  const descriptionFooter = req.body.descriptionFooter || '';
+  const customTags = Array.isArray(req.body.customTags) ? req.body.customTags : (req.body.customTags ? String(req.body.customTags).split(',').map(s=>s.trim()).filter(Boolean) : []);
+  const customThumbnails = (req.body.customThumbnails && typeof req.body.customThumbnails === 'object') ? req.body.customThumbnails : {};
+
   jobState = {
     id: `job_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
     folderIds,
@@ -1448,6 +1454,11 @@ app.post(['/api/process', '/api/process-folder'], async (req, res) => {
     playlistTitle: (playlistName || '').trim(),
     playlistId: null,
     playlistUrl: null,
+    privacyStatus,
+    scheduledPublishAt,
+    descriptionFooter,
+    customTags,
+    customThumbnails,
     status: 'scanning',
     processingMode: processingMode || 'youtube_standard',
     startedAt: new Date().toISOString(),
@@ -1924,19 +1935,37 @@ async function runUploadQueue(auth) {
 
           const monitoredStream = driveStreamResponse.data.pipe(progressMonitor);
 
+          const targetPrivacy = jobState.privacyStatus || 'unlisted';
+          const isScheduled = targetPrivacy === 'scheduled' && jobState.scheduledPublishAt;
+          const finalPrivacy = isScheduled ? 'private' : (targetPrivacy === 'public' ? 'public' : (targetPrivacy === 'private' ? 'private' : 'unlisted'));
+
+          let videoStatus = {
+            privacyStatus: finalPrivacy,
+            selfDeclaredMadeForKids: false
+          };
+          if (isScheduled) {
+            try {
+              videoStatus.publishAt = new Date(jobState.scheduledPublishAt).toISOString();
+            } catch (e) {}
+          }
+
+          let fullDescription = `Lecture Video: ${uploadTitle}\nBatch: ${fileObj.batch}\nSubject: ${fileObj.subject}`;
+          if (jobState.playlistTitle) fullDescription += `\nPlaylist: ${jobState.playlistTitle}`;
+          if (jobState.descriptionFooter) fullDescription += `\n\n${jobState.descriptionFooter}`;
+          fullDescription += `\n\nUploaded on: ${new Date().toISOString()}`;
+
+          const allTags = ['DriveToYouTube', 'AutomatedUpload', fileObj.subject, fileObj.batch, ...(jobState.customTags || [])].filter(Boolean);
+
           const ytResponse = await youtube.videos.insert({
             part: ['snippet', 'status'],
             requestBody: {
               snippet: {
                 title: uploadTitle,
-                description: `Lecture Video: ${uploadTitle}\nBatch: ${fileObj.batch}\nSubject: ${fileObj.subject}\nPlaylist: ${jobState.playlistTitle}\nUploaded on: ${new Date().toISOString()}`,
-                tags: ['DriveToYouTube', 'AutomatedUpload', fileObj.subject, fileObj.batch],
+                description: fullDescription,
+                tags: allTags,
                 categoryId: '27' // Education
               },
-              status: {
-                privacyStatus: 'unlisted',
-                selfDeclaredMadeForKids: false
-              }
+              status: videoStatus
             },
             media: {
               body: monitoredStream
@@ -1946,7 +1975,32 @@ async function runUploadQueue(auth) {
           const videoId = ytResponse.data.id;
           const youtubeUrl = `https://youtu.be/${videoId}`;
           const studioUrl = `https://studio.youtube.com/video/${videoId}/edit`;
-          const thumbnailUrl = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
+          let thumbnailUrl = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
+
+          // Handle automatic thumbnail push if provided in batch
+          if (jobState.customThumbnails && jobState.customThumbnails[fileObj.id] && videoId) {
+            try {
+              const rawThumb = jobState.customThumbnails[fileObj.id];
+              let thumbBuf = null;
+              if (rawThumb.startsWith('data:image/')) {
+                const b64 = rawThumb.replace(/^data:image\/\w+;base64,/, '');
+                thumbBuf = Buffer.from(b64, 'base64');
+              }
+              if (thumbBuf) {
+                await youtube.thumbnails.set({
+                  videoId: videoId,
+                  media: {
+                    mimeType: 'image/jpeg',
+                    body: require('stream').Readable.from(thumbBuf)
+                  }
+                });
+                thumbnailUrl = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg?t=${Date.now()}`;
+                addJobLog(`✔ Branded thumbnail uploaded for "${uploadTitle}"`, 'success');
+              }
+            } catch (tErr) {
+              console.warn('Batch thumbnail push note:', tErr.message);
+            }
+          }
 
           fileObj.status = 'completed';
           fileObj.percentage = 100;
@@ -1967,7 +2021,8 @@ async function runUploadQueue(auth) {
           jobState.stats.pending = Math.max(0, jobState.stats.pending - 1);
           jobState.stats.completed += 1;
 
-          addJobLog(`Uploaded: "${uploadTitle}" ➔ ${youtubeUrl} (Unlisted)`, 'success');
+          const privacyLabel = isScheduled ? `Scheduled for ${new Date(jobState.scheduledPublishAt).toLocaleString()}` : (finalPrivacy.charAt(0).toUpperCase() + finalPrivacy.slice(1));
+          addJobLog(`Uploaded: "${uploadTitle}" ➔ ${youtubeUrl} (${privacyLabel})`, 'success');
           saveCompletedFileToHistory(fileObj);
           persistJobState();
 
