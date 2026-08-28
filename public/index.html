@@ -117,6 +117,16 @@
           <span>Connect Google</span>
         </button>
 
+        <!-- Manual Upload Direct Button -->
+        <button
+          type="button"
+          onclick="openManualUploadModal()"
+          class="flex items-center gap-1.5 px-3 h-8 bg-[#1B1B1B] hover:bg-black text-white font-bold transition-all text-[11px] uppercase tracking-wider cursor-pointer shadow-xs"
+          title="Directly upload a video file from your computer / device to YouTube"
+        >
+          <span>+ Manual Upload</span>
+        </button>
+
         <!-- Connected Badge -->
         <div id="navConnectedBadge" class="hidden items-center gap-2 px-3 h-8 border border-emerald-600 bg-emerald-50 text-emerald-900 font-semibold text-[11px] uppercase tracking-wider">
           <span class="w-2 h-2 rounded-full bg-emerald-600 inline-block"></span>
@@ -146,6 +156,28 @@
 
   <!-- Main Container -->
   <main class="flex-1 max-w-[1400px] w-full mx-auto px-6 py-6 space-y-6">
+
+    <!-- Active Live Streaming Progress Hero Banner -->
+    <div id="liveStreamBanner" class="hidden p-3.5 bg-[#1B1B1B] text-white font-mono-code text-xs space-y-2 shadow-lg border-2 border-orange-500">
+      <div class="flex items-center justify-between flex-wrap gap-2">
+        <div class="flex items-center gap-2.5 overflow-hidden">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
+          <span class="font-bold uppercase tracking-wider text-orange-400 shrink-0">STREAMING TO YOUTUBE:</span>
+          <span class="font-bold text-white truncate" id="liveStreamTitle">Lecture Video.mp4</span>
+        </div>
+        <div class="flex items-center gap-3 shrink-0">
+          <span class="text-orange-400 font-bold" id="liveStreamSpeed">⚡ 0.0 MB/s</span>
+          <span class="text-emerald-400 font-bold text-sm" id="liveStreamPercent">0%</span>
+        </div>
+      </div>
+      <div class="w-full bg-stone-700 h-2 overflow-hidden">
+        <div id="liveStreamProgressBar" class="bg-gradient-to-r from-orange-500 to-emerald-400 h-full transition-all duration-200" style="width: 0%"></div>
+      </div>
+      <div class="flex items-center justify-between text-[10px] text-stone-400">
+        <span id="liveStreamBytes">0 MB / 0 MB</span>
+        <span id="liveStreamEta">Estimating time remaining...</span>
+      </div>
+    </div>
 
     <!-- Background Notice Banner -->
     <div id="bgNoticeBanner" class="hidden border border-[#1B1B1B] bg-white p-3 flex items-center justify-between text-xs text-[#1B1B1B]">
@@ -1138,6 +1170,174 @@
 
       </div> <!-- end authSetupWizard -->
 
+    </div>
+  </div>
+
+  <!-- 6. Manual Direct Video Upload Studio Modal -->
+  <div id="manualUploadModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 overflow-y-auto">
+    <div class="bg-[#F6F4F0] border-2 border-[#1B1B1B] max-w-2xl w-full shadow-2xl font-mono-code my-4 flex flex-col">
+      <!-- Header -->
+      <div class="flex items-center justify-between border-b border-[#D6D3CD] px-5 py-3 bg-white">
+        <div>
+          <h3 class="text-sm font-bold uppercase tracking-wider text-[#1B1B1B]">Direct Device Upload Studio</h3>
+          <p class="text-[10px] text-[#78716C]">Upload local video directly to YouTube with instant thumbnail &amp; title controls</p>
+        </div>
+        <button type="button" onclick="closeManualUploadModal()" class="text-[#78716C] hover:text-[#1B1B1B] text-lg font-bold cursor-pointer">&times;</button>
+      </div>
+
+      <!-- Body -->
+      <div class="p-5 space-y-4 max-h-[80vh] overflow-y-auto">
+        
+        <!-- Video File Selector / Drag & Drop Dropzone -->
+        <div id="manualDropzone" onclick="document.getElementById('manualVideoFileInput').click()" class="border-2 border-dashed border-[#1B1B1B] hover:border-orange-600 bg-white hover:bg-stone-50 p-6 text-center cursor-pointer transition-colors space-y-2 select-none">
+          <input type="file" id="manualVideoFileInput" class="hidden" accept="video/mp4, video/mkv, video/x-matroska, video/webm, video/quicktime, video/avi" onchange="handleManualFileSelected(event)" />
+          <div class="text-3xl">🎬</div>
+          <div class="font-bold text-xs uppercase tracking-wide text-[#1B1B1B]" id="manualFileDropPrompt">Click or Drag &amp; Drop a Video File Here</div>
+          <p class="text-[10px] text-[#78716C]">Supports MP4, MKV, WebM, MOV, AVI (no size limits)</p>
+        </div>
+
+        <!-- Local Video Player Preview (Hidden until file selected) -->
+        <div id="manualLocalPlayerContainer" class="hidden space-y-2 border border-[#D6D3CD] bg-black p-2">
+          <div class="flex items-center justify-between text-white text-[10px] px-1 font-bold">
+            <span class="text-emerald-400">▶ LOCAL VIDEO PREVIEW</span>
+            <span id="manualLocalFileInfo" class="text-stone-300">0 MB</span>
+          </div>
+          <video id="manualLocalVideoPlayer" controls class="w-full aspect-video bg-black"></video>
+        </div>
+
+        <!-- Metadata Controls Grid -->
+        <div class="space-y-3 bg-white p-4 border border-[#D6D3CD]">
+          <!-- Title Input -->
+          <div class="space-y-1">
+            <label class="block text-[10px] font-bold uppercase tracking-wider text-[#1B1B1B]">YouTube Video Title</label>
+            <input
+              type="text"
+              id="manualTitleInput"
+              placeholder="Enter YouTube Video Title..."
+              class="w-full h-8 px-2.5 om-box-input text-xs font-bold text-[#1B1B1B]"
+            />
+          </div>
+
+          <!-- 2-Col: Batch & Subject -->
+          <div class="grid grid-cols-2 gap-2.5">
+            <div class="space-y-1">
+              <label class="block text-[10px] font-bold uppercase tracking-wider text-[#78716C]">Batch Name</label>
+              <input
+                type="text"
+                id="manualBatchInput"
+                placeholder="e.g. 27-AJ251NP 2026"
+                class="w-full h-8 px-2 om-box-input text-xs"
+              />
+            </div>
+            <div class="space-y-1">
+              <label class="block text-[10px] font-bold uppercase tracking-wider text-[#78716C]">Subject / Lecture</label>
+              <input
+                type="text"
+                id="manualSubjectInput"
+                placeholder="e.g. PHYSICS"
+                class="w-full h-8 px-2 om-box-input text-xs"
+              />
+            </div>
+          </div>
+
+          <!-- 2-Col: Playlist & Visibility -->
+          <div class="grid grid-cols-2 gap-2.5">
+            <div class="space-y-1">
+              <label class="block text-[10px] font-bold uppercase tracking-wider text-[#78716C]">Playlist (optional)</label>
+              <input
+                type="text"
+                id="manualPlaylistInput"
+                placeholder="e.g. Physics 2026"
+                class="w-full h-8 px-2 om-box-input text-xs"
+              />
+            </div>
+            <div class="space-y-1">
+              <label class="block text-[10px] font-bold uppercase tracking-wider text-[#78716C]">Visibility &amp; Release</label>
+              <select
+                id="manualPrivacySelect"
+                class="w-full h-8 px-2 om-box-input text-xs bg-white cursor-pointer"
+              >
+                <option value="unlisted" selected>Unlisted (Default)</option>
+                <option value="private">Private</option>
+                <option value="public">Public</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Instant Thumbnail Studio Section -->
+        <div class="bg-white p-4 border border-[#D6D3CD] space-y-3">
+          <div class="flex items-center justify-between">
+            <label class="block text-[10px] font-bold uppercase tracking-wider text-[#1B1B1B]">Instant Thumbnail Studio</label>
+            <button type="button" onclick="generateManualSmartThumb()" class="px-2 py-0.5 bg-amber-50 border border-amber-400 text-amber-900 font-bold uppercase text-[10px] hover:bg-amber-100 cursor-pointer">
+              ⚡ 1-Click Smart Canvas
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+            <div class="md:col-span-5 aspect-video bg-stone-900 border border-[#D6D3CD] overflow-hidden flex items-center justify-center">
+              <img id="manualThumbPreview" src="https://placehold.co/1280x720/1c1917/ffffff?text=Thumbnail+Preview" alt="Thumbnail Preview" class="w-full h-full object-cover" />
+            </div>
+            <div class="md:col-span-7 space-y-2 text-xs">
+              <div>
+                <input
+                  type="text"
+                  id="manualThumbUrlInput"
+                  placeholder="Paste Drive image link or web URL..."
+                  oninput="handleManualThumbUrlInput()"
+                  class="w-full h-7 px-2 om-box-input text-[11px]"
+                />
+              </div>
+              <div class="flex items-center gap-2">
+                <button type="button" onclick="document.getElementById('manualThumbFileInput').click()" class="px-2.5 py-1 bg-white border border-[#D6D3CD] hover:bg-stone-100 text-[10px] font-bold uppercase cursor-pointer">
+                  Choose Image File...
+                </button>
+                <input type="file" id="manualThumbFileInput" class="hidden" accept="image/png, image/jpeg, image/webp" onchange="handleManualThumbFileSelected(event)" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Real-time Manual Upload Progress Bar -->
+        <div id="manualUploadProgressContainer" class="hidden bg-[#1B1B1B] text-white p-3.5 space-y-2 border-2 border-orange-500 font-mono-code text-xs">
+          <div class="flex items-center justify-between font-bold">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span class="text-orange-400 uppercase tracking-wider" id="manualProgressLabel">UPLOADING DIRECTLY TO YOUTUBE...</span>
+            </div>
+            <span id="manualProgressPercent" class="text-emerald-400 text-sm">0%</span>
+          </div>
+          <div class="w-full bg-stone-700 h-2 overflow-hidden">
+            <div id="manualProgressBarFill" class="bg-gradient-to-r from-orange-500 to-emerald-400 h-full transition-all duration-150" style="width: 0%"></div>
+          </div>
+          <div class="flex items-center justify-between text-[10px] text-stone-300">
+            <span id="manualProgressBytes">0 MB / 0 MB</span>
+            <span id="manualProgressSpeed">⚡ 0 MB/s</span>
+            <span id="manualProgressEta">--</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="px-5 py-3 border-t border-[#D6D3CD] bg-white flex items-center justify-between shrink-0">
+        <button
+          type="button"
+          onclick="closeManualUploadModal()"
+          class="px-3 py-1.5 bg-white border border-[#D6D3CD] text-[#78716C] hover:text-[#1B1B1B] text-xs font-semibold uppercase cursor-pointer"
+        >
+          Cancel
+        </button>
+
+        <button
+          type="button"
+          id="startManualUploadBtn"
+          onclick="startManualDirectUpload()"
+          class="px-6 py-2 bg-[#1B1B1B] hover:bg-black text-white text-xs font-bold uppercase tracking-widest cursor-pointer flex items-center gap-1.5"
+        >
+          <span>START DIRECT UPLOAD ➔</span>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -2288,6 +2488,356 @@
       if (tagsInput && savedTags) tagsInput.value = savedTags;
     };
 
+    let manualSelectedFile = null;
+    let manualCustomThumbBase64 = null;
+
+    window.openManualUploadModal = function() {
+      const modal = document.getElementById('manualUploadModal');
+      if (!modal) return;
+
+      manualSelectedFile = null;
+      manualCustomThumbBase64 = null;
+      const fileInput = document.getElementById('manualVideoFileInput');
+      if (fileInput) fileInput.value = '';
+      const dropPrompt = document.getElementById('manualFileDropPrompt');
+      if (dropPrompt) dropPrompt.textContent = 'Click or Drag & Drop a Video File Here';
+      const playerContainer = document.getElementById('manualLocalPlayerContainer');
+      if (playerContainer) playerContainer.classList.add('hidden');
+      const videoPlayer = document.getElementById('manualLocalVideoPlayer');
+      if (videoPlayer) {
+        videoPlayer.pause();
+        videoPlayer.src = '';
+      }
+      const progressContainer = document.getElementById('manualUploadProgressContainer');
+      if (progressContainer) progressContainer.classList.add('hidden');
+      const uploadBtn = document.getElementById('startManualUploadBtn');
+      if (uploadBtn) {
+        uploadBtn.disabled = false;
+        uploadBtn.innerHTML = '<span>START DIRECT UPLOAD ➔</span>';
+      }
+
+      const batchInput = document.getElementById('manualBatchInput');
+      const subjectInput = document.getElementById('manualSubjectInput');
+      const titleInput = document.getElementById('manualTitleInput');
+      if (titleInput) titleInput.value = '';
+      if (batchInput && !batchInput.value) batchInput.value = 'PW BATCH 2026';
+      if (subjectInput && !subjectInput.value) subjectInput.value = 'PHYSICS';
+
+      const thumbPreview = document.getElementById('manualThumbPreview');
+      if (thumbPreview) thumbPreview.src = 'https://placehold.co/1280x720/1c1917/ffffff?text=Thumbnail+Preview';
+
+      modal.classList.remove('hidden');
+    };
+
+    window.closeManualUploadModal = function() {
+      const modal = document.getElementById('manualUploadModal');
+      if (modal) modal.classList.add('hidden');
+      const videoPlayer = document.getElementById('manualLocalVideoPlayer');
+      if (videoPlayer) {
+        videoPlayer.pause();
+        videoPlayer.src = '';
+      }
+    };
+
+    window.handleManualFileSelected = function(e) {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+
+      manualSelectedFile = file;
+
+      const dropPrompt = document.getElementById('manualFileDropPrompt');
+      if (dropPrompt) {
+        dropPrompt.textContent = `✔ Selected: ${file.name} (${formatBytes(file.size)})`;
+      }
+
+      const cleanName = file.name.replace(/\.[^/.]+$/, '');
+      const titleInput = document.getElementById('manualTitleInput');
+      if (titleInput && (!titleInput.value || titleInput.value === 'Direct Lecture Video')) {
+        titleInput.value = cleanName;
+      }
+
+      const playerContainer = document.getElementById('manualLocalPlayerContainer');
+      const videoPlayer = document.getElementById('manualLocalVideoPlayer');
+      const fileInfo = document.getElementById('manualLocalFileInfo');
+
+      if (playerContainer && videoPlayer) {
+        const objectUrl = URL.createObjectURL(file);
+        videoPlayer.src = objectUrl;
+        playerContainer.classList.remove('hidden');
+        if (fileInfo) fileInfo.textContent = `${file.name} • ${formatBytes(file.size)}`;
+      }
+
+      generateManualSmartThumb();
+      showToast(`✔ Video loaded: ${file.name}`, 'success');
+    };
+
+    window.generateManualSmartThumb = function() {
+      const titleInput = document.getElementById('manualTitleInput');
+      const batchInput = document.getElementById('manualBatchInput');
+      const subjectInput = document.getElementById('manualSubjectInput');
+
+      const title = (titleInput && titleInput.value.trim()) ? titleInput.value.trim() : (manualSelectedFile ? manualSelectedFile.name.replace(/\.[^/.]+$/, '') : 'Lecture Video');
+      const batch = (batchInput && batchInput.value.trim()) ? batchInput.value.trim() : 'PW BATCH 2026';
+      const subject = (subjectInput && subjectInput.value.trim()) ? subjectInput.value.trim() : 'PHYSICS';
+
+      const canvas = document.createElement('canvas');
+      canvas.width = 1280;
+      canvas.height = 720;
+      const ctx = canvas.getContext('2d');
+
+      const grad = ctx.createLinearGradient(0, 0, 1280, 720);
+      grad.addColorStop(0, '#0f172a');
+      grad.addColorStop(0.5, '#1e1b4b');
+      grad.addColorStop(1, '#312e81');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 1280, 720);
+
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+      ctx.lineWidth = 1;
+      for (let x = 0; x < 1280; x += 60) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, 720);
+        ctx.stroke();
+      }
+
+      ctx.fillStyle = '#ea580c';
+      ctx.fillRect(100, 90, 480, 50);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 24px system-ui, -apple-system, sans-serif';
+      ctx.fillText(batch.toUpperCase(), 120, 125);
+
+      ctx.fillStyle = '#f59e0b';
+      ctx.font = '900 32px system-ui, -apple-system, sans-serif';
+      ctx.fillText(subject.toUpperCase(), 100, 200);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 56px system-ui, -apple-system, sans-serif';
+      const words = title.split(' ');
+      let line = '';
+      let y = 290;
+      for (let i = 0; i < words.length; i++) {
+        const testLine = line + words[i] + ' ';
+        const metrics = ctx.measureText(testLine);
+        if (metrics.width > 1050 && i > 0) {
+          ctx.fillText(line, 100, y);
+          line = words[i] + ' ';
+          y += 75;
+        } else {
+          line = testLine;
+        }
+      }
+      ctx.fillText(line, 100, y);
+
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+      ctx.strokeStyle = '#ea580c';
+      ctx.lineWidth = 2;
+      ctx.fillRect(960, 580, 240, 60);
+      ctx.strokeRect(960, 580, 240, 60);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 20px system-ui, -apple-system, sans-serif';
+      ctx.fillText('PW PORTAL HD', 995, 618);
+
+      const b64 = canvas.toDataURL('image/jpeg', 0.92);
+      manualCustomThumbBase64 = b64;
+      const preview = document.getElementById('manualThumbPreview');
+      if (preview) preview.src = b64;
+      showToast('✔ Smart thumbnail generated!', 'success');
+    };
+
+    window.handleManualThumbFileSelected = function(e) {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        manualCustomThumbBase64 = reader.result;
+        const preview = document.getElementById('manualThumbPreview');
+        if (preview) preview.src = reader.result;
+        showToast('✔ Custom thumbnail image selected!', 'success');
+      };
+      reader.readAsDataURL(file);
+    };
+
+    window.handleManualThumbUrlInput = function() {
+      const input = document.getElementById('manualThumbUrlInput');
+      const preview = document.getElementById('manualThumbPreview');
+      if (!input || !preview) return;
+
+      const val = input.value.trim();
+      if (!val) return;
+
+      const driveId = extractGoogleDriveFileId(val);
+      if (driveId) {
+        preview.src = `/api/drive-image-proxy?id=${driveId}&t=${Date.now()}`;
+        preview.onerror = () => {
+          preview.src = `https://lh3.googleusercontent.com/d/${driveId}=w1280`;
+        };
+        showToast('✔ Drive thumbnail detected!', 'success');
+      } else {
+        preview.src = val;
+      }
+    };
+
+    window.startManualDirectUpload = async function() {
+      if (!manualSelectedFile) {
+        showToast('Please select a video file from your device first.', 'error');
+        const fileInput = document.getElementById('manualVideoFileInput');
+        if (fileInput) fileInput.click();
+        return;
+      }
+
+      if (!window.gAccessToken) {
+        showToast('Please connect your Google Account first.', 'info');
+        openAuthModal();
+        return;
+      }
+
+      const titleInput = document.getElementById('manualTitleInput');
+      const batchInput = document.getElementById('manualBatchInput');
+      const subjectInput = document.getElementById('manualSubjectInput');
+      const playlistInput = document.getElementById('manualPlaylistInput');
+      const privacySelect = document.getElementById('manualPrivacySelect');
+      const thumbUrlInput = document.getElementById('manualThumbUrlInput');
+
+      const title = (titleInput && titleInput.value.trim()) ? titleInput.value.trim() : manualSelectedFile.name.replace(/\.[^/.]+$/, '');
+      const batch = (batchInput && batchInput.value.trim()) ? batchInput.value.trim() : 'Manual Upload';
+      const subject = (subjectInput && subjectInput.value.trim()) ? subjectInput.value.trim() : 'Lecture';
+      const playlistName = (playlistInput && playlistInput.value.trim()) ? playlistInput.value.trim() : null;
+      const privacyStatus = privacySelect ? privacySelect.value : 'unlisted';
+      const descriptionFooter = localStorage.getItem('yt_desc_footer') || '';
+      const customTags = (localStorage.getItem('yt_default_tags') || '').split(',').map(s=>s.trim()).filter(Boolean);
+      const customThumbUrl = thumbUrlInput ? thumbUrlInput.value.trim() : null;
+
+      const progressContainer = document.getElementById('manualUploadProgressContainer');
+      const progressBarFill = document.getElementById('manualProgressBarFill');
+      const progressPercent = document.getElementById('manualProgressPercent');
+      const progressBytes = document.getElementById('manualProgressBytes');
+      const progressSpeed = document.getElementById('manualProgressSpeed');
+      const progressEta = document.getElementById('manualProgressEta');
+      const uploadBtn = document.getElementById('startManualUploadBtn');
+
+      if (uploadBtn) {
+        uploadBtn.disabled = true;
+        uploadBtn.innerHTML = '<span>UPLOADING...</span>';
+      }
+      if (progressContainer) progressContainer.classList.remove('hidden');
+
+      showToast('Initiating direct upload session with YouTube...', 'info');
+
+      try {
+        const initRes = await fetch('/api/initiate-direct-upload', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${window.gAccessToken}`
+          },
+          body: JSON.stringify({
+            title,
+            batch,
+            subject,
+            playlistName,
+            privacyStatus,
+            descriptionFooter,
+            customTags
+          })
+        });
+
+        const initData = await initRes.json();
+        if (!initData.success || !initData.uploadUrl) {
+          throw new Error(initData.error || 'Failed to initiate YouTube upload session');
+        }
+
+        const uploadUrl = initData.uploadUrl;
+        showToast('Streaming file directly to YouTube CDN...', 'info');
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('PUT', uploadUrl, true);
+        xhr.setRequestHeader('Content-Type', manualSelectedFile.type || 'video/mp4');
+
+        const startTime = Date.now();
+
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) {
+            const percent = Math.round((e.loaded / e.total) * 100);
+            const timeDiffSec = (Date.now() - startTime) / 1000;
+            const speedMBps = timeDiffSec > 0.5 ? ((e.loaded / (1024 * 1024)) / timeDiffSec).toFixed(2) : '0';
+            const remainingBytes = Math.max(0, e.total - e.loaded);
+            const eta = speedMBps > 0 ? Math.round((remainingBytes / (1024 * 1024)) / parseFloat(speedMBps)) : 0;
+
+            if (progressBarFill) progressBarFill.style.width = `${percent}%`;
+            if (progressPercent) progressPercent.textContent = `${percent}%`;
+            if (progressBytes) progressBytes.textContent = `${formatBytes(e.loaded)} / ${formatBytes(e.total)}`;
+            if (progressSpeed) progressSpeed.textContent = `⚡ ${speedMBps} MB/s`;
+            if (progressEta) progressEta.textContent = eta > 0 ? `${eta}s remaining` : 'Finishing...';
+          }
+        };
+
+        xhr.onload = async () => {
+          if (xhr.status === 200 || xhr.status === 201) {
+            let videoId = null;
+            try {
+              const ytRes = JSON.parse(xhr.responseText);
+              videoId = ytRes.id;
+            } catch (pe) {
+              console.warn('Response parsing note:', pe);
+            }
+
+            if (videoId) {
+              showToast('✔ Upload finished! Applying thumbnail & saving...', 'success');
+
+              await fetch('/api/complete-direct-upload', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${window.gAccessToken}`
+                },
+                body: JSON.stringify({
+                  videoId,
+                  title,
+                  batch,
+                  subject,
+                  playlistName,
+                  fileSize: manualSelectedFile.size,
+                  thumbnailBase64: manualCustomThumbBase64 || null,
+                  thumbnailUrl: customThumbUrl || null
+                })
+              });
+
+              showToast(`🎉 Video "${title}" successfully uploaded to YouTube!`, 'success');
+              closeManualUploadModal();
+              loadJobStatus();
+
+              openVideoModal(videoId);
+            }
+          } else {
+            showToast(`Upload failed with status ${xhr.status}: ${xhr.responseText}`, 'error');
+            if (uploadBtn) {
+              uploadBtn.disabled = false;
+              uploadBtn.innerHTML = '<span>RETRY UPLOAD ➔</span>';
+            }
+          }
+        };
+
+        xhr.onerror = () => {
+          showToast('Network error during direct upload.', 'error');
+          if (uploadBtn) {
+            uploadBtn.disabled = false;
+            uploadBtn.innerHTML = '<span>RETRY UPLOAD ➔</span>';
+          }
+        };
+
+        xhr.send(manualSelectedFile);
+      } catch (err) {
+        console.error('Manual direct upload error:', err);
+        showToast(`Error: ${err.message}`, 'error');
+        if (uploadBtn) {
+          uploadBtn.disabled = false;
+          uploadBtn.innerHTML = '<span>START DIRECT UPLOAD ➔</span>';
+        }
+      }
+    };
+
     window.startInlineTitleEdit = function(fileId) {
       const container = document.getElementById(`scan-title-container-${fileId}`);
       if (!container) return;
@@ -3223,6 +3773,12 @@
           renderFilteredTable();
           updateDynamicMetrics();
         }
+        const banner = document.getElementById('liveStreamBanner');
+        const titleEl = document.getElementById('liveStreamTitle');
+        if (banner) {
+          banner.classList.remove('hidden');
+          if (titleEl) titleEl.textContent = event.fileName || 'Streaming video...';
+        }
       } else if (event.type === 'upload_progress') {
         const bar = document.getElementById(`progress-bar-${event.fileId}`);
         const bytesEl = document.getElementById(`progress-bytes-${event.fileId}`);
@@ -3234,9 +3790,29 @@
         if (speedEl) speedEl.textContent = event.speedMBps ? `⚡ ${event.speedMBps} MB/s` : 'Streaming...';
         if (etaEl) etaEl.textContent = event.etaSeconds ? `${event.etaSeconds}s` : '';
 
+        // Update Top Live Streaming Hero Banner
+        const banner = document.getElementById('liveStreamBanner');
+        const titleEl = document.getElementById('liveStreamTitle');
+        const speedTop = document.getElementById('liveStreamSpeed');
+        const percentTop = document.getElementById('liveStreamPercent');
+        const barTop = document.getElementById('liveStreamProgressBar');
+        const bytesTop = document.getElementById('liveStreamBytes');
+        const etaTop = document.getElementById('liveStreamEta');
+
+        if (banner) {
+          banner.classList.remove('hidden');
+          if (titleEl && event.fileName) titleEl.textContent = event.fileName;
+          if (speedTop) speedTop.textContent = event.speedMBps ? `⚡ ${event.speedMBps} MB/s` : 'Streaming...';
+          if (percentTop) percentTop.textContent = `${event.percentage}%`;
+          if (barTop) barTop.style.width = `${event.percentage}%`;
+          if (bytesTop) bytesTop.textContent = `${formatBytes(event.uploadedBytes)} / ${formatBytes(event.totalBytes)}`;
+          if (etaTop) etaTop.textContent = event.etaSeconds ? `${event.etaSeconds}s remaining` : 'Direct Pipe to YouTube CDN';
+        }
+
         if (currentState && currentState.files) {
           const f = currentState.files.find(item => item.id === event.fileId);
           if (f) {
+            f.status = 'uploading';
             f.percentage = event.percentage;
             f.uploadedBytes = event.uploadedBytes;
             f.speedMBps = event.speedMBps;
@@ -3244,6 +3820,9 @@
           }
         }
       } else if (event.type === 'file_completed') {
+        const banner = document.getElementById('liveStreamBanner');
+        if (banner) banner.classList.add('hidden');
+
         if (currentState && currentState.files) {
           const f = currentState.files.find(item => item.id === event.fileId);
           if (f) {
@@ -3258,6 +3837,8 @@
           updateDynamicMetrics();
         }
       } else if (event.type === 'file_error') {
+        const banner = document.getElementById('liveStreamBanner');
+        if (banner) banner.classList.add('hidden');
         if (currentState && currentState.files) {
           const f = currentState.files.find(item => item.id === event.fileId);
           if (f) {

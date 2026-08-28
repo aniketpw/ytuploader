@@ -1741,6 +1741,236 @@ app.get('/api/drive-image-proxy', async (req, res) => {
   }
 });
 
+/**
+ * Initiate Direct Manual Video Upload from Local File
+ */
+app.post('/api/initiate-direct-upload', async (req, res) => {
+  const auth = getOAuth2Client(req);
+  if (!auth) {
+    return res.status(401).json({ success: false, error: 'Google Account not connected. Please click Connect Google.' });
+  }
+
+  try {
+    const title = (req.body.title || 'Direct Lecture Video').trim();
+    const batch = req.body.batch ? req.body.batch.trim() : 'Manual Upload';
+    const subject = req.body.subject ? req.body.subject.trim() : 'Lecture';
+    const playlistName = req.body.playlistName ? req.body.playlistName.trim() : null;
+    const privacyStatus = req.body.privacyStatus || 'unlisted';
+    const scheduledPublishAt = req.body.scheduledPublishAt || null;
+    const descriptionFooter = req.body.descriptionFooter || '';
+    const customTags = Array.isArray(req.body.customTags) ? req.body.customTags : [];
+
+    const isScheduled = privacyStatus === 'scheduled' && scheduledPublishAt;
+    const finalPrivacy = isScheduled ? 'private' : (privacyStatus === 'public' ? 'public' : (privacyStatus === 'private' ? 'private' : 'unlisted'));
+
+    let statusConfig = {
+      privacyStatus: finalPrivacy,
+      selfDeclaredMadeForKids: false
+    };
+    if (isScheduled) {
+      try {
+        statusConfig.publishAt = new Date(scheduledPublishAt).toISOString();
+      } catch (e) {}
+    }
+
+    let fullDesc = `Lecture Video: ${title}\nBatch: ${batch}\nSubject: ${subject}`;
+    if (playlistName) fullDesc += `\nPlaylist: ${playlistName}`;
+    if (descriptionFooter) fullDesc += `\n\n${descriptionFooter}`;
+    fullDesc += `\n\nUploaded on: ${new Date().toISOString()}`;
+
+    const tags = ['DirectUpload', 'Lecture', subject, batch, ...customTags].filter(Boolean);
+
+    // Fetch fresh access token
+    const tokenInfo = await auth.getAccessToken();
+    const accessToken = typeof tokenInfo === 'string' ? tokenInfo : (tokenInfo?.token || tokenInfo?.access_token);
+
+    if (!accessToken) {
+      return res.status(401).json({ success: false, error: 'Could not acquire Google Access Token.' });
+    }
+
+    // Call YouTube API Resumable Upload Initiation URL
+    const https = require('https');
+    const postData = JSON.stringify({
+      snippet: {
+        title,
+        description: fullDesc,
+        tags,
+        categoryId: '27' // Education
+      },
+      status: statusConfig
+    });
+
+    const initOptions = {
+      hostname: 'www.googleapis.com',
+      port: 443,
+      path: '/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status',
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json; charset=UTF-8',
+        'Content-Length': Buffer.byteLength(postData),
+        'X-Upload-Content-Type': 'video/*'
+      }
+    };
+
+    const initReq = https.request(initOptions, (initRes) => {
+      if (initRes.statusCode >= 200 && initRes.statusCode < 300) {
+        const uploadUrl = initRes.headers['location'];
+        if (uploadUrl) {
+          return res.json({
+            success: true,
+            uploadUrl,
+            title,
+            batch,
+            subject,
+            playlistName
+          });
+        }
+      }
+
+      let errData = '';
+      initRes.on('data', chunk => { errData += chunk; });
+      initRes.on('end', () => {
+        console.error('YouTube Direct Upload Init Error:', errData);
+        return res.status(initRes.statusCode || 500).json({
+          success: false,
+          error: `YouTube API returned error (${initRes.statusCode}): ${errData}`
+        });
+      });
+    });
+
+    initReq.on('error', (e) => {
+      console.error('HTTPS init error:', e);
+      return res.status(500).json({ success: false, error: e.message });
+    });
+
+    initReq.write(postData);
+    initReq.end();
+  } catch (err) {
+    console.error('Initiate direct upload error:', err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * Complete Direct Manual Video Upload (Push Thumbnail, Add to Playlist, Save to History)
+ */
+app.post('/api/complete-direct-upload', async (req, res) => {
+  const auth = getOAuth2Client(req);
+  const { videoId, title, batch, subject, playlistName, fileSize, thumbnailBase64, thumbnailUrl } = req.body;
+
+  if (!videoId) {
+    return res.status(400).json({ success: false, error: 'Missing videoId.' });
+  }
+
+  const youtubeUrl = `https://youtu.be/${videoId}`;
+  const studioUrl = `https://studio.youtube.com/video/${videoId}/edit`;
+  let finalThumbnail = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+
+  const record = {
+    id: videoId,
+    videoId: videoId,
+    name: title || 'Manual Lecture Video',
+    originalName: title || 'Manual Lecture Video',
+    customTitle: title || 'Manual Lecture Video',
+    batch: batch || 'Direct Upload',
+    subject: subject || 'Lecture',
+    folderPath: 'Manual Device Upload',
+    size: fileSize || 0,
+    createdTime: new Date().toISOString(),
+    status: 'completed',
+    percentage: 100,
+    uploadedBytes: fileSize || 0,
+    totalBytes: fileSize || 0,
+    speedMBps: 0,
+    etaSeconds: 0,
+    youtubeUrl,
+    thumbnailUrl: finalThumbnail,
+    studioUrl,
+    error: null
+  };
+
+  if (auth) {
+    const { google } = require('googleapis');
+    const youtube = google.youtube({ version: 'v3', auth });
+
+    // 1. Add to Playlist if specified
+    if (playlistName && playlistName.trim()) {
+      try {
+        const pId = await getOrCreatePlaylist(youtube, playlistName.trim());
+        if (pId) {
+          await addVideoToPlaylist(youtube, pId, videoId);
+          addJobLog(`✔ Added "${title}" to Playlist: "${playlistName}"`, 'info');
+        }
+      } catch (pErr) {
+        console.warn('Manual playlist add error:', pErr.message);
+      }
+    }
+
+    // 2. Set Custom Thumbnail if provided
+    let thumbBuf = null;
+    let mimeType = 'image/jpeg';
+
+    if (thumbnailBase64) {
+      const match = thumbnailBase64.match(/^data:([^;]+);base64,(.+)$/);
+      mimeType = match ? match[1] : 'image/jpeg';
+      const raw = match ? match[2] : thumbnailBase64;
+      thumbBuf = Buffer.from(raw, 'base64');
+    } else if (thumbnailUrl) {
+      const driveFileId = extractGoogleDriveFileId(thumbnailUrl);
+      if (driveFileId) {
+        try {
+          const drive = google.drive({ version: 'v3', auth });
+          const imgRes = await drive.files.get({ fileId: driveFileId, alt: 'media', supportsAllDrives: true }, { responseType: 'arraybuffer' });
+          thumbBuf = Buffer.from(imgRes.data);
+        } catch (dErr) {
+          console.warn('Could not fetch drive thumbnail for direct upload:', dErr.message);
+        }
+      }
+    }
+
+    if (thumbBuf) {
+      try {
+        const { Readable } = require('stream');
+        const stream = new Readable();
+        stream.push(thumbBuf);
+        stream.push(null);
+
+        await youtube.thumbnails.set({
+          videoId,
+          media: { mimeType, body: stream }
+        });
+        finalThumbnail = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg?t=${Date.now()}`;
+        record.thumbnailUrl = finalThumbnail;
+        addJobLog(`✔ Branded thumbnail uploaded for "${title}"`, 'success');
+      } catch (tErr) {
+        console.warn('Manual upload thumbnail set error:', tErr.message);
+      }
+    }
+  }
+
+  saveCompletedFileToHistory(record);
+  addJobLog(`✔ Manual Upload Complete: "${title}" ➔ ${youtubeUrl}`, 'success');
+
+  broadcastSSE({
+    type: 'file_completed',
+    fileId: videoId,
+    fileName: title,
+    videoId,
+    youtubeUrl,
+    studioUrl,
+    thumbnailUrl: finalThumbnail
+  });
+
+  return res.json({
+    success: true,
+    videoId,
+    youtubeUrl,
+    studioUrl,
+    thumbnailUrl: finalThumbnail
+  });
+});
+
 // Start Server
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`====================================================`);
