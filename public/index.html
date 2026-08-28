@@ -4269,17 +4269,16 @@
     };
 
     function updateThemeControlsUI(isDark) {
-      const dockLight = document.getElementById('dockBtnLight');
-      const dockDark = document.getElementById('dockBtnDark');
+      const icon = document.getElementById('floatingThemeIcon');
+      const label = document.getElementById('floatingThemeLabel');
 
-      if (dockLight && dockDark) {
-        if (isDark) {
-          dockDark.className = "flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] shadow-xs";
-          dockLight.className = "flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer text-[var(--text-muted)] hover:text-[var(--text-main)]";
-        } else {
-          dockLight.className = "flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] shadow-xs";
-          dockDark.className = "flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer text-[var(--text-muted)] hover:text-[var(--text-main)]";
-        }
+      if (icon && label) {
+        icon.textContent = isDark ? '🌙' : '☀️';
+        label.textContent = isDark ? 'Dark Mode' : 'Light Mode';
+        // Smooth spin animation on theme change
+        icon.classList.remove('rotate-[360deg]');
+        void icon.offsetWidth; // trigger reflow
+        icon.classList.add('rotate-[360deg]');
       }
     }
 
@@ -4298,42 +4297,19 @@
     });
   </script>
 
-  <!-- Floating Brutalist Segmented Theme Dock (Bottom-Right) -->
-  <div id="floatingThemeDock" class="fixed bottom-5 right-5 z-50 flex items-center font-mono-code text-xs select-none shadow-2xl">
-    <div class="flex items-center p-1 bg-[var(--bg-card)] border border-[var(--border-main)] shadow-xl backdrop-blur-md gap-1">
-      <button
-        type="button"
-        id="dockBtnLight"
-        onclick="setAppTheme('light')"
-        class="flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer text-[var(--text-muted)] hover:text-[var(--text-main)]"
-        title="Switch to Light Mode"
-      >
-        <span class="text-xs">☀️</span>
-        <span>Light</span>
-      </button>
-
-      <button
-        type="button"
-        id="dockBtnDark"
-        onclick="setAppTheme('dark')"
-        class="flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] shadow-xs"
-        title="Switch to Dark Mode"
-      >
-        <span class="text-xs">🌙</span>
-        <span>Dark</span>
-      </button>
-
-      <div class="h-4 w-px bg-[var(--border-main)] mx-0.5"></div>
-
-      <button
-        type="button"
-        onclick="toggleAppTheme()"
-        class="px-1.5 py-0.5 bg-[var(--bg-main)] text-[var(--text-muted)] hover:text-[var(--text-main)] border border-[var(--border-main)] font-mono-code text-[10px] font-bold cursor-pointer transition-colors"
-        title="Toggle Theme (Shortcut: Press 'D')"
-      >
-        D
-      </button>
-    </div>
+  <!-- Floating Tactile Theme Pill (Bottom-Right Zen Quick-Toggle) -->
+  <div id="floatingThemeDock" class="fixed bottom-5 right-5 z-50 flex items-center font-mono-code text-xs select-none">
+    <button
+      type="button"
+      id="floatingThemeBtn"
+      onclick="toggleAppTheme()"
+      class="flex items-center gap-2.5 px-3.5 py-2 bg-[var(--bg-card)] hover:bg-[var(--bg-subcard)] text-[var(--text-main)] border border-[var(--border-main)] hover:border-[var(--btn-primary-bg)] shadow-2xl cursor-pointer select-none transition-all duration-200 hover:scale-105 active:scale-95 group"
+      title="Toggle Light / Dark Mode (Shortcut: Press 'D')"
+    >
+      <span id="floatingThemeIcon" class="text-sm transition-transform duration-500 ease-out group-hover:rotate-45 inline-block">🌙</span>
+      <span id="floatingThemeLabel" class="text-[10px] font-bold uppercase tracking-wider">Dark Mode</span>
+      <kbd class="text-[9px] px-1.5 py-0.5 bg-[var(--bg-main)] text-[var(--text-muted)] border border-[var(--border-main)] font-mono-code font-bold">D</kbd>
+    </button>
   </div>
 </body>
 </html>
