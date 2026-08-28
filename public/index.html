@@ -1453,31 +1453,39 @@
         <button type="button" onclick="closeInfoModal()" class="text-[var(--text-muted)] hover:text-[var(--text-main)] text-xl font-bold cursor-pointer">&times;</button>
       </div>
 
-      <!-- Segmented Tab Switcher -->
-      <div class="flex items-center border-b border-[var(--border-main)] bg-[var(--bg-card)] p-1 gap-1 text-xs shrink-0">
+      <!-- Segmented Tab Switcher (4 Tabs) -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 border-b border-[var(--border-main)] bg-[var(--bg-card)] p-1 gap-1 text-xs shrink-0">
         <button
           type="button"
           id="infoTabBtnGuide"
           onclick="switchInfoTab('guide')"
-          class="flex-1 py-1.5 px-3 font-bold uppercase text-[11px] tracking-wider transition-all bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] shadow-xs cursor-pointer"
+          class="py-1.5 px-2 font-bold uppercase text-[10px] sm:text-[11px] tracking-wider transition-all bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] shadow-xs cursor-pointer truncate text-center"
         >
           📖 How To Use
         </button>
         <button
           type="button"
+          id="infoTabBtnApi"
+          onclick="switchInfoTab('api')"
+          class="py-1.5 px-2 font-bold uppercase text-[10px] sm:text-[11px] tracking-wider transition-all text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer truncate text-center"
+        >
+          ⚡ Setup API
+        </button>
+        <button
+          type="button"
           id="infoTabBtnPrivacy"
           onclick="switchInfoTab('privacy')"
-          class="flex-1 py-1.5 px-3 font-bold uppercase text-[11px] tracking-wider transition-all text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer"
+          class="py-1.5 px-2 font-bold uppercase text-[10px] sm:text-[11px] tracking-wider transition-all text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer truncate text-center"
         >
-          🔒 Privacy &amp; Security
+          🔒 Privacy
         </button>
         <button
           type="button"
           id="infoTabBtnCloud"
           onclick="switchInfoTab('cloud')"
-          class="flex-1 py-1.5 px-3 font-bold uppercase text-[11px] tracking-wider transition-all text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer"
+          class="py-1.5 px-2 font-bold uppercase text-[10px] sm:text-[11px] tracking-wider transition-all text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer truncate text-center"
         >
-          ☁️ Cloud &amp; Docker Setup
+          ☁️ Cloud / Docker
         </button>
       </div>
 
@@ -1497,7 +1505,7 @@
                 <span class="w-5 h-5 rounded-full bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">1</span>
                 <div class="space-y-0.5">
                   <div class="font-bold text-[var(--text-main)]">Authorize Your Google Account</div>
-                  <p class="text-[var(--text-muted)]">Click "Connect Google" in top header. Provide your Google OAuth Client ID to grant YouTube and Drive access directly to your channel.</p>
+                  <p class="text-[var(--text-muted)]">Click "Connect Google" in the header or Setup API tab. Provide your Google OAuth Client ID to grant YouTube and Drive access directly to your channel.</p>
                 </div>
               </div>
 
@@ -1505,7 +1513,7 @@
                 <span class="w-5 h-5 rounded-full bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">2</span>
                 <div class="space-y-0.5">
                   <div class="font-bold text-[var(--text-main)]">Paste Drive Folder Link &amp; Filter</div>
-                  <p class="text-[var(--text-muted)]">Paste any Google Drive folder URL or ID. Set an optional Playlist Name or select Date Filters (Today, Yesterday, or custom range).</p>
+                  <p class="text-[var(--text-muted)]">Paste any Google Drive folder URL or ID. Set an optional Playlist Name or select Date Filters (Today, Yesterday, or custom calendar range).</p>
                 </div>
               </div>
 
@@ -1538,7 +1546,73 @@
           </div>
         </div>
 
-        <!-- Tab 2: Privacy & Security -->
+        <!-- Tab 2: Setup Your Own Google API (Free 10,000 Quota) -->
+        <div id="infoTabContentApi" class="hidden space-y-4">
+          <div class="border border-[var(--border-main)] bg-[var(--bg-subcard)] p-4 space-y-3">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <h4 class="font-bold text-sm uppercase text-amber-600 dark:text-amber-400 flex items-center gap-2">
+                <span>⚡</span>
+                <span>Setup Your Own Google OAuth Client ID</span>
+              </h4>
+              <span class="text-[9px] font-bold bg-amber-500/20 text-amber-700 dark:text-amber-200 px-2 py-0.5 border border-amber-500/40">100% FREE • 10,000 QUOTA/DAY</span>
+            </div>
+            <p class="text-[11px] text-[var(--text-muted)]">Google gives every user a free daily upload quota (6-8 full HD lectures every 24 hours). Follow these 5 steps:</p>
+
+            <div class="space-y-3 text-[11px]">
+              <!-- Step 1 -->
+              <div class="border border-[var(--border-main)] bg-[var(--bg-card)] p-3 space-y-1.5">
+                <div class="flex items-center justify-between">
+                  <div class="font-bold text-[var(--text-main)]">1. Open Google Cloud Console &amp; Create Project</div>
+                  <a href="https://console.cloud.google.com/projectcreate" target="_blank" rel="noopener" class="px-2 py-0.5 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] font-bold text-[10px] uppercase">Open Console ↗</a>
+                </div>
+                <p class="text-[10px] text-[var(--text-muted)]">Give your project any name (e.g. <code>My Video Uploader</code>) and click <b>Create</b>.</p>
+              </div>
+
+              <!-- Step 2 -->
+              <div class="border border-[var(--border-main)] bg-[var(--bg-card)] p-3 space-y-1.5">
+                <div class="flex items-center justify-between">
+                  <div class="font-bold text-[var(--text-main)]">2. Enable YouTube &amp; Google Drive APIs</div>
+                  <a href="https://console.cloud.google.com/apis/library" target="_blank" rel="noopener" class="px-2 py-0.5 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] font-bold text-[10px] uppercase">API Library ↗</a>
+                </div>
+                <p class="text-[10px] text-[var(--text-muted)]">Search and click <b>Enable</b> for both: <b>YouTube Data API v3</b> and <b>Google Drive API</b>.</p>
+              </div>
+
+              <!-- Step 3 -->
+              <div class="border border-[var(--border-main)] bg-[var(--bg-card)] p-3 space-y-1.5">
+                <div class="flex items-center justify-between">
+                  <div class="font-bold text-[var(--text-main)]">3. Configure OAuth Consent Screen</div>
+                  <a href="https://console.cloud.google.com/apis/credentials/consent" target="_blank" rel="noopener" class="px-2 py-0.5 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] font-bold text-[10px] uppercase">Consent Screen ↗</a>
+                </div>
+                <p class="text-[10px] text-[var(--text-muted)]">Choose <b>External</b>, enter your email as developer contact, and add your own Gmail address under <b>Test Users</b>.</p>
+              </div>
+
+              <!-- Step 4 -->
+              <div class="border border-[var(--border-main)] bg-[var(--bg-card)] p-3 space-y-1.5">
+                <div class="flex items-center justify-between">
+                  <div class="font-bold text-[var(--text-main)]">4. Create OAuth Client ID (Web Application)</div>
+                  <a href="https://console.cloud.google.com/apis/credentials/oauthclient" target="_blank" rel="noopener" class="px-2 py-0.5 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] font-bold text-[10px] uppercase">Create Client ↗</a>
+                </div>
+                <p class="text-[10px] text-[var(--text-muted)]">Select <b>Application type: Web application</b>. Add this app's origin URL under <b>Authorized JavaScript Origins</b>:</p>
+                <div class="flex items-center gap-2 pt-1">
+                  <input type="text" readonly id="infoOriginUrl" class="w-full h-7 px-2 bg-[var(--bg-subcard)] border border-[var(--border-main)] text-[10px] font-mono-code text-[var(--text-main)]" />
+                  <button type="button" onclick="copyOriginFromInfo()" class="px-2.5 h-7 bg-amber-600 hover:bg-amber-500 text-white font-bold text-[10px] uppercase shrink-0 cursor-pointer">Copy</button>
+                </div>
+              </div>
+
+              <!-- Step 5 -->
+              <div class="border border-[var(--border-main)] bg-[var(--bg-card)] p-3 space-y-2">
+                <div class="font-bold text-[var(--text-main)]">5. Paste Client ID &amp; Connect</div>
+                <p class="text-[10px] text-[var(--text-muted)]">Copy your generated Client ID ending in <code>.apps.googleusercontent.com</code> and paste it below:</p>
+                <div class="flex items-center gap-2">
+                  <input type="text" id="infoDirectClientIdInput" placeholder="xxxx.apps.googleusercontent.com" class="w-full h-8 px-2.5 om-box-input text-xs font-mono-code" />
+                  <button type="button" onclick="saveDirectClientIdFromInfo()" class="px-4 h-8 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider shrink-0 cursor-pointer">Save &amp; Connect</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 3: Privacy & Security -->
         <div id="infoTabContentPrivacy" class="hidden space-y-4">
           <div class="border border-[var(--border-main)] bg-[var(--bg-subcard)] p-4 space-y-3">
             <h4 class="font-bold text-sm uppercase text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
@@ -1554,7 +1628,7 @@
 
               <div class="border-b border-[var(--border-subtle)] pb-2.5 space-y-1">
                 <div class="font-bold text-[var(--text-main)]">🔑 Local Client Token Storage</div>
-                <p>All Google OAuth credentials and tokens reside securely in your browser's private <code class="bg-[var(--bg-card)] px-1 py-0.5 text-[var(--text-main)] border border-[var(--border-main)]">localStorage</code>. They are never transmitted to unauthorized parties.</p>
+                <p>All Google OAuth credentials and tokens reside securely in your browser's private IndexedDB &amp; storage cache. They are never transmitted to unauthorized parties.</p>
               </div>
 
               <div class="space-y-1">
@@ -1565,7 +1639,7 @@
           </div>
         </div>
 
-        <!-- Tab 3: Cloud & Docker Deployment Setup -->
+        <!-- Tab 4: Cloud & Docker Deployment Setup -->
         <div id="infoTabContentCloud" class="hidden space-y-4">
           <div class="border border-[var(--border-main)] bg-[var(--bg-subcard)] p-4 space-y-3">
             <h4 class="font-bold text-sm uppercase text-sky-500 flex items-center gap-2">
@@ -1635,6 +1709,113 @@
 
   <!-- Complete Application JavaScript Engine -->
   <script>
+    // =========================================================
+    // High-Performance Zero-Lag IndexedDB Storage Engine (AppStorage)
+    // Non-blocking, unlimited capacity, synchronous in-memory cache
+    // =========================================================
+    const AppStorage = {
+      dbName: 'DriveToYouTube_DB',
+      storeName: 'kv_store',
+      cache: new Map(),
+      dbPromise: null,
+
+      init() {
+        if (this.dbPromise) return this.dbPromise;
+        this.dbPromise = new Promise((resolve) => {
+          try {
+            for (let i = 0; i < localStorage.length; i++) {
+              const k = localStorage.key(i);
+              if (k) this.cache.set(k, localStorage.getItem(k));
+            }
+          } catch (e) {}
+
+          if (!window.indexedDB) {
+            return resolve(null);
+          }
+
+          try {
+            const req = indexedDB.open(this.dbName, 1);
+            req.onupgradeneeded = (e) => {
+              const db = e.target.result;
+              if (!db.objectStoreNames.contains(this.storeName)) {
+                db.createObjectStore(this.storeName);
+              }
+            };
+            req.onsuccess = (e) => {
+              const db = e.target.result;
+              try {
+                const tx = db.transaction(this.storeName, 'readonly');
+                const store = tx.objectStore(this.storeName);
+                const getAllKeysReq = store.getAllKeys();
+                getAllKeysReq.onsuccess = () => {
+                  const keys = getAllKeysReq.result || [];
+                  keys.forEach((k) => {
+                    const getReq = store.get(k);
+                    getReq.onsuccess = () => {
+                      if (getReq.result !== undefined) {
+                        this.cache.set(k, getReq.result);
+                      }
+                    };
+                  });
+                };
+              } catch(err) {}
+              resolve(db);
+            };
+            req.onerror = () => resolve(null);
+          } catch (err) {
+            resolve(null);
+          }
+        });
+        return this.dbPromise;
+      },
+
+      getItem(key, fallback = null) {
+        if (this.cache.has(key)) {
+          return this.cache.get(key);
+        }
+        try {
+          const val = localStorage.getItem(key);
+          if (val !== null) {
+            this.cache.set(key, val);
+            return val;
+          }
+        } catch(e) {}
+        return fallback;
+      },
+
+      setItem(key, value) {
+        const valStr = typeof value === 'string' ? value : JSON.stringify(value);
+        this.cache.set(key, valStr);
+        
+        try {
+          localStorage.setItem(key, valStr);
+        } catch(e) {}
+
+        this.init().then((db) => {
+          if (!db) return;
+          try {
+            const tx = db.transaction(this.storeName, 'readwrite');
+            tx.objectStore(this.storeName).put(valStr, key);
+          } catch (err) {}
+        });
+      },
+
+      removeItem(key) {
+        this.cache.delete(key);
+        try {
+          localStorage.removeItem(key);
+        } catch(e) {}
+        this.init().then((db) => {
+          if (!db) return;
+          try {
+            const tx = db.transaction(this.storeName, 'readwrite');
+            tx.objectStore(this.storeName).delete(key);
+          } catch (err) {}
+        });
+      }
+    };
+    AppStorage.init();
+
     let clientId = 'client_' + (Date.now ? Date.now() : new Date().getTime()) + '_' + Math.random().toString(36).substr(2, 6);
     let eventSource = null;
     let currentState = null;
@@ -2130,8 +2311,8 @@
     window.updateProcessingModeCards = function() {};
 
     window.handleConnectClick = function() {
-      const token = localStorage.getItem('oauth_access_token');
-      const expiry = localStorage.getItem('oauth_token_expiry');
+      const token = AppStorage.getItem('oauth_access_token');
+      const expiry = AppStorage.getItem('oauth_token_expiry');
       if (token && (!expiry || Date.now() < parseInt(expiry, 10))) {
         window.gAccessToken = token;
         window.isAuthenticated = true;
@@ -2158,8 +2339,8 @@
       const cleanToken = raw.replace(/^Bearer\s+/i, '').trim();
       window.gAccessToken = cleanToken;
       window.isAuthenticated = true;
-      localStorage.setItem('oauth_access_token', cleanToken);
-      localStorage.setItem('oauth_token_expiry', Date.now() + 3600 * 1000);
+      AppStorage.setItem('oauth_access_token', cleanToken);
+      AppStorage.setItem('oauth_token_expiry', Date.now() + 3600 * 1000);
       checkAuthStatus();
       closeAuthModal();
       input.value = '';
@@ -2248,7 +2429,7 @@
         input.focus();
         return;
       }
-      localStorage.setItem('yt_client_ids', val);
+      AppStorage.setItem('yt_client_ids', val);
       const textarea = document.getElementById('clientIdsList');
       if (textarea) textarea.value = val;
       showToast('✔ Client ID saved! Opening Google Sign-in...', 'success');
@@ -2287,8 +2468,8 @@
     };
 
     window.logoutGoogle = function() {
-      localStorage.removeItem('oauth_access_token');
-      localStorage.removeItem('oauth_token_expiry');
+      AppStorage.removeItem('oauth_access_token');
+      AppStorage.removeItem('oauth_token_expiry');
       window.gAccessToken = null;
       window.isAuthenticated = false;
       checkAuthStatus();
@@ -2297,7 +2478,7 @@
     };
 
     window.loadClientIds = function() {
-      const saved = localStorage.getItem('yt_client_ids');
+      const saved = AppStorage.getItem('yt_client_ids');
       const textarea = document.getElementById('clientIdsList');
       const wizInput = document.getElementById('wizClientIdInput');
       const countText = document.getElementById('keyCountText');
@@ -2324,7 +2505,7 @@
       const countText = document.getElementById('keyCountText');
       if (textarea) {
         const val = textarea.value.trim();
-        localStorage.setItem('yt_client_ids', val);
+        AppStorage.setItem('yt_client_ids', val);
         const count = val ? val.split('\n').filter(s => s.trim()).length : 0;
         if (countText) countText.textContent = `${count} key(s)`;
         if (!silent) showToast(`Saved ${count} API client ID(s)`, 'success');
@@ -2334,14 +2515,14 @@
     };
 
     window.getNextClientId = function() {
-      const saved = localStorage.getItem('yt_client_ids');
+      const saved = AppStorage.getItem('yt_client_ids');
       if (!saved) return null;
       const ids = saved.split('\n').map(s => s.trim()).filter(Boolean);
       if (ids.length === 0) return null;
-      let currentIndex = parseInt(localStorage.getItem('yt_client_id_index') || '0', 10);
+      let currentIndex = parseInt(AppStorage.getItem('yt_client_id_index') || '0', 10);
       if (currentIndex >= ids.length) currentIndex = 0;
       const chosen = ids[currentIndex];
-      localStorage.setItem('yt_client_id_index', (currentIndex + 1) % ids.length);
+      AppStorage.setItem('yt_client_id_index', (currentIndex + 1) % ids.length);
       return chosen;
     };
 
@@ -2383,8 +2564,8 @@
               if (tokenResponse && tokenResponse.access_token) {
                 window.gAccessToken = tokenResponse.access_token;
                 window.isAuthenticated = true;
-                localStorage.setItem('oauth_access_token', tokenResponse.access_token);
-                localStorage.setItem('oauth_token_expiry', Date.now() + (tokenResponse.expires_in || 3500) * 1000);
+                AppStorage.setItem('oauth_access_token', tokenResponse.access_token);
+                AppStorage.setItem('oauth_token_expiry', Date.now() + (tokenResponse.expires_in || 3500) * 1000);
                 checkAuthStatus();
                 closeAuthModal();
                 showToast('✔ Google Account authorized successfully!', 'success');
@@ -2757,22 +2938,23 @@
     window.saveMetadataPresets = function() {
       const footerInput = document.getElementById('presetDescFooterInput');
       const tagsInput = document.getElementById('presetTagsInput');
-      if (footerInput) localStorage.setItem('yt_desc_footer', footerInput.value.trim());
-      if (tagsInput) localStorage.setItem('yt_default_tags', tagsInput.value.trim());
+      if (footerInput) AppStorage.setItem('yt_desc_footer', footerInput.value.trim());
+      if (tagsInput) AppStorage.setItem('yt_default_tags', tagsInput.value.trim());
       showToast('✔ Description & Tags template saved!', 'success');
     };
 
     window.loadMetadataPresets = function() {
       const footerInput = document.getElementById('presetDescFooterInput');
       const tagsInput = document.getElementById('presetTagsInput');
-      const savedFooter = localStorage.getItem('yt_desc_footer');
-      const savedTags = localStorage.getItem('yt_default_tags');
+      const savedFooter = AppStorage.getItem('yt_desc_footer');
+      const savedTags = AppStorage.getItem('yt_default_tags');
       if (footerInput && savedFooter) footerInput.value = savedFooter;
       if (tagsInput && savedTags) tagsInput.value = savedTags;
     };
 
     let manualSelectedFile = null;
     let manualCustomThumbBase64 = null;
+    let currentManualBlobUrl = null;
 
     window.openManualUploadModal = function() {
       const modal = document.getElementById('manualUploadModal');
@@ -2780,6 +2962,10 @@
 
       manualSelectedFile = null;
       manualCustomThumbBase64 = null;
+      if (currentManualBlobUrl) {
+        URL.revokeObjectURL(currentManualBlobUrl);
+        currentManualBlobUrl = null;
+      }
       const fileInput = document.getElementById('manualVideoFileInput');
       if (fileInput) fileInput.value = '';
       const dropPrompt = document.getElementById('manualFileDropPrompt');
@@ -2789,7 +2975,8 @@
       const videoPlayer = document.getElementById('manualLocalVideoPlayer');
       if (videoPlayer) {
         videoPlayer.pause();
-        videoPlayer.src = '';
+        videoPlayer.removeAttribute('src');
+        videoPlayer.load();
       }
       const progressContainer = document.getElementById('manualUploadProgressContainer');
       if (progressContainer) progressContainer.classList.add('hidden');
@@ -2815,10 +3002,15 @@
     window.closeManualUploadModal = function() {
       const modal = document.getElementById('manualUploadModal');
       if (modal) modal.classList.add('hidden');
+      if (currentManualBlobUrl) {
+        URL.revokeObjectURL(currentManualBlobUrl);
+        currentManualBlobUrl = null;
+      }
       const videoPlayer = document.getElementById('manualLocalVideoPlayer');
       if (videoPlayer) {
         videoPlayer.pause();
-        videoPlayer.src = '';
+        videoPlayer.removeAttribute('src');
+        videoPlayer.load();
       }
     };
 
@@ -2844,8 +3036,12 @@
       const fileInfo = document.getElementById('manualLocalFileInfo');
 
       if (playerContainer && videoPlayer) {
-        const objectUrl = URL.createObjectURL(file);
-        videoPlayer.src = objectUrl;
+        if (currentManualBlobUrl) {
+          URL.revokeObjectURL(currentManualBlobUrl);
+          currentManualBlobUrl = null;
+        }
+        currentManualBlobUrl = URL.createObjectURL(file);
+        videoPlayer.src = currentManualBlobUrl;
         playerContainer.classList.remove('hidden');
         if (fileInfo) fileInfo.textContent = `${file.name} • ${formatBytes(file.size)}`;
       }
@@ -2988,8 +3184,8 @@
       const subject = (subjectInput && subjectInput.value.trim()) ? subjectInput.value.trim() : 'Lecture';
       const playlistName = (playlistInput && playlistInput.value.trim()) ? playlistInput.value.trim() : null;
       const privacyStatus = privacySelect ? privacySelect.value : 'unlisted';
-      const descriptionFooter = localStorage.getItem('yt_desc_footer') || '';
-      const customTags = (localStorage.getItem('yt_default_tags') || '').split(',').map(s=>s.trim()).filter(Boolean);
+      const descriptionFooter = AppStorage.getItem('yt_desc_footer') || '';
+      const customTags = (AppStorage.getItem('yt_default_tags') || '').split(',').map(s=>s.trim()).filter(Boolean);
       const customThumbUrl = thumbUrlInput ? thumbUrlInput.value.trim() : null;
 
       const progressContainer = document.getElementById('manualUploadProgressContainer');
@@ -4039,6 +4235,54 @@
       };
     }
 
+    // 60fps RequestAnimationFrame Render Throttler for Zero-Lag Streaming
+    let pendingProgressUpdates = new Map();
+    let isProgressRafScheduled = false;
+
+    function scheduleProgressDOMUpdate(event) {
+      pendingProgressUpdates.set(event.fileId, event);
+      if (!isProgressRafScheduled) {
+        isProgressRafScheduled = true;
+        requestAnimationFrame(() => {
+          isProgressRafScheduled = false;
+          pendingProgressUpdates.forEach((ev) => {
+            applyProgressDOM(ev);
+          });
+          pendingProgressUpdates.clear();
+        });
+      }
+    }
+
+    function applyProgressDOM(event) {
+      const bar = document.getElementById(`progress-bar-${event.fileId}`);
+      const bytesEl = document.getElementById(`progress-bytes-${event.fileId}`);
+      const speedEl = document.getElementById(`speed-${event.fileId}`);
+      const etaEl = document.getElementById(`eta-${event.fileId}`);
+
+      if (bar) bar.style.width = `${event.percentage}%`;
+      if (bytesEl) bytesEl.textContent = `${formatBytes(event.uploadedBytes)}`;
+      if (speedEl) speedEl.textContent = event.speedMBps ? `⚡ ${event.speedMBps} MB/s` : 'Streaming...';
+      if (etaEl) etaEl.textContent = event.etaSeconds ? `${event.etaSeconds}s` : '';
+
+      const banner = document.getElementById('liveStreamBanner');
+      const titleEl = document.getElementById('liveStreamTitle');
+      const speedTop = document.getElementById('liveStreamSpeed');
+      const percentTop = document.getElementById('liveStreamPercent');
+      const barTop = document.getElementById('liveStreamProgressBar');
+      const bytesTop = document.getElementById('liveStreamBytes');
+      const etaTop = document.getElementById('liveStreamEta');
+
+      if (banner) {
+        banner.classList.remove('hidden');
+        if (titleEl && event.fileName) titleEl.textContent = event.fileName;
+        if (speedTop) speedTop.textContent = event.speedMBps ? `⚡ ${event.speedMBps} MB/s` : 'Streaming...';
+        if (percentTop) percentTop.textContent = `${event.percentage}%`;
+        if (barTop) barTop.style.width = `${event.percentage}%`;
+        if (bytesTop) bytesTop.textContent = `${formatBytes(event.uploadedBytes)} / ${formatBytes(event.totalBytes)}`;
+        if (etaTop) etaTop.textContent = event.etaSeconds ? `${event.etaSeconds}s remaining` : 'Direct Pipe to YouTube CDN';
+      }
+    }
+
     function handleSSEEvent(event) {
       if (!event || !event.type) return;
 
@@ -4063,34 +4307,7 @@
           if (titleEl) titleEl.textContent = event.fileName || 'Streaming video...';
         }
       } else if (event.type === 'upload_progress') {
-        const bar = document.getElementById(`progress-bar-${event.fileId}`);
-        const bytesEl = document.getElementById(`progress-bytes-${event.fileId}`);
-        const speedEl = document.getElementById(`speed-${event.fileId}`);
-        const etaEl = document.getElementById(`eta-${event.fileId}`);
-
-        if (bar) bar.style.width = `${event.percentage}%`;
-        if (bytesEl) bytesEl.textContent = `${formatBytes(event.uploadedBytes)}`;
-        if (speedEl) speedEl.textContent = event.speedMBps ? `⚡ ${event.speedMBps} MB/s` : 'Streaming...';
-        if (etaEl) etaEl.textContent = event.etaSeconds ? `${event.etaSeconds}s` : '';
-
-        // Update Top Live Streaming Hero Banner
-        const banner = document.getElementById('liveStreamBanner');
-        const titleEl = document.getElementById('liveStreamTitle');
-        const speedTop = document.getElementById('liveStreamSpeed');
-        const percentTop = document.getElementById('liveStreamPercent');
-        const barTop = document.getElementById('liveStreamProgressBar');
-        const bytesTop = document.getElementById('liveStreamBytes');
-        const etaTop = document.getElementById('liveStreamEta');
-
-        if (banner) {
-          banner.classList.remove('hidden');
-          if (titleEl && event.fileName) titleEl.textContent = event.fileName;
-          if (speedTop) speedTop.textContent = event.speedMBps ? `⚡ ${event.speedMBps} MB/s` : 'Streaming...';
-          if (percentTop) percentTop.textContent = `${event.percentage}%`;
-          if (barTop) barTop.style.width = `${event.percentage}%`;
-          if (bytesTop) bytesTop.textContent = `${formatBytes(event.uploadedBytes)} / ${formatBytes(event.totalBytes)}`;
-          if (etaTop) etaTop.textContent = event.etaSeconds ? `${event.etaSeconds}s remaining` : 'Direct Pipe to YouTube CDN';
-        }
+        scheduleProgressDOMUpdate(event);
 
         if (currentState && currentState.files) {
           const f = currentState.files.find(item => item.id === event.fileId);
@@ -4296,8 +4513,8 @@
       const releaseInput = document.getElementById('scheduledReleaseTimeInput');
       const scheduledPublishAt = (privacyStatus === 'scheduled' && releaseInput && releaseInput.value) ? releaseInput.value : null;
 
-      const descriptionFooter = localStorage.getItem('yt_desc_footer') || '';
-      const customTags = (localStorage.getItem('yt_default_tags') || '').split(',').map(s=>s.trim()).filter(Boolean);
+      const descriptionFooter = AppStorage.getItem('yt_desc_footer') || '';
+      const customTags = (AppStorage.getItem('yt_default_tags') || '').split(',').map(s=>s.trim()).filter(Boolean);
       const customThumbnails = window.bulkThumbnailsMap || {};
 
       startButton.disabled = true;
@@ -4448,8 +4665,8 @@
       loadClientIds();
       loadMetadataPresets();
 
-      const token = localStorage.getItem('oauth_access_token');
-      const expiry = localStorage.getItem('oauth_token_expiry');
+      const token = AppStorage.getItem('oauth_access_token');
+      const expiry = AppStorage.getItem('oauth_token_expiry');
       if (token && expiry && Date.now() < parseInt(expiry, 10)) {
         window.gAccessToken = token;
         window.isAuthenticated = true;
@@ -4474,7 +4691,7 @@
           document.documentElement.classList.remove('dark');
         }
         try {
-          localStorage.setItem('om_theme', theme);
+          AppStorage.setItem('om_theme', theme);
         } catch(e) {}
         updateThemeControlsUI(isDark);
         if (typeof renderFilteredTable === 'function') {
@@ -4515,9 +4732,15 @@
       }
     }
 
-    // Info & Architecture Modal Controls
+    // Info & Architecture Modal Controls (4 Tabs)
     window.openInfoModal = function(initialTab = 'guide') {
       const modal = document.getElementById('infoModal');
+      const originDisplay = document.getElementById('infoOriginUrl');
+      const directInput = document.getElementById('infoDirectClientIdInput');
+      if (originDisplay) originDisplay.value = window.location.origin;
+      if (directInput && !directInput.value) {
+        directInput.value = AppStorage.getItem('yt_client_ids') || '';
+      }
       if (modal) {
         modal.classList.remove('hidden');
         switchInfoTab(initialTab);
@@ -4531,27 +4754,57 @@
       }
     };
 
+    window.copyOriginFromInfo = function() {
+      copyToClipboard(window.location.origin, 'Authorized Origin URL');
+    };
+
+    window.saveDirectClientIdFromInfo = function() {
+      const input = document.getElementById('infoDirectClientIdInput');
+      if (!input) return;
+      const val = input.value.trim();
+      if (!val) {
+        showToast('Please enter your Google OAuth Client ID.', 'error');
+        input.focus();
+        return;
+      }
+      AppStorage.setItem('yt_client_ids', val);
+      const textarea = document.getElementById('clientIdsList');
+      if (textarea) textarea.value = val;
+      const wizInput = document.getElementById('wizClientIdInput');
+      if (wizInput) wizInput.value = val;
+      showToast('✔ Client ID saved! Opening Google Sign-in...', 'success');
+      closeInfoModal();
+      launchOAuthPopup();
+    };
+
     window.switchInfoTab = function(tabName) {
       const btnGuide = document.getElementById('infoTabBtnGuide');
+      const btnApi = document.getElementById('infoTabBtnApi');
       const btnPrivacy = document.getElementById('infoTabBtnPrivacy');
       const btnCloud = document.getElementById('infoTabBtnCloud');
 
       const contentGuide = document.getElementById('infoTabContentGuide');
+      const contentApi = document.getElementById('infoTabContentApi');
       const contentPrivacy = document.getElementById('infoTabContentPrivacy');
       const contentCloud = document.getElementById('infoTabContentCloud');
 
-      const inactiveClass = "flex-1 py-1.5 px-3 font-bold uppercase text-[11px] tracking-wider transition-all text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer";
-      const activeClass = "flex-1 py-1.5 px-3 font-bold uppercase text-[11px] tracking-wider transition-all bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] shadow-xs cursor-pointer";
+      const inactiveClass = "py-1.5 px-2 font-bold uppercase text-[10px] sm:text-[11px] tracking-wider transition-all text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer truncate text-center";
+      const activeClass = "py-1.5 px-2 font-bold uppercase text-[10px] sm:text-[11px] tracking-wider transition-all bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] shadow-xs cursor-pointer truncate text-center";
 
       if (btnGuide) btnGuide.className = inactiveClass;
+      if (btnApi) btnApi.className = inactiveClass;
       if (btnPrivacy) btnPrivacy.className = inactiveClass;
       if (btnCloud) btnCloud.className = inactiveClass;
 
       if (contentGuide) contentGuide.classList.add('hidden');
+      if (contentApi) contentApi.classList.add('hidden');
       if (contentPrivacy) contentPrivacy.classList.add('hidden');
       if (contentCloud) contentCloud.classList.add('hidden');
 
-      if (tabName === 'privacy') {
+      if (tabName === 'api') {
+        if (btnApi) btnApi.className = activeClass;
+        if (contentApi) contentApi.classList.remove('hidden');
+      } else if (tabName === 'privacy') {
         if (btnPrivacy) btnPrivacy.className = activeClass;
         if (contentPrivacy) contentPrivacy.classList.remove('hidden');
       } else if (tabName === 'cloud') {
