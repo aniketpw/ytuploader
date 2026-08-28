@@ -1,381 +1,232 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full bg-[#fbfbf9] text-stone-900 antialiased">
+<html lang="en" class="h-full bg-[#EDEAE5] text-[#1B1B1B] antialiased">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Drive → YouTube Video Portal</title>
+  <title>Drive to YouTube — Cloud Video Portal</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Google Identity Services for OAuth -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['"Plus Jakarta Sans"', 'system-ui', '-apple-system', 'sans-serif'],
-            mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace']
-          },
-          colors: {
-            terracotta: {
-              50: '#fff7ed',
-              100: '#ffedd5',
-              500: '#f97316',
-              600: '#ea580c',
-              700: '#c2410c'
-            }
-          }
-        }
-      }
-    }
-  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500;1,6..72,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   
   <style>
+    :root {
+      --cream: #EDEAE5;
+      --cream-card: #F6F4F0;
+      --cream-border: #D6D3CD;
+      --ink: #1B1B1B;
+      --terracotta: #EA580C;
+    }
+    
     body { 
       font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-      background-color: #fbfbf9;
+      background-color: var(--cream);
+      color: var(--ink);
     }
-    .font-mono { font-family: 'JetBrains Mono', monospace; }
     
-    /* Clean Editorial Scrollbar */
+    .font-serif-editorial {
+      font-family: 'Newsreader', Georgia, serif;
+    }
+    
+    .font-mono-code {
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
+    }
+    
+    /* Clean Minimal Scrollbar */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: #f5f5f0; }
-    ::-webkit-scrollbar-thumb { background: #d6d3d1; border-radius: 9999px; }
-    ::-webkit-scrollbar-thumb:hover { background: #a8a29e; }
+    ::-webkit-scrollbar-track { background: #E5E1DB; }
+    ::-webkit-scrollbar-thumb { background: #BDB7AE; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #8E887F; }
     
-    .editorial-card {
-      background: #ffffff;
-      border: 1px solid #e7e5e4;
-      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.02);
+    .om-border {
+      border: 1px solid var(--cream-border);
     }
     
-    .editorial-input {
-      background: #ffffff;
-      border: 1px solid #d6d3d1;
-      color: #1c1917;
+    .om-input {
+      background: transparent;
+      border-bottom: 2px solid var(--ink);
+      color: var(--ink);
+      transition: all 0.15s ease-in-out;
+      border-radius: 0;
+    }
+    .om-input:focus {
+      outline: none;
+      border-bottom-color: var(--terracotta);
+    }
+    
+    .om-box-input {
+      background: #FFFFFF;
+      border: 1px solid var(--cream-border);
+      color: var(--ink);
       transition: all 0.15s ease-in-out;
     }
-    .editorial-input:focus {
+    .om-box-input:focus {
       outline: none;
-      border-color: #ea580c;
-      box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.12);
+      border-color: var(--ink);
+      box-shadow: 0 0 0 2px rgba(27, 27, 27, 0.08);
     }
   </style>
 </head>
-<body class="min-h-full flex flex-col bg-[#fbfbf9] text-stone-900 selection:bg-orange-500 selection:text-white">
+<body class="min-h-full flex flex-col bg-[#EDEAE5] text-[#1B1B1B] selection:bg-[#1B1B1B] selection:text-white">
 
-  <!-- 1. Top Clean Editorial Header Bar -->
-  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-stone-200/90 px-6 py-3 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
-    <div class="max-w-[1680px] mx-auto flex items-center justify-between gap-4">
+  <!-- 1. Minimal Editorial Header (Matching Office Mobile) -->
+  <header class="w-full border-b border-[#D6D3CD] px-6 py-3.5 bg-[#EDEAE5]/90 backdrop-blur-xs sticky top-0 z-40">
+    <div class="max-w-[1280px] mx-auto flex items-center justify-between">
       
-      <!-- Brand & Title -->
-      <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-xl bg-stone-900 text-white flex items-center justify-center shadow-xs">
-          <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+      <!-- Brand Logo in Office Mobile style -->
+      <div class="flex items-center gap-2.5">
+        <div class="w-7 h-7 rounded bg-[#1B1B1B] text-white flex items-center justify-center font-bold text-xs shadow-xs">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
             <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/>
           </svg>
         </div>
-        <div>
-          <div class="flex items-center gap-2">
-            <h1 class="text-[15px] font-bold text-stone-900 tracking-tight">Drive <span class="text-stone-400 font-normal">→</span> YouTube Portal</h1>
-            <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-stone-100 text-stone-700 border border-stone-200 uppercase tracking-wider">
-              PORTAL
-            </span>
-          </div>
-          <p class="text-[11px] text-stone-500 font-medium">Cloud Direct Upload • 0 MB Local Bandwidth</p>
+        <div class="text-[17px] tracking-tight font-medium text-[#1B1B1B]">
+          Drive <span class="font-serif-editorial italic font-normal text-xl">to YouTube</span>
         </div>
       </div>
 
-      <!-- Top Header Status Badges & Auth -->
-      <div class="flex items-center gap-2.5">
+      <!-- Right Header Actions & Status Badges -->
+      <div class="flex items-center gap-2 font-mono-code text-xs">
         <!-- Google Auth Not Connected Button -->
         <button
           type="button"
           id="navAuthBtn"
           onclick="handleConnectClick()"
-          class="flex items-center gap-2 px-3 h-8.5 rounded-lg text-xs font-semibold bg-white hover:bg-stone-50 text-stone-800 border border-stone-300 shadow-2xs transition-all cursor-pointer hover:border-stone-400"
+          class="flex items-center gap-2 px-3 h-8 rounded border border-[#1B1B1B] bg-transparent hover:bg-[#1B1B1B] hover:text-white text-[#1B1B1B] font-semibold transition-all cursor-pointer text-[11px] uppercase tracking-wider"
           title="Google Account is not connected. Click to connect."
         >
-          <span class="relative flex h-2 w-2">
-            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-            <span class="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
-          </span>
-          <span>Google Auth: <span class="text-rose-600 font-bold">Not Connected</span></span>
-          <span class="text-[11px] bg-stone-100 text-stone-800 font-bold px-1.5 py-0.5 rounded border border-stone-200 ml-0.5 hover:bg-stone-200">Connect</span>
+          <span class="w-2 h-2 rounded-full bg-rose-500 inline-block"></span>
+          <span>Connect Google</span>
         </button>
 
         <!-- Connected Badge -->
-        <div id="navConnectedBadge" class="hidden items-center gap-2 px-3 h-8.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-2xs">
-          <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
+        <div id="navConnectedBadge" class="hidden items-center gap-2 px-3 h-8 rounded border border-emerald-600 bg-emerald-50 text-emerald-900 font-semibold text-[11px] uppercase tracking-wider">
+          <span class="w-2 h-2 rounded-full bg-emerald-600 inline-block"></span>
           <span>Google Connected</span>
-          <button type="button" onclick="openAuthModal()" class="text-xs text-emerald-700 hover:text-emerald-950 underline ml-1 cursor-pointer font-semibold">Settings</button>
+          <button type="button" onclick="openAuthModal()" class="text-emerald-700 hover:text-emerald-950 underline ml-1 cursor-pointer font-bold lowercase">settings</button>
         </div>
 
-        <!-- Verify Channel Button -->
+        <!-- Verify Channel Link -->
         <a
           href="https://www.youtube.com/verify"
           target="_blank"
           rel="noopener noreferrer"
-          class="flex items-center gap-1.5 px-3 h-8.5 rounded-lg text-xs font-semibold bg-amber-50 hover:bg-amber-100/80 text-amber-900 border border-amber-200 shadow-2xs transition-all"
-          title="Verify your YouTube account with phone number to unlock >15 min video uploads"
+          class="hidden sm:flex items-center gap-1.5 px-3 h-8 rounded border border-[#D6D3CD] bg-[#F6F4F0] hover:bg-white text-[#1B1B1B] font-semibold transition-all text-[11px] uppercase tracking-wider"
+          title="Verify YouTube Channel for >15 min uploads"
         >
-          <span class="w-2 h-2 rounded-full bg-amber-500 inline-block"></span>
-          <span>Verify Channel (&gt;15 min)</span>
-          <svg class="w-3 h-3 text-amber-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-          </svg>
+          <span>Verify (&gt;15 min) ↗</span>
         </a>
 
-        <!-- SSE Connection Status Badge -->
-        <div id="connectionBadge" class="flex items-center gap-2 px-3 h-8.5 rounded-lg text-xs font-semibold bg-white text-emerald-700 border border-emerald-300 shadow-2xs">
-          <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
-          <span id="sseStatusText">Live SSE Connected</span>
+        <!-- SSE Status -->
+        <div id="connectionBadge" class="flex items-center gap-1.5 px-2.5 h-8 rounded border border-[#D6D3CD] bg-[#F6F4F0] text-emerald-800 text-[11px] font-semibold">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-600 inline-block animate-pulse"></span>
+          <span id="sseStatusText" class="font-mono-code">Live</span>
         </div>
       </div>
     </div>
   </header>
 
-  <!-- Main Content Container -->
-  <main class="flex-1 max-w-[1680px] w-full mx-auto px-6 py-4 space-y-4">
+  <!-- Main Container (Centered Editorial Page) -->
+  <main class="flex-1 max-w-[1280px] w-full mx-auto px-6 py-8 space-y-7">
 
     <!-- Background Notice Banner -->
-    <div id="bgNoticeBanner" class="hidden editorial-card rounded-xl px-4 py-2.5 flex items-center justify-between text-xs text-stone-800 bg-orange-50/60 border-orange-200 shadow-2xs">
-      <div class="flex items-center gap-2.5">
-        <span class="relative flex h-2.5 w-2.5">
-          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
-          <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-orange-600"></span>
-        </span>
-        <span class="font-semibold text-stone-900" id="bgStatusText">Upload task is currently in progress in background...</span>
+    <div id="bgNoticeBanner" class="hidden border border-[#1B1B1B] bg-white rounded p-3 flex items-center justify-between text-xs text-[#1B1B1B] shadow-xs">
+      <div class="flex items-center gap-2.5 font-mono-code">
+        <span class="w-2 h-2 rounded-full bg-orange-600 animate-ping"></span>
+        <span class="font-bold text-[11px] uppercase tracking-wider" id="bgStatusText">Upload task active in background...</span>
       </div>
-      <button type="button" id="cancelJobBtn" onclick="cancelProcessingJob()" class="px-2.5 py-1 rounded bg-white hover:bg-rose-50 border border-rose-200 font-bold text-rose-600 cursor-pointer shadow-2xs transition-colors text-xs flex items-center gap-1">
-        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-        <span>Stop Current Task</span>
+      <button type="button" id="cancelJobBtn" onclick="cancelProcessingJob()" class="px-2.5 py-1 rounded bg-rose-50 hover:bg-rose-100 border border-rose-300 font-bold text-rose-700 cursor-pointer font-mono-code text-[10px] uppercase tracking-wider">
+        Stop Task
       </button>
     </div>
 
-    <!-- 2. Metrics Filter Pills Row & Top Date Range Picker -->
-    <div class="flex items-center justify-between gap-3 flex-wrap select-none">
-      <div class="flex items-center gap-2 overflow-x-auto pb-0.5">
-        <span class="font-bold text-stone-500 text-xs uppercase tracking-wider whitespace-nowrap mr-1">Filter Stats:</span>
-
-        <!-- 1. Total Pill -->
-        <button
-          type="button"
-          id="filterPillAll"
-          onclick="setTableFilter('all')"
-          class="inline-flex items-center h-8 px-3.5 rounded-lg border border-stone-900 bg-stone-900 text-white font-bold shadow-2xs whitespace-nowrap cursor-pointer transition-all"
-          title="Click to view all videos"
-        >
-          Total - <span id="metricTotal" class="ml-1.5 font-bold">0</span>
-        </button>
-
-        <!-- 2. Uploaded Pill -->
-        <button
-          type="button"
-          id="filterPillCompleted"
-          onclick="setTableFilter('completed')"
-          class="inline-flex items-center h-8 px-3.5 rounded-lg border border-emerald-300 bg-white text-emerald-700 font-semibold shadow-2xs whitespace-nowrap cursor-pointer hover:bg-emerald-50 transition-all"
-          title="Click to view uploaded videos only"
-        >
-          Uploaded - <span id="metricUploaded" class="ml-1.5 font-bold">0 (0.00%)</span>
-        </button>
-
-        <!-- 3. In Progress Pill -->
-        <button
-          type="button"
-          id="filterPillPending"
-          onclick="setTableFilter('pending')"
-          class="inline-flex items-center h-8 px-3.5 rounded-lg border border-orange-300 bg-white text-orange-700 font-semibold shadow-2xs whitespace-nowrap cursor-pointer hover:bg-orange-50 transition-all"
-          title="Click to view in-progress videos only"
-        >
-          In Progress - <span id="metricPending" class="ml-1.5 font-bold">0 (0.00%)</span>
-        </button>
-
-        <!-- 4. Playlist Pill Badge -->
-        <a
-          id="playlistPill"
-          href="#"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="hidden items-center h-8 px-3.5 rounded-lg border border-stone-300 bg-stone-100 hover:bg-stone-200 font-bold text-stone-800 shadow-2xs whitespace-nowrap gap-1.5 transition-colors cursor-pointer"
-          title="Click to open full YouTube Playlist"
-        >
-          <svg class="w-3.5 h-3.5 text-stone-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/></svg>
-          <span>Playlist: <span id="playlistPillTitle" class="underline">View Playlist</span> ↗</span>
-        </a>
-
-        <!-- 5. Failed Pill -->
-        <button
-          type="button"
-          id="filterPillFailed"
-          onclick="setTableFilter('failed')"
-          class="hidden inline-flex items-center h-8 px-3.5 rounded-lg border border-rose-300 bg-white font-semibold text-rose-700 shadow-2xs whitespace-nowrap cursor-pointer hover:bg-rose-50 transition-all"
-          title="Click to view failed videos only"
-        >
-          Failed - <span id="metricFailed" class="ml-1.5 font-bold">0</span>
-        </button>
-
-        <!-- 6. Privacy Pill -->
-        <div class="inline-flex items-center h-8 px-3.5 rounded-lg border border-stone-200 bg-white font-semibold text-stone-700 shadow-2xs whitespace-nowrap">
-          Privacy: <span class="ml-1.5 font-bold text-stone-900">Unlisted (100%)</span>
-        </div>
-      </div>
-
-      <!-- Top Interactive Date Range Picker -->
-      <div class="relative flex items-center gap-2 shrink-0">
-        <span class="text-xs font-semibold text-stone-600 whitespace-nowrap">Pick date range:</span>
-        <div class="relative" id="calendarWrapper">
-          <button
-            type="button"
-            id="dateRangeInputBtn"
-            onclick="toggleCalendarPopover(event)"
-            class="h-8.5 px-3 bg-white border border-stone-300 hover:border-stone-400 rounded-lg text-xs font-semibold text-stone-800 shadow-2xs flex items-center gap-2 cursor-pointer transition-all focus:outline-none focus:ring-2 focus:ring-stone-400/20"
-            title="Click to select custom date range or single date"
-          >
-            <svg class="w-3.5 h-3.5 text-stone-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-            </svg>
-            <span id="dateRangeInputText" class="font-bold text-stone-900">All Dates</span>
-            <svg class="w-3 h-3 text-stone-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-            </svg>
-          </button>
-
-          <!-- Calendar Popover dropdown -->
-          <div id="calendarPopover" class="hidden absolute right-0 top-10 z-50 bg-white border border-stone-200 rounded-xl shadow-xl p-4 w-[300px] select-none text-stone-800">
-            <!-- Calendar Navigation Header -->
-            <div class="flex items-center justify-between pb-2.5 mb-2 border-b border-stone-100">
-              <button type="button" onclick="navigateMonth(-1)" class="w-7 h-7 rounded hover:bg-stone-100 flex items-center justify-center text-stone-600 font-bold cursor-pointer transition-colors text-sm" title="Previous Month">
-                ‹
-              </button>
-              <span id="calendarMonthYearLabel" class="text-sm font-bold text-stone-900">August 2026</span>
-              <button type="button" onclick="navigateMonth(1)" class="w-7 h-7 rounded hover:bg-stone-100 flex items-center justify-center text-stone-600 font-bold cursor-pointer transition-colors text-sm" title="Next Month">
-                ›
-              </button>
-            </div>
-
-            <!-- Weekday Row -->
-            <div class="grid grid-cols-7 text-center text-[11px] font-bold text-stone-400 mb-1.5">
-              <span>Mo</span>
-              <span>Tu</span>
-              <span>We</span>
-              <span>Th</span>
-              <span>Fr</span>
-              <span class="text-rose-500">Sa</span>
-              <span class="text-rose-500">Su</span>
-            </div>
-
-            <!-- Calendar Days Grid -->
-            <div id="calendarDaysGrid" class="grid grid-cols-7 gap-y-1 text-center text-xs">
-              <!-- Populated dynamically -->
-            </div>
-
-            <!-- Quick Presets -->
-            <div class="pt-3 mt-3 border-t border-stone-100 flex items-center justify-between text-xs">
-              <div class="flex items-center gap-1.5">
-                <button type="button" onclick="applyPresetRange('today')" class="px-2 py-0.5 rounded bg-stone-100 hover:bg-stone-200 text-stone-700 font-medium cursor-pointer transition-colors">Today</button>
-                <button type="button" onclick="applyPresetRange('yesterday')" class="px-2 py-0.5 rounded bg-stone-100 hover:bg-stone-200 text-stone-700 font-medium cursor-pointer transition-colors">Yesterday</button>
-                <button type="button" onclick="applyPresetRange('last7')" class="px-2 py-0.5 rounded bg-stone-100 hover:bg-stone-200 text-stone-700 font-medium cursor-pointer transition-colors">7 Days</button>
-              </div>
-              <button type="button" onclick="applyPresetRange('all')" class="text-rose-600 hover:underline font-bold cursor-pointer">Reset All</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- Quota Alert Banner -->
-    <div id="quotaAlertBanner" class="hidden editorial-card bg-amber-50/80 border border-amber-200 rounded-xl p-4 shadow-2xs flex items-center justify-between flex-wrap gap-3">
-      <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-lg bg-amber-100 border border-amber-300 text-amber-800 flex items-center justify-center shrink-0">
-          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+    <div id="quotaAlertBanner" class="hidden border border-amber-400 bg-amber-50/90 rounded p-4 flex items-center justify-between flex-wrap gap-3">
+      <div class="space-y-1">
+        <div class="flex items-center gap-2">
+          <h4 class="text-xs font-bold font-mono-code uppercase tracking-wider text-amber-900">YouTube Daily Upload Limit Reached (~10-15 videos/day)</h4>
+          <span class="px-2 py-0.5 bg-amber-200 text-amber-900 rounded text-[9px] font-bold font-mono-code uppercase">Quota Paused</span>
         </div>
-        <div>
-          <div class="flex items-center gap-2">
-            <h4 class="text-xs font-bold text-amber-900">YouTube Daily Upload Limit Reached (~10-15 videos/day)</h4>
-            <span class="px-2 py-0.2 bg-amber-200 text-amber-900 rounded text-[10px] font-bold uppercase">Queue Paused</span>
-          </div>
-          <p class="text-xs text-amber-800/90 mt-0.5">YouTube API has paused uploads for today. You can convert remaining or failed videos into instant <strong>Secure Google Drive Player</strong> embed links!</p>
-        </div>
+        <p class="text-xs text-amber-800">You can convert all remaining or failed videos into instant <strong>Secure Google Drive Player</strong> embed links without waiting!</p>
       </div>
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2 font-mono-code">
         <button
           type="button"
           onclick="convertAllToDrivePlayer()"
-          class="h-8.5 px-3 bg-stone-900 hover:bg-black text-white rounded-lg text-xs font-bold shadow-2xs transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+          class="h-8 px-3 bg-[#1B1B1B] hover:bg-black text-white rounded text-[11px] font-bold uppercase tracking-wider cursor-pointer"
         >
-          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
-          <span>⚡ Convert Remaining to Drive Player</span>
+          ⚡ Convert to Drive Player
         </button>
         <button
           type="button"
           onclick="dismissQuotaBanner()"
-          class="h-8.5 px-2.5 bg-white text-stone-700 hover:bg-stone-100 border border-stone-300 rounded-lg text-xs font-semibold cursor-pointer"
+          class="h-8 px-2.5 bg-white text-[#1B1B1B] border border-amber-300 rounded text-[11px] font-semibold cursor-pointer"
         >
           Dismiss
         </button>
       </div>
     </div>
 
-    <!-- 3. Inputs & Controls Dashboard Card -->
-    <div class="editorial-card rounded-xl p-4.5 space-y-4">
+    <!-- 2. Hero Editorial Section (Matching Office Mobile Screenshot) -->
+    <div class="space-y-3 pt-2">
+      <!-- Step Indicator -->
+      <div class="font-mono-code text-[11px] uppercase tracking-widest text-[#78716C]">
+        STEP - 01 OF 03
+      </div>
+
+      <!-- Big Editorial Heading -->
+      <h2 class="text-4xl md:text-5xl font-serif-editorial text-[#1B1B1B] leading-[1.1] tracking-tight">
+        Your Google Drive.<br />
+        Your <span class="italic font-normal">Way.</span>
+      </h2>
+
+      <!-- Comment-style Subtitle -->
+      <p class="font-mono-code text-xs text-[#78716C]">
+        // connect a google drive folder. scan, upload, correct, filter.
+      </p>
+    </div>
+
+    <!-- Hidden radio for processingMode (preserving backend function without rendering unwanted 1st image cards) -->
+    <input type="radio" name="processingMode" value="youtube" checked class="hidden" />
+
+    <!-- 3. Form Input Container (Matching Office Mobile Tab Bar + Input Style) -->
+    <div class="space-y-6 pt-2">
       
-      <!-- Processing Modes Options -->
-      <div>
-        <label class="block text-[11px] font-bold uppercase tracking-wider text-stone-500 mb-2">Select Processing Mode:</label>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-          
-          <!-- Mode 1: YouTube Upload -->
-          <label id="modeCard-youtube" onclick="selectProcessingMode('youtube')" class="relative flex items-start p-3 rounded-lg border-2 border-stone-900 bg-stone-50 shadow-2xs cursor-pointer transition-all">
-            <input type="radio" name="processingMode" value="youtube" checked onchange="updateProcessingModeCards()" class="mt-0.5 text-stone-900 focus:ring-stone-900 cursor-pointer accent-stone-900" />
-            <div class="ml-2.5 text-xs">
-              <span class="font-bold text-stone-900 block text-xs">Option 1: YouTube Upload</span>
-              <span class="text-stone-500 block mt-0.5 leading-relaxed">Upload to YouTube Unlisted. Uses your daily 10,000 API quota (approx 6-10 videos/day).</span>
-            </div>
-          </label>
-
-          <!-- Mode 2: Auto-Queue -->
-          <label id="modeCard-queue" onclick="selectProcessingMode('queue')" class="relative flex items-start p-3 rounded-lg border-2 border-stone-200 bg-white hover:bg-stone-50/80 cursor-pointer transition-all">
-            <input type="radio" name="processingMode" value="queue" onchange="updateProcessingModeCards()" class="mt-0.5 text-stone-900 focus:ring-stone-900 cursor-pointer accent-stone-900" />
-            <div class="ml-2.5 text-xs">
-              <span class="font-bold text-stone-800 block text-xs">Option 2: Smart Auto-Queue</span>
-              <span class="text-stone-500 block mt-0.5 leading-relaxed">Uploads to YouTube. If quota is reached, it will pause automatically and save progress.</span>
-            </div>
-          </label>
-
-          <!-- Mode 3: Drive Secure Direct Player -->
-          <label id="modeCard-drive_secure" onclick="selectProcessingMode('drive_secure')" class="relative flex items-start p-3 rounded-lg border-2 border-stone-200 bg-white hover:bg-stone-50/80 cursor-pointer transition-all">
-            <input type="radio" name="processingMode" value="drive_secure" onchange="updateProcessingModeCards()" class="mt-0.5 text-stone-900 focus:ring-stone-900 cursor-pointer accent-stone-900" />
-            <div class="ml-2.5 text-xs">
-              <span class="font-bold text-stone-800 block text-xs">Option 3: Secure Drive Player</span>
-              <span class="text-stone-500 block mt-0.5 leading-relaxed">Bypass YouTube (No quota limit!). Generates a protected Google Drive embed link.</span>
-            </div>
-          </label>
+      <!-- Segmented Action Header Bar (PASTE LINK / SCAN OPTIONS / MY CHANNEL) -->
+      <div class="grid grid-cols-3 border border-[#1B1B1B] bg-[#EDEAE5] text-center font-mono-code text-xs font-bold uppercase tracking-wider">
+        <div class="py-2.5 bg-[#1B1B1B] text-white">
+          PASTE LINK
+        </div>
+        <div class="py-2.5 border-x border-[#1B1B1B] text-[#1B1B1B] hover:bg-white/40 transition-colors cursor-pointer" onclick="document.getElementById('playlistNameInput').focus()">
+          PLAYLIST
+        </div>
+        <div class="py-2.5 text-[#1B1B1B] hover:bg-white/40 transition-colors cursor-pointer" onclick="syncYouTubeUploads()">
+          SYNC CHANNEL
         </div>
       </div>
 
-      <!-- Main Input Controls Grid -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 items-end">
-        <!-- Drive Link/ID Input (Col 5) -->
-        <div class="lg:col-span-5 space-y-1">
-          <label class="block text-xs font-bold text-stone-700">
-            Google Drive Folder Link / ID <span class="text-stone-400 font-normal">(Recursive subfolders auto-scanned)</span>
+      <!-- Main Input Section -->
+      <div class="space-y-5">
+        
+        <!-- Folder Link Input (Underline style matching Office Mobile) -->
+        <div class="space-y-1.5">
+          <label class="block font-mono-code text-[11px] font-bold uppercase tracking-widest text-[#1B1B1B]">
+            DRIVE FOLDER URL
           </label>
           <div class="relative flex items-center">
             <input
               type="text"
               id="folderInput"
-              placeholder="Paste Drive Folder Link (e.g. 27-LNE51MP 2026)..."
-              class="w-full h-9 pl-3 pr-9 editorial-input rounded-lg text-xs placeholder:text-stone-400"
+              placeholder="https://drive.google.com/drive/folders/..."
+              class="w-full py-2.5 pr-10 om-input font-mono-code text-sm placeholder:text-[#A8A29E]"
             />
             <button
               type="button"
               onclick="pasteFromClipboard()"
-              class="absolute right-2.5 text-stone-400 hover:text-stone-700 transition-colors cursor-pointer"
+              class="absolute right-1 text-[#78716C] hover:text-[#1B1B1B] transition-colors cursor-pointer"
               title="Paste from clipboard"
             >
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -383,390 +234,396 @@
               </svg>
             </button>
           </div>
+          <p class="font-mono-code text-[11px] text-[#A8A29E]">
+            paste any google drive folder link or folder id • recursive scan • 0 mb local bandwidth
+          </p>
         </div>
 
-        <!-- Playlist Name Input (Col 2) -->
-        <div class="lg:col-span-2 space-y-1">
-          <label class="block text-xs font-bold text-stone-700">
-            Playlist Name <span class="text-stone-400 font-normal">(Optional)</span>
-          </label>
-          <input
-            type="text"
-            id="playlistNameInput"
-            placeholder="e.g. 27-LNE51MP"
-            class="w-full h-9 px-3 editorial-input rounded-lg text-xs placeholder:text-stone-400"
-          />
-        </div>
+        <!-- Optional Parameters (Playlist & Scan Date Range) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+          <!-- Playlist Name -->
+          <div class="space-y-1">
+            <label class="block font-mono-code text-[10px] font-bold uppercase tracking-wider text-[#78716C]">
+              PLAYLIST NAME <span class="font-normal lowercase">(optional)</span>
+            </label>
+            <input
+              type="text"
+              id="playlistNameInput"
+              placeholder="e.g. 27-LNE51MP 2026"
+              class="w-full h-8 px-2.5 om-box-input font-mono-code text-xs rounded"
+            />
+          </div>
 
-        <!-- Date Range Filter Picker for Scanning (Col 3) -->
-        <div class="lg:col-span-3 space-y-1">
-          <div class="flex items-center justify-between">
-            <label class="block text-xs font-bold text-stone-700">Scan Date Filter</label>
-            <div class="flex items-center gap-1.5 text-[10px]">
-              <button type="button" onclick="setDatePreset('all')" class="text-orange-600 hover:underline font-bold cursor-pointer">All Time</button>
-              <span class="text-stone-300">|</span>
-              <button type="button" onclick="setDatePreset('today')" class="text-stone-600 hover:text-stone-900 cursor-pointer">Today</button>
-              <span class="text-stone-300">|</span>
-              <button type="button" onclick="setDatePreset('yesterday')" class="text-stone-600 hover:text-stone-900 cursor-pointer">Yesterday</button>
-              <span class="text-stone-300">|</span>
-              <button type="button" onclick="setDatePreset('clear')" class="text-rose-600 hover:underline cursor-pointer">Clear</button>
+          <!-- Date Filter Preset for Scan -->
+          <div class="space-y-1">
+            <div class="flex items-center justify-between font-mono-code text-[10px]">
+              <label class="font-bold uppercase tracking-wider text-[#78716C]">SCAN DATE FILTER</label>
+              <div class="flex items-center gap-1.5 text-[10px]">
+                <button type="button" onclick="setDatePreset('all')" class="text-orange-700 hover:underline font-bold cursor-pointer">All Time</button>
+                <span class="text-[#D6D3CD]">|</span>
+                <button type="button" onclick="setDatePreset('today')" class="text-[#78716C] hover:text-[#1B1B1B] cursor-pointer">Today</button>
+                <span class="text-[#D6D3CD]">|</span>
+                <button type="button" onclick="setDatePreset('yesterday')" class="text-[#78716C] hover:text-[#1B1B1B] cursor-pointer">Yesterday</button>
+                <span class="text-[#D6D3CD]">|</span>
+                <button type="button" onclick="setDatePreset('clear')" class="text-rose-600 hover:underline cursor-pointer">Clear</button>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5 font-mono-code">
+              <input
+                type="date"
+                id="startDateInput"
+                class="w-1/2 h-8 px-2 om-box-input text-xs rounded"
+              />
+              <span class="text-[#78716C] text-xs">-</span>
+              <input
+                type="date"
+                id="endDateInput"
+                class="w-1/2 h-8 px-2 om-box-input text-xs rounded"
+              />
             </div>
           </div>
-          <div class="flex items-center gap-1.5">
-            <input
-              type="date"
-              id="startDateInput"
-              class="w-1/2 h-9 px-2 editorial-input rounded-lg text-xs text-stone-700"
-            />
-            <span class="text-stone-400 text-xs">-</span>
-            <input
-              type="date"
-              id="endDateInput"
-              class="w-1/2 h-9 px-2 editorial-input rounded-lg text-xs text-stone-700"
-            />
-          </div>
         </div>
 
-        <!-- Action Buttons (Col 2) -->
-        <div class="lg:col-span-2 flex items-center gap-2">
+        <!-- Submit Process Action Button (Matching Large Flat Button in Office Mobile) -->
+        <div class="pt-2 flex items-center gap-3">
           <button
             type="button"
             id="startButton"
             onclick="startProcessing()"
-            class="flex-1 h-9 bg-stone-900 hover:bg-black text-white rounded-lg text-xs font-bold shadow-2xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            class="flex-1 py-3.5 bg-[#78716C] hover:bg-[#1B1B1B] text-white font-mono-code text-xs font-bold uppercase tracking-widest rounded transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
           >
-            <svg class="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span id="buttonText">Start Process</span>
+            <span id="buttonText">OPEN THIS FOLDER →</span>
           </button>
 
           <button
             type="button"
             id="stopProcessBtn"
             onclick="cancelProcessingJob()"
-            class="hidden h-9 px-3 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold shadow-2xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-            title="Stop / Cancel current background upload"
+            class="hidden py-3.5 px-6 bg-rose-700 hover:bg-rose-800 text-white font-mono-code text-xs font-bold uppercase tracking-widest rounded transition-all cursor-pointer"
           >
-            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-            </svg>
-            <span>Stop</span>
+            STOP
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <hr class="border-t border-[#D6D3CD] my-6" />
+
+    <!-- 4. Library & Dashboard Table Section (Matching Lower Half of Screenshot) -->
+    <div class="space-y-4">
+      
+      <!-- Section Header -->
+      <div class="flex items-end justify-between">
+        <div class="space-y-0.5">
+          <div class="font-mono-code text-[10px] uppercase tracking-widest text-[#78716C]">LIBRARY</div>
+          <h3 class="text-xl font-bold font-serif-editorial text-[#1B1B1B]">Saved videos &amp; uploads</h3>
+        </div>
+
+        <!-- Quick View / Presets -->
+        <div class="flex items-center gap-3 font-mono-code text-xs">
+          <!-- Interactive Calendar Popover Trigger -->
+          <div class="relative" id="calendarWrapper">
+            <button
+              type="button"
+              id="dateRangeInputBtn"
+              onclick="toggleCalendarPopover(event)"
+              class="font-bold text-orange-700 hover:text-orange-900 uppercase tracking-wider flex items-center gap-1 cursor-pointer"
+            >
+              <span id="dateRangeInputText">QUICK VIEW</span>
+              <span>→</span>
+            </button>
+
+            <!-- Calendar Popover dropdown -->
+            <div id="calendarPopover" class="hidden absolute right-0 top-7 z-50 bg-[#F6F4F0] border border-[#1B1B1B] rounded shadow-xl p-4 w-[290px] select-none text-[#1B1B1B]">
+              <div class="flex items-center justify-between pb-2 mb-2 border-b border-[#D6D3CD] font-mono-code">
+                <button type="button" onclick="navigateMonth(-1)" class="w-6 h-6 rounded hover:bg-white flex items-center justify-center font-bold text-xs cursor-pointer">‹</button>
+                <span id="calendarMonthYearLabel" class="text-xs font-bold text-[#1B1B1B]">August 2026</span>
+                <button type="button" onclick="navigateMonth(1)" class="w-6 h-6 rounded hover:bg-white flex items-center justify-center font-bold text-xs cursor-pointer">›</button>
+              </div>
+              <div class="grid grid-cols-7 text-center text-[10px] font-mono-code font-bold text-[#78716C] mb-1">
+                <span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span class="text-rose-600">Sa</span><span class="text-rose-600">Su</span>
+              </div>
+              <div id="calendarDaysGrid" class="grid grid-cols-7 gap-1 text-center font-mono-code text-xs"></div>
+              <div class="pt-2.5 mt-2.5 border-t border-[#D6D3CD] flex items-center justify-between font-mono-code text-[11px]">
+                <div class="flex items-center gap-1">
+                  <button type="button" onclick="applyPresetRange('today')" class="px-1.5 py-0.5 rounded bg-white hover:bg-[#1B1B1B] hover:text-white border border-[#D6D3CD] cursor-pointer">Today</button>
+                  <button type="button" onclick="applyPresetRange('yesterday')" class="px-1.5 py-0.5 rounded bg-white hover:bg-[#1B1B1B] hover:text-white border border-[#D6D3CD] cursor-pointer">Yest</button>
+                  <button type="button" onclick="applyPresetRange('last7')" class="px-1.5 py-0.5 rounded bg-white hover:bg-[#1B1B1B] hover:text-white border border-[#D6D3CD] cursor-pointer">7D</button>
+                </div>
+                <button type="button" onclick="applyPresetRange('all')" class="text-rose-600 hover:underline font-bold cursor-pointer">All</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats Filter Bar (Total, Uploaded, In Progress, Playlist) -->
+      <div class="flex items-center justify-between gap-2 flex-wrap font-mono-code text-xs border border-[#D6D3CD] bg-[#F6F4F0] p-2 rounded">
+        <div class="flex items-center gap-2 overflow-x-auto">
+          <button
+            type="button"
+            id="filterPillAll"
+            onclick="setTableFilter('all')"
+            class="px-2.5 py-1 bg-[#1B1B1B] text-white font-bold rounded text-[11px] uppercase tracking-wider cursor-pointer"
+          >
+            Total (<span id="metricTotal">0</span>)
+          </button>
+
+          <button
+            type="button"
+            id="filterPillCompleted"
+            onclick="setTableFilter('completed')"
+            class="px-2.5 py-1 bg-white border border-[#D6D3CD] text-emerald-800 font-semibold rounded text-[11px] uppercase tracking-wider hover:bg-emerald-50 cursor-pointer"
+          >
+            Uploaded (<span id="metricUploaded">0</span>)
+          </button>
+
+          <button
+            type="button"
+            id="filterPillPending"
+            onclick="setTableFilter('pending')"
+            class="px-2.5 py-1 bg-white border border-[#D6D3CD] text-orange-800 font-semibold rounded text-[11px] uppercase tracking-wider hover:bg-orange-50 cursor-pointer"
+          >
+            In Progress (<span id="metricPending">0</span>)
+          </button>
+
+          <button
+            type="button"
+            id="filterPillFailed"
+            onclick="setTableFilter('failed')"
+            class="hidden px-2.5 py-1 bg-white border border-rose-300 text-rose-700 font-semibold rounded text-[11px] uppercase tracking-wider hover:bg-rose-50 cursor-pointer"
+          >
+            Failed (<span id="metricFailed">0</span>)
+          </button>
+
+          <a
+            id="playlistPill"
+            href="#"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="hidden items-center px-2.5 py-1 bg-white border border-[#1B1B1B] text-[#1B1B1B] font-bold rounded text-[11px] uppercase tracking-wider hover:bg-[#1B1B1B] hover:text-white transition-colors"
+          >
+            <span>Playlist: <span id="playlistPillTitle" class="underline">View</span> ↗</span>
+          </a>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <!-- Segmented Source Filters -->
+          <div class="flex items-center border border-[#D6D3CD] bg-white rounded p-0.5 text-[10px] font-mono-code font-bold uppercase">
+            <button type="button" id="sourceFilterAll" onclick="setSourceFilter('all')" class="px-2 py-0.5 rounded bg-[#1B1B1B] text-white">All (<span id="sourceCountAll">0</span>)</button>
+            <button type="button" id="sourceFilterYouTube" onclick="setSourceFilter('youtube')" class="px-2 py-0.5 text-[#78716C] hover:text-[#1B1B1B]">YouTube (<span id="sourceCountYouTube">0</span>)</button>
+            <button type="button" id="sourceFilterDrive" onclick="setSourceFilter('drive')" class="px-2 py-0.5 text-[#78716C] hover:text-[#1B1B1B]">Drive (<span id="sourceCountDrive">0</span>)</button>
+          </div>
+
+          <button
+            type="button"
+            onclick="copyAllVideoLinks()"
+            class="px-2.5 py-1 bg-white border border-[#D6D3CD] text-[#1B1B1B] rounded text-[10px] font-bold uppercase tracking-wider hover:bg-stone-100 cursor-pointer"
+          >
+            Copy Links
           </button>
 
           <button
             type="button"
             id="downloadCsvBtn"
-            class="h-9 px-3 bg-stone-100 hover:bg-stone-200 text-stone-800 rounded-lg text-xs font-bold border border-stone-300 shadow-2xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-            title="Download CSV report of uploaded videos"
+            class="px-2.5 py-1 bg-white border border-[#D6D3CD] text-[#1B1B1B] rounded text-[10px] font-bold uppercase tracking-wider hover:bg-stone-100 cursor-pointer"
           >
-            <svg class="w-3.5 h-3.5 text-stone-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-            </svg>
-            <span>CSV</span>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 4. Clean Enterprise Table & Search Toolbar -->
-    <div class="editorial-card rounded-xl overflow-hidden shadow-2xs space-y-0">
-      
-      <!-- Table Search & Action Toolbar -->
-      <div class="p-2.5 border-b border-stone-200 bg-stone-50/80 flex items-center justify-between gap-3 flex-wrap">
-        <!-- Search & Source Filters (Left) -->
-        <div class="flex items-center gap-2.5 flex-1 min-w-[320px]">
-          <!-- Real-Time Search Input Box -->
-          <div class="relative flex-1 max-w-sm">
-            <input
-              type="text"
-              id="tableSearchInput"
-              placeholder="Search videos by title, batch, or subject..."
-              oninput="handleTableSearch()"
-              class="w-full h-8.5 pl-8 pr-3 text-xs bg-white border border-stone-300 rounded-lg text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-1 focus:ring-stone-900 focus:border-stone-900 transition-all"
-            />
-            <svg class="w-3.5 h-3.5 text-stone-400 absolute left-2.5 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-            </svg>
-          </div>
-
-          <!-- Source Filter Segmented Buttons (All / YouTube / Drive) -->
-          <div class="flex items-center bg-stone-200/70 p-0.5 rounded-lg border border-stone-300 text-xs shrink-0 whitespace-nowrap">
-            <button
-              type="button"
-              id="sourceFilterAll"
-              onclick="setSourceFilter('all')"
-              class="h-7.5 px-3 rounded-md text-xs font-bold bg-white text-stone-900 shadow-2xs cursor-pointer transition-all whitespace-nowrap flex items-center gap-1"
-            >
-              <span>All (<span id="sourceCountAll">0</span>)</span>
-            </button>
-            <button
-              type="button"
-              id="sourceFilterYouTube"
-              onclick="setSourceFilter('youtube')"
-              class="h-7.5 px-3 rounded-md text-xs font-semibold text-stone-600 hover:text-stone-900 cursor-pointer transition-all whitespace-nowrap flex items-center gap-1.5"
-            >
-              <svg class="w-3.5 h-3.5 text-rose-600 shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
-              <span>YouTube (<span id="sourceCountYouTube">0</span>)</span>
-            </button>
-            <button
-              type="button"
-              id="sourceFilterDrive"
-              onclick="setSourceFilter('drive')"
-              class="h-7.5 px-3 rounded-md text-xs font-semibold text-stone-600 hover:text-stone-900 cursor-pointer transition-all whitespace-nowrap flex items-center gap-1.5"
-            >
-              <svg class="w-3.5 h-3.5 text-stone-700 shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
-              <span>Drive (<span id="sourceCountDrive">0</span>)</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Right Side Quick Action Buttons -->
-        <div class="flex items-center gap-2 shrink-0">
-          <!-- Copy All Links Button -->
-          <button
-            type="button"
-            onclick="copyAllVideoLinks()"
-            class="h-8.5 px-3 bg-white hover:bg-stone-50 text-stone-700 border border-stone-300 rounded-lg text-xs font-semibold shadow-2xs transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
-            title="Copy all embed links"
-          >
-            <svg class="w-3.5 h-3.5 text-stone-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-            </svg>
-            <span>Copy All Links</span>
-          </button>
-
-          <!-- Sync YouTube Uploads Button -->
-          <button
-            type="button"
-            onclick="syncYouTubeUploads()"
-            class="h-8.5 px-3 bg-white hover:bg-stone-50 text-stone-700 hover:text-rose-600 border border-stone-300 rounded-lg text-xs font-semibold shadow-2xs transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
-            title="Fetch all live uploaded videos from your YouTube channel"
-          >
-            <svg class="w-3.5 h-3.5 text-rose-600 shrink-0" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-            </svg>
-            <span>Sync YouTube</span>
-          </button>
-
-          <!-- Clear / Clean Table Button -->
-          <button
-            type="button"
-            onclick="clearCompletedVideos()"
-            class="h-8.5 px-3 bg-white hover:bg-stone-50 text-stone-700 hover:text-rose-600 border border-stone-300 rounded-lg text-xs font-semibold shadow-2xs transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
-            title="Clean / Remove all completed videos from this dashboard"
-          >
-            <svg class="w-3.5 h-3.5 text-stone-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-            <span>Clean Table</span>
+            CSV
           </button>
         </div>
       </div>
 
-      <!-- Main Video Data Table -->
-      <div class="overflow-x-auto">
+      <!-- Search Input in Lowercase Mono -->
+      <div class="relative">
+        <input
+          type="text"
+          id="tableSearchInput"
+          placeholder="search forms or videos..."
+          oninput="handleTableSearch()"
+          class="w-full py-1.5 font-mono-code text-xs text-[#1B1B1B] bg-transparent border-b border-[#D6D3CD] placeholder:text-[#A8A29E] focus:outline-none focus:border-b-2 focus:border-[#1B1B1B]"
+        />
+      </div>
+
+      <!-- Main Video Data Table / Grid (Clean Editorial Style) -->
+      <div class="border border-[#D6D3CD] bg-white rounded overflow-hidden">
         <table class="w-full text-left border-collapse text-xs">
           <thead>
-            <tr class="bg-stone-50 border-b border-stone-200 text-[11px] font-bold uppercase tracking-wider text-stone-600">
-              <th class="py-3 px-3 w-12 text-center border-r border-stone-200">#</th>
-              <th class="py-3 px-4 border-r border-stone-200">File Name &amp; Batch <span class="font-normal text-[10px] text-stone-400 lowercase">(click ✏️ to edit live)</span></th>
-              <th class="py-3 px-3 w-28 text-center border-r border-stone-200">Date</th>
-              <th class="py-3 px-3 w-32 text-center border-r border-stone-200">Format &amp; Source</th>
-              <th class="py-3 px-4 w-72 border-r border-stone-200">Thumbnail &amp; Status</th>
-              <th class="py-3 px-4 w-44 text-center">Action</th>
+            <tr class="border-b border-[#D6D3CD] bg-[#F6F4F0] font-mono-code text-[10px] font-bold uppercase tracking-wider text-[#78716C]">
+              <th class="py-2.5 px-3 w-10 text-center border-r border-[#D6D3CD]">#</th>
+              <th class="py-2.5 px-4 border-r border-[#D6D3CD]">TITLE &amp; BATCH</th>
+              <th class="py-2.5 px-3 w-28 text-center border-r border-[#D6D3CD]">DATE</th>
+              <th class="py-2.5 px-3 w-24 text-center border-r border-[#D6D3CD]">FORMAT</th>
+              <th class="py-2.5 px-4 w-72 border-r border-[#D6D3CD]">STATUS</th>
+              <th class="py-2.5 px-4 w-44 text-center">ACTIONS</th>
             </tr>
           </thead>
-          <tbody id="trackingTableBody" class="divide-y divide-stone-100 font-medium">
-            <tr id="emptyRow" class="text-stone-400">
-              <td colspan="6" class="py-16 text-center">
-                <div class="flex flex-col items-center justify-center gap-2">
-                  <svg class="w-8 h-8 text-stone-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  </svg>
-                  <p class="text-xs font-semibold text-stone-500">No videos in queue. Paste Google Drive folder link above and click "Start Process".</p>
-                </div>
+          <tbody id="trackingTableBody" class="divide-y divide-[#EBE7DF]">
+            <tr id="emptyRow" class="text-[#A8A29E]">
+              <td colspan="6" class="py-14 text-center font-mono-code text-xs">
+                no videos in queue. paste a google drive folder link above and click open.
               </td>
             </tr>
           </tbody>
         </table>
       </div>
+
+      <!-- Full-Width CLEAR ALL button (Matching screenshot bottom bar) -->
+      <button
+        type="button"
+        onclick="clearCompletedVideos()"
+        class="w-full py-2.5 border border-[#D6D3CD] hover:border-[#1B1B1B] bg-[#F6F4F0] hover:bg-white text-[#78716C] hover:text-[#1B1B1B] font-mono-code text-[11px] font-bold uppercase tracking-widest rounded transition-all cursor-pointer text-center"
+      >
+        CLEAR ALL
+      </button>
     </div>
   </main>
 
-  <!-- 5. Modern Video Player Modal with Poster & Play Button -->
+  <!-- 5. Video Player Modal with Poster & Play Button -->
   <div id="videoModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-4">
-    <div class="bg-white rounded-xl max-w-4xl w-full overflow-hidden shadow-2xl border border-stone-200 flex flex-col">
+    <div class="bg-[#F6F4F0] rounded border border-[#1B1B1B] max-w-4xl w-full overflow-hidden shadow-2xl flex flex-col">
       <!-- Modal Header -->
-      <div class="flex items-center justify-between px-5 py-3 border-b border-stone-200 bg-stone-50">
-        <div class="space-y-1 overflow-hidden pr-3">
+      <div class="flex items-center justify-between px-5 py-3 border-b border-[#D6D3CD] bg-white font-mono-code">
+        <div class="space-y-0.5 overflow-hidden pr-3">
           <div class="flex items-center gap-2">
-            <span id="modalSourceBadge" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-600 border border-rose-200">
-              <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
-              <span>YouTube (Unlisted)</span>
+            <span id="modalSourceBadge" class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200 uppercase">
+              YouTube
             </span>
-            <span id="modalBatchTag" class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-stone-100 text-stone-800 border border-stone-200">Batch</span>
-            <span id="modalSubjectTag" class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-stone-100 text-stone-700 border border-stone-200">Subject</span>
+            <span id="modalBatchTag" class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold bg-stone-100 text-stone-800 border border-stone-200 uppercase">Batch</span>
+            <span id="modalSubjectTag" class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-semibold bg-stone-100 text-stone-700 border border-stone-200">Subject</span>
           </div>
-          <h3 id="modalVideoTitle" class="text-sm font-bold text-stone-900 truncate">Lecture Preview</h3>
+          <h3 id="modalVideoTitle" class="text-sm font-bold font-serif-editorial text-[#1B1B1B] truncate">Lecture Preview</h3>
         </div>
 
-        <div class="flex items-center gap-2 shrink-0">
+        <div class="flex items-center gap-2 shrink-0 text-xs">
           <button
             type="button"
             onclick="openEditModalFromPlayer()"
-            class="px-2.5 py-1.5 bg-white hover:bg-stone-50 text-stone-800 border border-stone-300 rounded text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
-            title="Edit Title, Batch, or Change Thumbnail"
+            class="px-2.5 py-1 bg-white hover:bg-stone-100 text-[#1B1B1B] border border-[#D6D3CD] rounded text-[11px] font-bold uppercase tracking-wider cursor-pointer"
           >
-            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-            </svg>
-            <span>Edit / Thumbnail</span>
+            Edit
           </button>
 
-          <a id="modalYtLink" href="#" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer">
-            <span>Open Link ↗</span>
+          <a id="modalYtLink" href="#" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 bg-[#1B1B1B] hover:bg-black text-white rounded text-[11px] font-bold uppercase tracking-wider cursor-pointer">
+            Open ↗
           </a>
 
-          <button onclick="closeVideoModal()" class="w-8 h-8 rounded hover:bg-stone-200 text-stone-500 flex items-center justify-center transition-colors cursor-pointer text-lg font-bold">
+          <button onclick="closeVideoModal()" class="w-7 h-7 rounded hover:bg-stone-200 text-[#1B1B1B] flex items-center justify-center cursor-pointer text-lg font-bold">
             &times;
           </button>
         </div>
       </div>
 
-      <!-- Video Player / Poster Container Area -->
-      <div class="relative aspect-video w-full bg-stone-950 flex items-center justify-center overflow-hidden">
-        <!-- 1. Initial Thumbnail Poster View with Play Button -->
+      <!-- Video Player / Poster Area -->
+      <div class="relative aspect-video w-full bg-black flex items-center justify-center overflow-hidden">
         <div id="modalPosterContainer" class="absolute inset-0 z-10 flex items-center justify-center cursor-pointer group select-none" onclick="startModalPlayback()">
           <img id="modalPosterImg" src="" alt="Thumbnail" class="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300 opacity-90 group-hover:opacity-100" onerror="this.src='https://placehold.co/1280x720/1c1917/ffffff?text=Click+to+Play'" />
           <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-black/40"></div>
           
-          <!-- Centered Play Button Overlay -->
           <div class="relative z-20 flex flex-col items-center gap-3">
-            <div class="w-18 h-18 rounded-2xl bg-white text-stone-900 shadow-2xl flex items-center justify-center transform group-hover:scale-110 transition-all duration-200 border border-stone-200">
-              <svg class="w-9 h-9 ml-1 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            <div class="w-16 h-16 rounded-2xl bg-white text-[#1B1B1B] shadow-2xl flex items-center justify-center transform group-hover:scale-110 transition-all duration-200">
+              <svg class="w-8 h-8 ml-1 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
             </div>
-            <span class="text-white font-bold text-xs bg-black/70 backdrop-blur-xs px-4 py-1.5 rounded-full border border-white/20 shadow-md">Click to Play Video</span>
+            <span class="text-white font-mono-code text-[11px] uppercase tracking-wider bg-black/70 px-3 py-1 rounded border border-white/20">Click to Play</span>
           </div>
 
-          <!-- Bottom Video Info Overlay on Poster -->
           <div class="absolute bottom-4 left-5 right-5 z-20 flex items-end justify-between pointer-events-none">
             <div class="space-y-0.5 max-w-xl text-left">
-              <span id="posterBatchTag" class="text-xs font-bold text-amber-300 uppercase tracking-wider block"></span>
-              <h4 id="posterVideoTitle" class="text-base font-bold text-white drop-shadow-md line-clamp-1"></h4>
+              <span id="posterBatchTag" class="text-xs font-bold font-mono-code text-amber-300 uppercase tracking-wider block"></span>
+              <h4 id="posterVideoTitle" class="text-base font-bold font-serif-editorial text-white drop-shadow-md line-clamp-1"></h4>
             </div>
           </div>
         </div>
 
-        <!-- 2. Active Embedded Player Iframe -->
         <iframe id="modalIframe" src="" class="w-full h-full border-0 relative z-0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
       </div>
     </div>
   </div>
 
   <!-- 6. Video Details & Thumbnail Studio Modal -->
-  <div id="editVideoModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-4">
-    <div class="bg-white rounded-xl max-w-xl w-full p-5 shadow-2xl border border-stone-200 space-y-4">
-      <div class="flex items-center justify-between border-b border-stone-200 pb-3">
-        <div class="flex items-center gap-2">
-          <div class="w-7 h-7 rounded bg-stone-100 text-stone-800 border border-stone-200 flex items-center justify-center font-bold text-xs">
-            ✏️
-          </div>
-          <div>
-            <h3 class="text-sm font-bold text-stone-900">Edit Video &amp; Thumbnail Studio</h3>
-            <p class="text-[11px] text-stone-500">Update YouTube title, batch, and set custom thumbnails</p>
-          </div>
+  <div id="editVideoModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4">
+    <div class="bg-[#F6F4F0] rounded border border-[#1B1B1B] max-w-xl w-full p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-[#D6D3CD] pb-2.5 font-mono-code">
+        <div>
+          <h3 class="text-sm font-bold uppercase tracking-wider text-[#1B1B1B]">Edit Video &amp; Thumbnail</h3>
+          <p class="text-[10px] text-[#78716C]">Update title, batch tags, and 16:9 thumbnail</p>
         </div>
-        <button type="button" onclick="closeEditModal()" class="text-stone-400 hover:text-stone-600 text-lg font-bold cursor-pointer">&times;</button>
+        <button type="button" onclick="closeEditModal()" class="text-[#78716C] hover:text-[#1B1B1B] text-lg font-bold cursor-pointer">&times;</button>
       </div>
 
       <input type="hidden" id="editModalFileId" value="" />
       <input type="hidden" id="editModalVideoId" value="" />
 
       <!-- Video Title Input -->
-      <div class="space-y-1">
-        <label class="block text-xs font-bold text-stone-800">Video Title (Syncs with YouTube):</label>
+      <div class="space-y-1 font-mono-code">
+        <label class="block text-[11px] font-bold uppercase tracking-wider text-[#1B1B1B]">Video Title:</label>
         <input
           type="text"
           id="editModalTitleInput"
-          class="w-full h-9 px-3 text-xs font-semibold editorial-input rounded-md text-stone-900"
+          class="w-full h-8 px-2.5 om-box-input rounded text-xs text-[#1B1B1B]"
           placeholder="Enter video title..."
         />
       </div>
 
       <!-- Batch & Subject Row -->
-      <div class="grid grid-cols-2 gap-3">
+      <div class="grid grid-cols-2 gap-3 font-mono-code">
         <div class="space-y-1">
-          <label class="block text-xs font-semibold text-stone-700">Batch Name:</label>
+          <label class="block text-[10px] font-bold uppercase tracking-wider text-[#78716C]">Batch Name:</label>
           <input
             type="text"
             id="editModalBatchInput"
-            class="w-full h-8.5 px-3 text-xs editorial-input rounded-md text-stone-900"
-            placeholder="e.g. 27-LNE51MP 2026"
+            class="w-full h-8 px-2.5 om-box-input rounded text-xs text-[#1B1B1B]"
+            placeholder="e.g. 27-LNE51MP"
           />
         </div>
         <div class="space-y-1">
-          <label class="block text-xs font-semibold text-stone-700">Subject / Category:</label>
+          <label class="block text-[10px] font-bold uppercase tracking-wider text-[#78716C]">Subject:</label>
           <input
             type="text"
             id="editModalSubjectInput"
-            class="w-full h-8.5 px-3 text-xs editorial-input rounded-md text-stone-900"
-            placeholder="e.g. Physics / Lecture"
+            class="w-full h-8 px-2.5 om-box-input rounded text-xs text-[#1B1B1B]"
+            placeholder="e.g. Physics"
           />
         </div>
       </div>
 
-      <!-- Thumbnail Management Box -->
-      <div class="p-3.5 rounded-lg bg-stone-50 border border-stone-200 space-y-3">
+      <!-- Thumbnail Studio Box -->
+      <div class="p-3 rounded bg-white border border-[#D6D3CD] space-y-2.5 font-mono-code">
         <div class="flex items-center justify-between">
-          <label class="text-xs font-bold text-stone-900 flex items-center gap-1.5">
-            <span>Thumbnail Studio (16:9)</span>
-            <span class="text-[10px] font-normal text-stone-500">Live preview &amp; YouTube uploader</span>
-          </label>
+          <label class="text-[11px] font-bold uppercase tracking-wider text-[#1B1B1B]">16:9 Thumbnail</label>
           <button
             type="button"
             onclick="generateSmartThumbnail()"
-            class="px-2.5 py-1 bg-stone-900 hover:bg-black text-white rounded text-[11px] font-bold shadow-2xs transition-colors cursor-pointer flex items-center gap-1"
-            title="Auto-generate a clean professional thumbnail banner"
+            class="px-2 py-0.5 bg-[#1B1B1B] hover:bg-black text-white rounded text-[10px] font-bold uppercase tracking-wider cursor-pointer"
           >
-            <span>⚡ 1-Click Auto Thumbnail</span>
+            ⚡ Auto Thumbnail
           </button>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
-          <!-- Thumbnail Live Preview (Col 5) -->
           <div class="sm:col-span-5">
-            <div class="relative aspect-video w-full rounded border border-stone-300 overflow-hidden bg-stone-900 shadow-2xs group">
+            <div class="relative aspect-video w-full rounded border border-[#D6D3CD] overflow-hidden bg-black shadow-2xs">
               <img id="editModalThumbPreview" src="https://placehold.co/640x360/1c1917/ffffff?text=Preview" alt="Thumbnail Preview" class="w-full h-full object-cover" />
-              <div class="absolute bottom-1 right-1 bg-black/70 px-1.5 py-0.5 rounded text-[9px] text-white font-mono">16:9 HD</div>
             </div>
           </div>
-
-          <!-- Thumbnail Options (Col 7) -->
           <div class="sm:col-span-7 space-y-2 text-xs">
             <div>
-              <span class="text-[11px] font-semibold text-stone-700 block mb-1">Option A: Upload Image File</span>
+              <span class="text-[10px] font-bold text-[#78716C] uppercase block mb-1">Option A: Upload Image</span>
               <button
                 type="button"
                 onclick="document.getElementById('thumbnailFileInput').click()"
-                class="w-full h-8 px-3 bg-white hover:bg-stone-50 text-stone-700 hover:text-stone-900 border border-stone-300 rounded text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                class="w-full h-7.5 px-2 bg-[#F6F4F0] hover:bg-white text-[#1B1B1B] border border-[#D6D3CD] rounded text-[11px] font-semibold flex items-center justify-center gap-1 cursor-pointer"
               >
-                <svg class="w-3.5 h-3.5 text-stone-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                </svg>
-                <span>Choose Image (JPG / PNG)</span>
+                Choose Image File (PNG/JPG)
               </button>
             </div>
-
             <div>
-              <span class="text-[11px] font-semibold text-stone-700 block mb-1">Option B: Image URL</span>
+              <span class="text-[10px] font-bold text-[#78716C] uppercase block mb-1">Option B: Image URL</span>
               <input
                 type="text"
                 id="editModalThumbUrlInput"
                 oninput="handleCustomThumbUrlInput()"
-                placeholder="Paste image link https://..."
-                class="w-full h-8 px-2 text-xs editorial-input rounded text-stone-900"
+                placeholder="https://..."
+                class="w-full h-7.5 px-2 text-xs om-box-input rounded text-[#1B1B1B]"
               />
             </div>
           </div>
@@ -774,29 +631,29 @@
       </div>
 
       <!-- Action Buttons -->
-      <div class="flex items-center justify-between pt-2 border-t border-stone-200">
+      <div class="flex items-center justify-between pt-2 border-t border-[#D6D3CD] font-mono-code">
         <button
           type="button"
           onclick="deleteCurrentVideoFromEditModal()"
-          class="px-3 py-1.5 text-xs text-rose-600 hover:bg-rose-50 border border-rose-200 rounded font-semibold cursor-pointer transition-colors"
+          class="px-2.5 py-1 text-xs text-rose-600 hover:bg-rose-50 border border-rose-200 rounded font-bold uppercase tracking-wider cursor-pointer"
         >
-          🗑️ Remove Video
+          Delete
         </button>
 
         <div class="flex items-center gap-2">
           <button
             type="button"
             onclick="closeEditModal()"
-            class="px-3.5 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded text-xs font-semibold cursor-pointer"
+            class="px-3 py-1 bg-white border border-[#D6D3CD] text-[#1B1B1B] rounded text-xs font-semibold cursor-pointer"
           >
             Cancel
           </button>
           <button
             type="button"
             onclick="saveVideoEditModal()"
-            class="px-4 py-1.5 bg-stone-900 hover:bg-black text-white rounded text-xs font-bold shadow-2xs transition-colors cursor-pointer flex items-center gap-1.5"
+            class="px-3.5 py-1 bg-[#1B1B1B] hover:bg-black text-white rounded text-xs font-bold uppercase tracking-wider cursor-pointer"
           >
-            <span>Save &amp; Apply</span>
+            Save &amp; Apply
           </button>
         </div>
       </div>
@@ -805,111 +662,83 @@
 
   <!-- Google Auth & API Keys Modal -->
   <div id="authConfigModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-stone-200 space-y-4">
-      <div class="flex items-center justify-between border-b border-stone-100 pb-3">
-        <div class="flex items-center gap-2.5">
-          <div class="w-8 h-8 rounded-lg bg-stone-900 text-white flex items-center justify-center font-bold">G</div>
-          <div>
-            <h3 class="text-sm font-bold text-stone-900">Google OAuth &amp; Multi-Key Rotation</h3>
-            <p class="text-[11px] text-stone-500">Connect Google account for unlimited uploads</p>
-          </div>
+    <div class="bg-[#F6F4F0] rounded border border-[#1B1B1B] max-w-lg w-full p-5 shadow-2xl space-y-4 font-mono-code">
+      <div class="flex items-center justify-between border-b border-[#D6D3CD] pb-2.5">
+        <div>
+          <h3 class="text-sm font-bold uppercase tracking-wider text-[#1B1B1B]">Google Authentication</h3>
+          <p class="text-[10px] text-[#78716C]">Connect Google account for unlimited upload</p>
         </div>
-        <button type="button" onclick="closeAuthModal()" class="text-stone-400 hover:text-stone-600 text-lg font-bold cursor-pointer">&times;</button>
+        <button type="button" onclick="closeAuthModal()" class="text-[#78716C] hover:text-[#1B1B1B] text-lg font-bold cursor-pointer">&times;</button>
       </div>
 
-      <!-- Quick Connect Tabs / Options -->
-      <div class="space-y-3">
-        <!-- Direct Access Token Input (Guaranteed Instant Connect) -->
-        <div class="p-3 rounded-lg bg-emerald-50/70 border border-emerald-200 text-xs space-y-2">
-          <div class="flex items-center justify-between font-bold text-emerald-900">
-            <span>Option A: Instant Token Connect (Zero-Setup)</span>
-            <span class="text-[10px] text-emerald-700 font-semibold">Recommended</span>
-          </div>
-          <div class="flex gap-2">
-            <input
-              type="password"
-              id="directAccessTokenInput"
-              placeholder="Paste Google Access Token (ya29...)"
-              class="flex-1 p-2 text-xs font-mono border border-emerald-300 rounded bg-white text-stone-900 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
-            />
-            <button
-              type="button"
-              onclick="saveDirectToken()"
-              class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded text-xs transition-colors cursor-pointer whitespace-nowrap"
-            >
-              Connect Token
-            </button>
-          </div>
-          <p class="text-[10px] text-emerald-700">Paste any valid OAuth Bearer access token from Google OAuth Playground to connect instantly without creating OAuth credentials.</p>
+      <!-- Quick Connect Token -->
+      <div class="p-3 rounded bg-emerald-50 border border-emerald-300 text-xs space-y-2">
+        <div class="flex items-center justify-between font-bold text-emerald-900 uppercase text-[10px]">
+          <span>Option A: Instant Bearer Token</span>
+          <span class="bg-emerald-200 px-1.5 py-0.2 rounded">Fast</span>
         </div>
-
-        <!-- OAuth Client ID (Popup Sign-In) -->
-        <div class="p-3 rounded-lg bg-stone-50 border border-stone-200 text-xs space-y-2.5">
-          <div class="flex items-center justify-between font-bold text-stone-800">
-            <span>Option B: Google Cloud OAuth 2.0 Web Client ID</span>
-            <span id="keyCountText" class="text-[10px] font-semibold text-stone-600">0 key(s) active</span>
-          </div>
-
-          <!-- Quick Origin Setup Helper -->
-          <div class="p-2.5 rounded bg-amber-50/80 border border-amber-200 text-xs space-y-1">
-            <div class="flex items-center justify-between font-bold text-amber-900">
-              <span class="text-[11px]">Authorized JavaScript Origin:</span>
-              <button type="button" onclick="copyOriginUrl()" class="px-2 py-0.5 rounded bg-amber-200/80 hover:bg-amber-300 text-amber-900 text-[10px] font-bold cursor-pointer transition-colors">
-                Copy Origin URL
-              </button>
-            </div>
-            <div class="font-mono text-[11px] text-amber-800 bg-white/80 px-2 py-1 rounded border border-amber-200/60 truncate" id="originUrlDisplay">
-              https://...
-            </div>
-          </div>
-
-          <textarea
-            id="clientIdsList"
-            rows="2"
-            placeholder="Paste your OAuth Client ID (e.g. 123456789-xxx.apps.googleusercontent.com)..."
-            class="w-full p-2 text-xs font-mono border border-stone-300 rounded bg-white text-stone-900 focus:ring-2 focus:ring-stone-400/20 focus:border-stone-900"
-          ></textarea>
-
-          <div class="flex items-center justify-between pt-1">
-            <span class="text-[10px] text-stone-500">Add origin in Google Cloud Console &rarr; Credentials &rarr; OAuth Client</span>
-            <button
-              type="button"
-              onclick="saveAndAuthorize()"
-              class="px-3.5 py-1.5 rounded bg-stone-900 hover:bg-black text-white font-bold text-xs shadow-2xs transition-colors cursor-pointer"
-            >
-              Save &amp; Sign In
-            </button>
-          </div>
-        </div>
-
-        <!-- Sync YouTube Uploads -->
-        <div class="p-3 rounded-lg bg-rose-50/60 border border-rose-100 flex items-center justify-between">
-          <div>
-            <div class="text-xs font-bold text-stone-900">Sync YouTube Uploads</div>
-            <div class="text-[11px] text-stone-500">Fetch all previously uploaded channel videos</div>
-          </div>
+        <div class="flex gap-2">
+          <input
+            type="password"
+            id="directAccessTokenInput"
+            placeholder="Paste Google Access Token (ya29...)"
+            class="flex-1 p-2 text-xs border border-emerald-400 rounded bg-white text-[#1B1B1B] focus:outline-none"
+          />
           <button
             type="button"
-            onclick="syncYouTubeUploads()"
-            class="px-3.5 py-1.5 rounded bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-2xs transition-colors cursor-pointer flex items-center gap-1.5"
+            onclick="saveDirectToken()"
+            class="px-3 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded text-xs uppercase tracking-wider cursor-pointer whitespace-nowrap"
           >
-            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-            </svg>
-            <span>Sync Uploads</span>
+            Connect
           </button>
         </div>
       </div>
 
-      <div class="flex items-center justify-between pt-2 border-t border-stone-100">
-        <button type="button" onclick="logoutGoogle()" class="text-xs text-rose-600 hover:underline font-semibold cursor-pointer">
-          Disconnect Account
+      <!-- OAuth Client ID -->
+      <div class="p-3 rounded bg-white border border-[#D6D3CD] text-xs space-y-2">
+        <div class="flex items-center justify-between font-bold text-[#1B1B1B] uppercase text-[10px]">
+          <span>Option B: Google Cloud OAuth Client ID</span>
+          <span id="keyCountText" class="text-stone-500">0 key(s)</span>
+        </div>
+
+        <div class="p-2 rounded bg-[#EDEAE5] border border-[#D6D3CD] text-[10px] space-y-1">
+          <div class="flex items-center justify-between font-bold">
+            <span>Authorized Origin:</span>
+            <button type="button" onclick="copyOriginUrl()" class="px-1.5 py-0.5 rounded bg-white border border-[#D6D3CD] text-[9px] uppercase cursor-pointer">
+              Copy
+            </button>
+          </div>
+          <div class="text-[10px] truncate" id="originUrlDisplay">https://...</div>
+        </div>
+
+        <textarea
+          id="clientIdsList"
+          rows="2"
+          placeholder="Paste OAuth Client ID..."
+          class="w-full p-2 text-xs border border-[#D6D3CD] rounded bg-[#F6F4F0] text-[#1B1B1B] focus:outline-none focus:border-[#1B1B1B]"
+        ></textarea>
+
+        <div class="flex items-center justify-between pt-1">
+          <span class="text-[9px] text-[#78716C]">Google Console &rarr; OAuth Client</span>
+          <button
+            type="button"
+            onclick="saveAndAuthorize()"
+            class="px-3 py-1 bg-[#1B1B1B] hover:bg-black text-white font-bold text-xs uppercase tracking-wider rounded cursor-pointer"
+          >
+            Sign In
+          </button>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between pt-2 border-t border-[#D6D3CD]">
+        <button type="button" onclick="logoutGoogle()" class="text-xs text-rose-600 hover:underline font-bold uppercase cursor-pointer">
+          Disconnect
         </button>
         <div class="flex items-center gap-2">
-          <button type="button" onclick="saveClientIds()" class="px-4 py-1.5 bg-stone-900 hover:bg-black text-white rounded text-xs font-bold shadow-2xs transition-colors cursor-pointer">
-            Save Keys
+          <button type="button" onclick="saveClientIds()" class="px-3.5 py-1 bg-white border border-[#D6D3CD] text-[#1B1B1B] rounded text-xs font-bold uppercase cursor-pointer">
+            Save
           </button>
-          <button type="button" onclick="closeAuthModal()" class="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded text-xs font-semibold cursor-pointer">
+          <button type="button" onclick="closeAuthModal()" class="px-3 py-1 bg-[#1B1B1B] text-white rounded text-xs font-bold uppercase cursor-pointer">
             Close
           </button>
         </div>
@@ -917,10 +746,10 @@
     </div>
   </div>
 
-  <!-- Toast Notification Container -->
-  <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 ease-out flex items-center gap-2.5 px-4 py-2.5 bg-stone-900 text-white rounded-lg shadow-xl text-xs font-medium border border-stone-800 select-none">
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 ease-out flex items-center gap-2.5 px-4 py-2.5 bg-[#1B1B1B] text-white rounded shadow-xl font-mono-code text-xs font-medium select-none">
     <span id="toastIcon"></span>
-    <span id="toastMessage">Notification message</span>
+    <span id="toastMessage">Notification</span>
   </div>
 
   <!-- Hidden Custom Thumbnail Input File Selector -->
@@ -931,22 +760,22 @@
     let clientId = 'client_' + (Date.now ? Date.now() : new Date().getTime()) + '_' + Math.random().toString(36).substr(2, 6);
     let eventSource = null;
     let currentState = null;
-    let currentFilter = 'all'; // 'all' | 'completed' | 'pending' | 'failed'
+    let currentFilter = 'all';
 
     // Date Range Picker State
     let dateFilterRange = {
-      start: null, // YYYY-MM-DD
-      end: null,   // YYYY-MM-DD
-      preset: 'all' // 'all' | 'today' | 'yesterday' | 'last7' | 'custom'
+      start: null,
+      end: null,
+      preset: 'all'
     };
     let calendarDisplayYear = new Date().getFullYear();
-    let calendarDisplayMonth = new Date().getMonth(); // 0-based
+    let calendarDisplayMonth = new Date().getMonth();
     let isCalendarOpen = false;
 
     const MONTH_NAMES_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const MONTH_NAMES_FULL = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
-    // DOM Elements (retrieved on init)
+    // DOM Elements
     let connectionBadge, navAuthBtn, navConnectedBadge, bgNoticeBanner, cancelJobBtn;
     let folderInput, playlistNameInput, playlistPill, playlistPillTitle, startDateInput, endDateInput;
     let startButton, buttonText, downloadCsvBtn, trackingTableBody, toast, toastMessage, toastIcon;
@@ -954,7 +783,6 @@
     let videoModal, modalIframe, modalVideoTitle, modalBatchTag, modalSubjectTag, modalYtLink;
     let currentModalEmbedLink = '';
 
-    // Date formatting functions
     function formatDateToYMD(d) {
       if (!d || isNaN(d.getTime())) return '';
       const year = d.getFullYear();
@@ -965,7 +793,7 @@
 
     function formatDateToDMY(d) {
       if (!d || isNaN(d.getTime())) return '';
-      return d.toLocaleDateString('en-GB'); // DD/MM/YYYY
+      return d.toLocaleDateString('en-GB');
     }
 
     function formatDisplayDate(ymd) {
@@ -1000,14 +828,12 @@
       return getTodayYMD();
     }
 
-    // Status Filter Handler
     window.setTableFilter = function(filter) {
       currentFilter = filter;
       updateFilterPillsUI();
       renderFilteredTable();
     };
 
-    // Calendar Popover & Date Range Handling
     window.toggleCalendarPopover = function(e) {
       if (e) e.stopPropagation();
       const pop = document.getElementById('calendarPopover');
@@ -1119,22 +945,22 @@
       const isEnd = end === ymd;
       const isInRange = start && end && ymd > start && ymd < end;
 
-      let classes = 'h-8 flex items-center justify-center text-xs font-semibold cursor-pointer transition-all relative ';
+      let classes = 'h-7 flex items-center justify-center text-xs font-semibold cursor-pointer transition-all relative ';
 
       if (isStart && isEnd) {
-        classes += 'bg-stone-900 text-white rounded-md font-bold shadow-xs z-10';
+        classes += 'bg-[#1B1B1B] text-white rounded font-bold z-10';
       } else if (isStart) {
-        classes += end ? 'bg-stone-900 text-white rounded-l-md font-bold z-10' : 'bg-stone-900 text-white rounded-md font-bold shadow-xs z-10';
+        classes += end ? 'bg-[#1B1B1B] text-white rounded-l font-bold z-10' : 'bg-[#1B1B1B] text-white rounded font-bold z-10';
       } else if (isEnd) {
-        classes += 'bg-stone-900 text-white rounded-r-md font-bold z-10';
+        classes += 'bg-[#1B1B1B] text-white rounded-r font-bold z-10';
       } else if (isInRange) {
-        classes += 'bg-stone-200 text-stone-900 font-semibold rounded-none';
+        classes += 'bg-stone-300 text-[#1B1B1B] font-semibold rounded-none';
       } else if (isOtherMonth) {
-        classes += 'text-stone-300 hover:text-stone-500 hover:bg-stone-50 rounded-md';
+        classes += 'text-stone-300 hover:text-stone-500 hover:bg-stone-100 rounded';
       } else if (isWeekend) {
-        classes += 'text-rose-500 hover:bg-stone-100 rounded-md';
+        classes += 'text-rose-600 hover:bg-stone-100 rounded';
       } else {
-        classes += 'text-stone-700 hover:bg-stone-100 rounded-md';
+        classes += 'text-stone-800 hover:bg-stone-100 rounded';
       }
 
       btn.className = classes;
@@ -1208,15 +1034,15 @@
 
       if (displayText) {
         if (!start && !end) {
-          displayText.textContent = 'All Dates';
+          displayText.textContent = 'QUICK VIEW';
         } else if (start && !end) {
           displayText.textContent = formatDisplayDate(start);
         } else if (start && end) {
           if (start === end) {
             if (start === getTodayYMD()) {
-              displayText.textContent = `${formatDisplayDate(start)} (Today)`;
+              displayText.textContent = `TODAY (${formatDisplayDate(start)})`;
             } else if (start === getYesterdayYMD()) {
-              displayText.textContent = `${formatDisplayDate(start)} (Yesterday)`;
+              displayText.textContent = `YEST (${formatDisplayDate(start)})`;
             } else {
               displayText.textContent = formatDisplayDate(start);
             }
@@ -1234,19 +1060,19 @@
 
     function updateFilterPillsUI() {
       if (!filterPillAll) return;
-      filterPillAll.className = "inline-flex items-center h-8 px-3.5 rounded-lg border border-stone-300 bg-white text-stone-800 font-semibold shadow-2xs whitespace-nowrap cursor-pointer hover:bg-stone-50 transition-all";
-      filterPillCompleted.className = "inline-flex items-center h-8 px-3.5 rounded-lg border border-emerald-300 bg-white text-emerald-700 font-semibold shadow-2xs whitespace-nowrap cursor-pointer hover:bg-emerald-50 transition-all";
-      filterPillPending.className = "inline-flex items-center h-8 px-3.5 rounded-lg border border-orange-300 bg-white text-orange-700 font-semibold shadow-2xs whitespace-nowrap cursor-pointer hover:bg-orange-50 transition-all";
-      filterPillFailed.className = "inline-flex items-center h-8 px-3.5 rounded-lg border border-rose-300 bg-white text-rose-700 font-semibold shadow-2xs whitespace-nowrap cursor-pointer hover:bg-rose-50 transition-all";
+      filterPillAll.className = "px-2.5 py-1 bg-white border border-[#D6D3CD] text-[#1B1B1B] font-semibold rounded text-[11px] uppercase tracking-wider hover:bg-stone-50 cursor-pointer";
+      filterPillCompleted.className = "px-2.5 py-1 bg-white border border-[#D6D3CD] text-emerald-800 font-semibold rounded text-[11px] uppercase tracking-wider hover:bg-emerald-50 cursor-pointer";
+      filterPillPending.className = "px-2.5 py-1 bg-white border border-[#D6D3CD] text-orange-800 font-semibold rounded text-[11px] uppercase tracking-wider hover:bg-orange-50 cursor-pointer";
+      filterPillFailed.className = "px-2.5 py-1 bg-white border border-rose-300 text-rose-700 font-semibold rounded text-[11px] uppercase tracking-wider hover:bg-rose-50 cursor-pointer";
 
       if (currentFilter === 'all') {
-        filterPillAll.className = "inline-flex items-center h-8 px-3.5 rounded-lg border border-stone-900 bg-stone-900 text-white font-bold shadow-xs whitespace-nowrap cursor-pointer transition-all";
+        filterPillAll.className = "px-2.5 py-1 bg-[#1B1B1B] text-white font-bold rounded text-[11px] uppercase tracking-wider cursor-pointer";
       } else if (currentFilter === 'completed') {
-        filterPillCompleted.className = "inline-flex items-center h-8 px-3.5 rounded-lg border border-emerald-600 bg-emerald-600 text-white font-bold shadow-xs whitespace-nowrap cursor-pointer transition-all";
+        filterPillCompleted.className = "px-2.5 py-1 bg-emerald-700 text-white font-bold rounded text-[11px] uppercase tracking-wider cursor-pointer";
       } else if (currentFilter === 'pending') {
-        filterPillPending.className = "inline-flex items-center h-8 px-3.5 rounded-lg border border-orange-600 bg-orange-600 text-white font-bold shadow-xs whitespace-nowrap cursor-pointer transition-all";
+        filterPillPending.className = "px-2.5 py-1 bg-orange-700 text-white font-bold rounded text-[11px] uppercase tracking-wider cursor-pointer";
       } else if (currentFilter === 'failed') {
-        filterPillFailed.className = "inline-flex items-center h-8 px-3.5 rounded-lg border border-rose-600 bg-rose-600 text-white font-bold shadow-xs whitespace-nowrap cursor-pointer transition-all";
+        filterPillFailed.className = "px-2.5 py-1 bg-rose-700 text-white font-bold rounded text-[11px] uppercase tracking-wider cursor-pointer";
       }
     }
 
@@ -1279,11 +1105,11 @@
       if (!toastMessage || !toast) return;
       toastMessage.textContent = message;
       if (type === 'success') {
-        toastIcon.innerHTML = `<svg class="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>`;
+        toastIcon.innerHTML = `<span class="text-emerald-400 font-bold">✔</span>`;
       } else if (type === 'error') {
-        toastIcon.innerHTML = `<svg class="w-4 h-4 text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>`;
+        toastIcon.innerHTML = `<span class="text-rose-400 font-bold">✕</span>`;
       } else {
-        toastIcon.innerHTML = `<svg class="w-4 h-4 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`;
+        toastIcon.innerHTML = `<span class="text-orange-400 font-bold">●</span>`;
       }
       toast.classList.remove('translate-y-20', 'opacity-0');
       toast.classList.add('translate-y-0', 'opacity-100');
@@ -1296,8 +1122,8 @@
     function updateDynamicMetrics() {
       if (!currentState || !currentState.files) {
         document.getElementById('metricTotal').textContent = '0';
-        document.getElementById('metricUploaded').textContent = '0 (0.00%)';
-        document.getElementById('metricPending').textContent = '0 (0.00%)';
+        document.getElementById('metricUploaded').textContent = '0';
+        document.getElementById('metricPending').textContent = '0';
         if (filterPillFailed) filterPillFailed.classList.add('hidden');
         return;
       }
@@ -1319,12 +1145,9 @@
       const pending = matchingFiles.filter(f => f.status === 'uploading' || f.status === 'queued').length;
       const failed = matchingFiles.filter(f => f.status === 'failed').length;
 
-      const completedPct = total > 0 ? ((completed / total) * 100).toFixed(2) : '0.00';
-      const pendingPct = total > 0 ? ((pending / total) * 100).toFixed(2) : '0.00';
-
       document.getElementById('metricTotal').textContent = total;
-      document.getElementById('metricUploaded').textContent = `${completed} (${completedPct}%)`;
-      document.getElementById('metricPending').textContent = `${pending} (${pendingPct}%)`;
+      document.getElementById('metricUploaded').textContent = completed;
+      document.getElementById('metricPending').textContent = pending;
 
       if (failed > 0 && filterPillFailed) {
         filterPillFailed.classList.remove('hidden');
@@ -1339,27 +1162,9 @@
       if (radio) {
         radio.checked = true;
       }
-      updateProcessingModeCards();
     };
 
-    window.updateProcessingModeCards = function() {
-      const selectedMode = document.querySelector('input[name="processingMode"]:checked')?.value || 'youtube';
-      const modes = [
-        { id: 'modeCard-youtube', val: 'youtube' },
-        { id: 'modeCard-queue', val: 'queue' },
-        { id: 'modeCard-drive_secure', val: 'drive_secure' }
-      ];
-
-      modes.forEach(m => {
-        const card = document.getElementById(m.id);
-        if (!card) return;
-        if (m.val === selectedMode) {
-          card.className = 'relative flex items-start p-3 rounded-lg border-2 border-stone-900 bg-stone-50 shadow-2xs cursor-pointer transition-all';
-        } else {
-          card.className = 'relative flex items-start p-3 rounded-lg border-2 border-stone-200 bg-white hover:bg-stone-50/80 cursor-pointer transition-all';
-        }
-      });
-    };
+    window.updateProcessingModeCards = function() {};
 
     window.handleConnectClick = function() {
       const token = localStorage.getItem('oauth_access_token');
@@ -1463,7 +1268,7 @@
       if (saved && textarea) {
         textarea.value = saved;
         const count = saved.split('\n').filter(s => s.trim()).length;
-        if (countText) countText.textContent = `${count} key(s) active`;
+        if (countText) countText.textContent = `${count} key(s)`;
       }
       const originDisplay = document.getElementById('originUrlDisplay');
       if (originDisplay) {
@@ -1478,7 +1283,7 @@
         const val = textarea.value.trim();
         localStorage.setItem('yt_client_ids', val);
         const count = val ? val.split('\n').filter(s => s.trim()).length : 0;
-        if (countText) countText.textContent = `${count} key(s) active`;
+        if (countText) countText.textContent = `${count} key(s)`;
         if (!silent) showToast(`Saved ${count} API client ID(s)`, 'success');
         return count;
       }
@@ -1566,7 +1371,7 @@
 
     window.syncYouTubeUploads = async function() {
       if (!window.gAccessToken) {
-        showToast('Please click "Connect Google" to authorize access to your YouTube channel uploads.', 'info');
+        showToast('Please connect your Google Account first.', 'info');
         openAuthModal();
         return;
       }
@@ -1581,7 +1386,7 @@
         });
         const data = await res.json();
         if (data.success) {
-          showToast(`✔ Successfully synced ${data.count} uploaded video(s) from YouTube channel "${data.channelTitle}"!`, 'success');
+          showToast(`✔ Successfully synced ${data.count} uploaded video(s) from channel "${data.channelTitle}"!`, 'success');
           loadJobStatus();
         } else {
           showToast('Sync note: ' + (data.error || 'Could not fetch channel uploads'), 'error');
@@ -1593,7 +1398,7 @@
     };
 
     let currentSearchQuery = '';
-    let currentSourceFilter = 'all'; // 'all' | 'youtube' | 'drive'
+    let currentSourceFilter = 'all';
     let currentActiveEditFile = null;
 
     window.handleTableSearch = function() {
@@ -1608,16 +1413,16 @@
       const ytBtn = document.getElementById('sourceFilterYouTube');
       const driveBtn = document.getElementById('sourceFilterDrive');
 
-      if (allBtn) allBtn.className = 'h-7.5 px-3 rounded-md text-xs font-semibold text-stone-600 hover:text-stone-900 cursor-pointer transition-all whitespace-nowrap flex items-center gap-1';
-      if (ytBtn) ytBtn.className = 'h-7.5 px-3 rounded-md text-xs font-semibold text-stone-600 hover:text-stone-900 cursor-pointer transition-all whitespace-nowrap flex items-center gap-1.5';
-      if (driveBtn) driveBtn.className = 'h-7.5 px-3 rounded-md text-xs font-semibold text-stone-600 hover:text-stone-900 cursor-pointer transition-all whitespace-nowrap flex items-center gap-1.5';
+      if (allBtn) allBtn.className = 'px-2 py-0.5 text-[#78716C] hover:text-[#1B1B1B]';
+      if (ytBtn) ytBtn.className = 'px-2 py-0.5 text-[#78716C] hover:text-[#1B1B1B]';
+      if (driveBtn) driveBtn.className = 'px-2 py-0.5 text-[#78716C] hover:text-[#1B1B1B]';
 
       if (source === 'all' && allBtn) {
-        allBtn.className = 'h-7.5 px-3 rounded-md text-xs font-bold bg-white text-stone-900 shadow-2xs cursor-pointer transition-all whitespace-nowrap flex items-center gap-1';
+        allBtn.className = 'px-2 py-0.5 rounded bg-[#1B1B1B] text-white';
       } else if (source === 'youtube' && ytBtn) {
-        ytBtn.className = 'h-7.5 px-3 rounded-md text-xs font-bold bg-white text-stone-900 shadow-2xs cursor-pointer transition-all whitespace-nowrap flex items-center gap-1.5';
+        ytBtn.className = 'px-2 py-0.5 rounded bg-[#1B1B1B] text-white';
       } else if (source === 'drive' && driveBtn) {
-        driveBtn.className = 'h-7.5 px-3 rounded-md text-xs font-bold bg-white text-stone-900 shadow-2xs cursor-pointer transition-all whitespace-nowrap flex items-center gap-1.5';
+        driveBtn.className = 'px-2 py-0.5 rounded bg-[#1B1B1B] text-white';
       }
 
       renderFilteredTable();
@@ -1673,21 +1478,21 @@
         modalYtLink.href = `https://youtu.be/${ytId}`;
         modalYtLink.textContent = 'Open YouTube ↗';
         if (modalSourceBadge) {
-          modalSourceBadge.className = 'inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-600 border border-rose-200';
-          modalSourceBadge.innerHTML = `<svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg><span>YouTube (Unlisted)</span>`;
+          modalSourceBadge.className = 'inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200 uppercase';
+          modalSourceBadge.textContent = 'YouTube';
         }
       } else {
         const driveId = file.id || file.videoId;
         modalYtLink.href = `https://drive.google.com/file/d/${driveId}/view`;
         modalYtLink.textContent = 'Open Drive ↗';
         if (modalSourceBadge) {
-          modalSourceBadge.className = 'inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-stone-100 text-stone-800 border border-stone-200';
-          modalSourceBadge.innerHTML = `<svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg><span>Google Drive</span>`;
+          modalSourceBadge.className = 'inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold bg-stone-100 text-stone-800 border border-stone-200 uppercase';
+          modalSourceBadge.textContent = 'Drive';
         }
       }
 
       modalVideoTitle.textContent = file.customTitle || file.name || 'Lecture Video';
-      modalBatchTag.textContent = file.batch || 'General Batch';
+      modalBatchTag.textContent = file.batch || 'Batch';
       modalSubjectTag.textContent = file.subject || 'Lecture';
       videoModal.classList.remove('hidden');
     };
@@ -1762,7 +1567,6 @@
       canvas.height = 720;
       const ctx = canvas.getContext('2d');
 
-      // 1. Dark Gradient Background
       const grad = ctx.createLinearGradient(0, 0, 1280, 720);
       grad.addColorStop(0, '#0f172a');
       grad.addColorStop(0.5, '#1e1b4b');
@@ -1770,7 +1574,6 @@
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, 1280, 720);
 
-      // 2. Geometric Grid Pattern
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
       ctx.lineWidth = 1;
       for (let x = 0; x < 1280; x += 60) {
@@ -1786,11 +1589,9 @@
         ctx.stroke();
       }
 
-      // 3. Left Brand Pillar
       ctx.fillStyle = '#ea580c';
       ctx.fillRect(60, 80, 16, 560);
 
-      // 4. Batch Header Tag
       ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
       ctx.strokeStyle = '#ea580c';
       ctx.lineWidth = 2;
@@ -1802,12 +1603,10 @@
       ctx.font = 'bold 24px system-ui, -apple-system, sans-serif';
       ctx.fillText(batch.toUpperCase(), 120, 115);
 
-      // 5. Subject Tag
       ctx.fillStyle = '#f59e0b';
       ctx.font = '900 32px system-ui, -apple-system, sans-serif';
       ctx.fillText(subject.toUpperCase(), 100, 200);
 
-      // 6. Lecture Title (Wrap)
       ctx.fillStyle = '#ffffff';
       ctx.font = 'bold 56px system-ui, -apple-system, sans-serif';
       const words = title.split(' ');
@@ -1826,7 +1625,6 @@
       }
       ctx.fillText(line, 100, y);
 
-      // 7. Watermark Badge
       ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
       ctx.strokeStyle = '#ea580c';
       ctx.lineWidth = 2;
@@ -1841,7 +1639,7 @@
       const generatedBase64 = canvas.toDataURL('image/jpeg', 0.92);
       document.getElementById('editModalThumbPreview').src = generatedBase64;
       window.generatedBase64Thumbnail = generatedBase64;
-      showToast('✔ 1-Click HD Thumbnail generated! Click "Save & Apply" to update.', 'success');
+      showToast('✔ Thumbnail generated! Click "Save" to apply.', 'success');
     };
 
     window.saveVideoEditModal = async function() {
@@ -1881,7 +1679,7 @@
       window.generatedBase64Thumbnail = null;
       closeEditModal();
       renderFilteredTable();
-      showToast('✔ Saved! Updating video & thumbnail in background...', 'info');
+      showToast('✔ Saved locally! Syncing with YouTube...', 'info');
 
       try {
         const res = await fetch('/api/edit-video', {
@@ -1903,10 +1701,10 @@
 
         const data = await res.json();
         if (data.success) {
-          showToast('✔ Video details & thumbnail successfully synced on YouTube!', 'success');
+          showToast('✔ Synced on YouTube!', 'success');
           loadJobStatus();
         } else {
-          showToast('Notice: ' + (data.error || 'Changes saved locally'), 'info');
+          showToast('Notice: ' + (data.error || 'Saved locally'), 'info');
         }
       } catch (err) {
         console.error('Background edit error:', err);
@@ -1914,7 +1712,7 @@
     };
 
     window.deleteVideo = async function(fileId) {
-      if (!confirm('Are you sure you want to remove this video from the portal list?')) return;
+      if (!confirm('Remove this video from portal list?')) return;
       showToast('Removing video...', 'info');
       try {
         const res = await fetch('/api/delete-video', {
@@ -1924,13 +1722,13 @@
         });
         const data = await res.json();
         if (data.success) {
-          showToast('✔ Video removed successfully.', 'success');
+          showToast('✔ Video removed.', 'success');
           loadJobStatus();
         } else {
           showToast('Failed to remove: ' + data.error, 'error');
         }
       } catch (err) {
-        showToast('Error removing video: ' + err.message, 'error');
+        showToast('Error: ' + err.message, 'error');
       }
     };
 
@@ -1943,29 +1741,29 @@
     };
 
     window.clearCompletedVideos = async function() {
-      if (!confirm('Are you sure you want to clean/clear all completed videos from this dashboard?')) return;
-      showToast('Cleaning dashboard table...', 'info');
+      if (!confirm('Clear all completed videos from this dashboard?')) return;
+      showToast('Cleaning table...', 'info');
       try {
         const res = await fetch('/api/clear-history', { method: 'POST' });
         const data = await res.json();
         if (data.success) {
-          showToast('✔ Table cleaned successfully.', 'success');
+          showToast('✔ Table cleaned.', 'success');
           loadJobStatus();
         }
       } catch (err) {
-        showToast('Error clearing: ' + err.message, 'error');
+        showToast('Error: ' + err.message, 'error');
       }
     };
 
     window.copyAllVideoLinks = function() {
       if (!currentState?.files || currentState.files.length === 0) {
-        showToast('No videos available to copy.', 'error');
+        showToast('No videos to copy.', 'error');
         return;
       }
 
       const completed = currentState.files.filter(f => f.status === 'completed');
       if (completed.length === 0) {
-        showToast('No completed videos found to copy.', 'error');
+        showToast('No completed videos to copy.', 'error');
         return;
       }
 
@@ -1977,9 +1775,9 @@
       }).join('\n');
 
       navigator.clipboard.writeText(links).then(() => {
-        showToast(`✔ Copied ${completed.length} embed video link(s) to clipboard!`, 'success');
+        showToast(`✔ Copied ${completed.length} embed link(s)!`, 'success');
       }).catch(() => {
-        showToast('Failed to copy links to clipboard', 'error');
+        showToast('Failed to copy', 'error');
       });
     };
 
@@ -2001,7 +1799,7 @@
         const base64 = reader.result;
         document.getElementById('editModalThumbPreview').src = base64;
         window.generatedBase64Thumbnail = base64;
-        showToast('✔ Thumbnail image selected! Click "Save & Apply" to upload.', 'success');
+        showToast('✔ Image chosen! Click "Save" to apply.', 'success');
       };
       reader.readAsDataURL(file);
     };
@@ -2009,7 +1807,7 @@
     window.copyToClipboard = function(text, label = 'Link') {
       if (!text) return;
       navigator.clipboard.writeText(text).then(() => {
-        showToast(`✔ Copied ${label}: ${text}`, 'success');
+        showToast(`✔ Copied: ${text}`, 'success');
       }).catch(() => {
         showToast('Failed to copy', 'error');
       });
@@ -2020,14 +1818,9 @@
 
       if (!currentState || !currentState.files || currentState.files.length === 0) {
         trackingTableBody.innerHTML = `
-          <tr id="emptyRow" class="text-stone-400">
-            <td colspan="6" class="py-16 text-center">
-              <div class="flex flex-col items-center justify-center gap-2">
-                <svg class="w-8 h-8 text-stone-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-                <p class="text-xs font-semibold text-stone-500">No videos in queue. Paste Google Drive folder link above and click "Start Process".</p>
-              </div>
+          <tr id="emptyRow" class="text-[#A8A29E]">
+            <td colspan="6" class="py-14 text-center font-mono-code text-xs">
+              no videos in queue. paste a google drive folder link above and click open.
             </td>
           </tr>
         `;
@@ -2050,14 +1843,12 @@
 
       let filteredFiles = allFiles;
 
-      // 1. Source Filter
       if (currentSourceFilter === 'youtube') {
         filteredFiles = filteredFiles.filter(f => isYouTubeVideo(f));
       } else if (currentSourceFilter === 'drive') {
         filteredFiles = filteredFiles.filter(f => !isYouTubeVideo(f));
       }
 
-      // 2. Search Query Filter
       if (currentSearchQuery) {
         filteredFiles = filteredFiles.filter(f => {
           const t = (f.customTitle || f.name || '').toLowerCase();
@@ -2067,7 +1858,6 @@
         });
       }
 
-      // 3. Date Range Filter
       const { start, end } = dateFilterRange;
       if (start && end) {
         filteredFiles = filteredFiles.filter(f => {
@@ -2078,7 +1868,6 @@
         filteredFiles = filteredFiles.filter(f => getFileYMD(f) === start);
       }
       
-      // 4. Status Filter
       if (currentFilter === 'completed') {
         filteredFiles = filteredFiles.filter(f => f.status === 'completed');
       } else if (currentFilter === 'pending') {
@@ -2089,9 +1878,9 @@
 
       if (filteredFiles.length === 0) {
         trackingTableBody.innerHTML = `
-          <tr class="text-stone-400">
-            <td colspan="6" class="py-12 text-center text-xs font-medium text-stone-500">
-              No videos matching the active filters or search term.
+          <tr class="text-[#78716C]">
+            <td colspan="6" class="py-10 text-center font-mono-code text-xs">
+              no matching videos found for active filter.
             </td>
           </tr>
         `;
@@ -2102,7 +1891,7 @@
       filteredFiles.forEach((file, index) => {
         const row = document.createElement('tr');
         row.id = `file-row-${file.id}`;
-        row.className = 'hover:bg-stone-50/90 transition-colors text-stone-800 border-b border-stone-200';
+        row.className = 'hover:bg-[#F6F4F0] transition-colors text-[#1B1B1B]';
 
         const displayTitle = file.customTitle || file.name || file.originalName || 'Lecture Video';
         const extMatch = (file.originalName || file.name || '').match(/\.([0-9a-z]+)$/i);
@@ -2114,14 +1903,12 @@
         const embedLabel = isYt ? 'YouTube Embed Link' : 'Drive Embed Link';
 
         const sourceBadgeHtml = isYt ? `
-          <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-600 border border-rose-200 shadow-2xs">
-            <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
-            <span>YouTube</span>
+          <span class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold font-mono-code bg-rose-50 text-rose-700 border border-rose-200 uppercase">
+            YouTube
           </span>
         ` : `
-          <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-stone-100 text-stone-800 border border-stone-200 shadow-2xs">
-            <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
-            <span>Drive</span>
+          <span class="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-bold font-mono-code bg-stone-100 text-stone-800 border border-stone-200 uppercase">
+            Drive
           </span>
         `;
 
@@ -2130,39 +1917,30 @@
           const thumb = file.thumbnailUrl || (isYt && ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : 'https://placehold.co/120x68/1c1917/ffffff?text=Preview');
           statusHtml = `
             <div class="flex items-center gap-2.5">
-              <button onclick="openVideoModal('${file.id || ytId}')" class="relative group w-16 h-9 rounded border border-stone-300 overflow-hidden shadow-2xs shrink-0 bg-stone-900 cursor-pointer" title="Click to open video preview">
+              <button onclick="openVideoModal('${file.id || ytId}')" class="relative group w-14 h-8 rounded border border-[#D6D3CD] overflow-hidden shrink-0 bg-black cursor-pointer" title="Preview">
                 <img src="${thumb}" alt="Preview" class="w-full h-full object-cover group-hover:scale-105 transition-transform" onerror="this.src='https://placehold.co/120x68/1c1917/ffffff?text=Preview'"/>
-                <div class="absolute inset-0 bg-black/30 group-hover:bg-stone-900/60 flex items-center justify-center transition-colors">
-                  <span class="w-4 h-4 rounded-full bg-white text-stone-900 flex items-center justify-center text-[7px] font-bold shadow-xs">▶</span>
-                </div>
               </button>
-              <div class="space-y-0.5">
-                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                  <span>Uploaded 100%</span>
+              <div class="space-y-0.5 font-mono-code">
+                <span class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                  <span>100% READY</span>
                 </span>
-                <div class="text-[9px] text-stone-400 font-mono">Stream Ready</div>
               </div>
             </div>
           `;
         } else if (file.status === 'uploading') {
           const speedText = file.speedMBps ? `${file.speedMBps} MB/s` : 'Streaming...';
-          const etaText = file.etaSeconds ? `${file.etaSeconds}s left` : '';
+          const etaText = file.etaSeconds ? `${file.etaSeconds}s` : '';
           statusHtml = `
-            <div class="space-y-1 max-w-[240px]">
-              <div class="flex items-center justify-between text-[11px] font-semibold text-stone-900">
-                <span class="flex items-center gap-1 text-orange-600">
-                  <span class="w-1.5 h-1.5 rounded-full bg-orange-600 animate-ping"></span>
-                  <span>Uploading ${file.percentage || 0}%</span>
-                </span>
-                <span class="font-mono text-stone-500 text-[9px]" id="progress-bytes-${file.id}">
-                  ${formatBytes(file.uploadedBytes || 0)} / ${formatBytes(file.totalBytes || file.size)}
-                </span>
+            <div class="space-y-1 max-w-[220px] font-mono-code">
+              <div class="flex items-center justify-between text-[10px] font-bold text-orange-700">
+                <span>Uploading ${file.percentage || 0}%</span>
+                <span class="text-[#78716C]" id="progress-bytes-${file.id}">${formatBytes(file.uploadedBytes || 0)}</span>
               </div>
-              <div class="w-full bg-stone-100 rounded-full h-1.5 overflow-hidden border border-stone-200">
-                <div id="progress-bar-${file.id}" class="bg-stone-900 h-full rounded-full transition-all duration-150" style="width: ${file.percentage || 0}%"></div>
+              <div class="w-full bg-[#E5E1DB] rounded-full h-1.5 overflow-hidden">
+                <div id="progress-bar-${file.id}" class="bg-[#1B1B1B] h-full transition-all" style="width: ${file.percentage || 0}%"></div>
               </div>
-              <div class="flex items-center justify-between text-[9px] text-stone-400 font-mono">
+              <div class="flex items-center justify-between text-[9px] text-[#78716C]">
                 <span id="speed-${file.id}">⚡ ${speedText}</span>
                 <span id="eta-${file.id}">${etaText}</span>
               </div>
@@ -2170,47 +1948,40 @@
           `;
         } else if (file.status === 'failed') {
           statusHtml = `
-            <div class="space-y-1">
-              <div class="flex items-center gap-1.5 flex-wrap">
-                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-600 border border-rose-200">
-                  <span>Failed</span>
-                </span>
-                <button onclick="convertToDrive('${file.id}')" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-stone-100 text-stone-800 border border-stone-200 hover:bg-stone-200 transition-colors cursor-pointer shadow-2xs" title="Convert to Instant Secure Drive Player Link">
-                  <span>▶ Use Drive Player</span>
+            <div class="space-y-1 font-mono-code">
+              <div class="flex items-center gap-1">
+                <span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-rose-50 text-rose-700 border border-rose-200 uppercase">Failed</span>
+                <button onclick="convertToDrive('${file.id}')" class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-stone-100 text-stone-800 border border-stone-300 hover:bg-stone-200 cursor-pointer">
+                  ▶ Drive
                 </button>
               </div>
-              <div class="text-[9px] text-rose-500 font-mono truncate max-w-[190px]" title="${escapeHtml(file.error)}">${escapeHtml(file.error || 'Upload error')}</div>
+              <div class="text-[9px] text-rose-600 truncate max-w-[180px]">${escapeHtml(file.error || 'Upload error')}</div>
             </div>
           `;
         } else {
           statusHtml = `
-            <div class="space-y-1">
-              <div class="flex items-center gap-1.5 flex-wrap">
-                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-stone-100 text-stone-600 border border-stone-200">
-                  <span class="w-1.5 h-1.5 rounded-full bg-stone-400"></span>
-                  <span>Queued</span>
-                </span>
-                <button onclick="convertToDrive('${file.id}')" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-stone-50 text-stone-600 border border-stone-200 hover:text-stone-900 transition-colors cursor-pointer" title="Convert to Instant Drive Player Link">
-                  <span>▶ Drive Link</span>
-                </button>
-              </div>
+            <div class="flex items-center gap-1 font-mono-code">
+              <span class="px-1.5 py-0.2 rounded text-[9px] font-medium bg-stone-100 text-stone-600 border border-stone-200">Queued</span>
+              <button onclick="convertToDrive('${file.id}')" class="px-1.5 py-0.2 rounded text-[9px] font-semibold bg-white text-stone-700 border border-stone-300 hover:bg-stone-100 cursor-pointer">
+                ▶ Drive
+              </button>
             </div>
           `;
         }
 
         const actionHtml = `
-          <div class="flex items-center justify-center gap-1">
-            <button onclick="openVideoModal('${file.id || ytId}')" class="h-7 px-2 bg-white hover:bg-stone-100 text-stone-700 border border-stone-300 rounded text-xs font-semibold shadow-2xs transition-colors flex items-center gap-1 cursor-pointer" title="Preview Video with Poster">
-              <span>▶</span>
+          <div class="flex items-center justify-center gap-1 font-mono-code text-[10px]">
+            <button onclick="openVideoModal('${file.id || ytId}')" class="h-6 px-1.5 bg-white hover:bg-stone-100 text-[#1B1B1B] border border-[#D6D3CD] rounded uppercase font-bold cursor-pointer" title="Preview">
+              Open
             </button>
-            <button onclick="copyToClipboard('${embedLink}', '${embedLabel}')" class="h-7 px-2 bg-white hover:bg-stone-100 text-stone-700 border border-stone-300 rounded text-xs font-semibold shadow-2xs transition-colors flex items-center gap-1 cursor-pointer" title="Copy ${embedLabel}">
-              <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+            <button onclick="copyToClipboard('${embedLink}', '${embedLabel}')" class="h-6 px-1.5 bg-white hover:bg-stone-100 text-[#1B1B1B] border border-[#D6D3CD] rounded uppercase font-bold cursor-pointer" title="Copy Embed Link">
+              Copy
             </button>
-            <button onclick="openEditModal('${file.id || ytId}')" class="h-7 px-2 bg-white hover:bg-stone-100 text-stone-800 border border-stone-300 rounded text-xs font-semibold shadow-2xs transition-colors flex items-center gap-1 cursor-pointer" title="Edit Title, Batch, or Thumbnail">
-              <span>✏️</span>
+            <button onclick="openEditModal('${file.id || ytId}')" class="h-6 px-1.5 bg-white hover:bg-stone-100 text-[#1B1B1B] border border-[#D6D3CD] rounded uppercase font-bold cursor-pointer" title="Edit">
+              Edit
             </button>
-            <button onclick="deleteVideo('${file.id || ytId}')" class="h-7 px-2 bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 rounded text-xs font-semibold shadow-2xs transition-colors flex items-center gap-1 cursor-pointer" title="Remove Video">
-              <span>🗑️</span>
+            <button onclick="deleteVideo('${file.id || ytId}')" class="h-6 px-1.5 bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 rounded font-bold cursor-pointer" title="Delete">
+              ×
             </button>
           </div>
         `;
@@ -2220,51 +1991,35 @@
         const fileDate = (dateParts.length === 3) ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` : (file.createdTime ? new Date(file.createdTime).toLocaleDateString('en-GB') : formatDateToDMY(new Date()));
 
         const rawBytes = file.totalBytes || file.size || 0;
-        const showByteSize = (!isYt || file.status === 'uploading') && rawBytes > 0;
-        const byteSizeBadge = showByteSize ? `<span>${formatBytes(rawBytes)}</span>` : '';
+        const byteSizeBadge = rawBytes > 0 ? `<span class="text-[9px] text-[#78716C] block">${formatBytes(rawBytes)}</span>` : '';
 
         row.innerHTML = `
-          <td class="py-2.5 px-3 text-center font-mono text-stone-400 border-r border-stone-200 text-xs">${index + 1}</td>
-          <td class="py-2.5 px-4 border-r border-stone-200">
-            <div id="title-text-${file.id}" class="space-y-1">
-              <div class="flex items-center gap-1.5 group">
-                <span class="font-bold text-stone-900 text-xs leading-snug cursor-pointer hover:text-orange-600 transition-colors" onclick="openVideoModal('${file.id || ytId}')" title="${escapeHtml(displayTitle)}">
-                  ${escapeHtml(displayTitle)}
-                </span>
-                <button onclick="openEditModal('${file.id}')" class="opacity-0 group-hover:opacity-100 p-0.5 text-stone-500 hover:text-stone-900 hover:bg-stone-100 rounded transition-all cursor-pointer" title="Edit Details Live">
-                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
-                  </svg>
-                </button>
+          <td class="py-2 px-3 text-center font-mono-code text-[#A8A29E] border-r border-[#D6D3CD] text-[11px]">${index + 1}</td>
+          <td class="py-2 px-4 border-r border-[#D6D3CD]">
+            <div id="title-text-${file.id}" class="space-y-0.5">
+              <div class="font-bold text-[#1B1B1B] text-xs leading-snug cursor-pointer hover:text-orange-700 transition-colors" onclick="openVideoModal('${file.id || ytId}')">
+                ${escapeHtml(displayTitle)}
               </div>
-              <div class="flex items-center gap-1.5 flex-wrap">
-                <button onclick="copyToClipboard('${escapeHtml(displayTitle)}', 'Title')" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-stone-100 text-stone-700 border border-stone-200 hover:bg-stone-200 transition-colors cursor-pointer" title="Copy Title">
-                  <svg class="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-                  <span>Copy Title</span>
-                </button>
-                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-stone-100 text-stone-700 border border-stone-200 uppercase tracking-wider">
-                  ${escapeHtml(file.batch || 'Batch')}
-                </span>
-                <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold bg-stone-100 text-stone-600 border border-stone-200">
-                  ${escapeHtml(file.subject || 'Lecture')}
-                </span>
+              <div class="flex items-center gap-1.5 font-mono-code text-[9px] text-[#78716C]">
+                <button onclick="copyToClipboard('${escapeHtml(displayTitle)}', 'Title')" class="underline hover:text-[#1B1B1B] cursor-pointer">copy title</button>
+                <span>•</span>
+                <span class="uppercase">${escapeHtml(file.batch || 'Batch')}</span>
+                <span>•</span>
+                <span>${escapeHtml(file.subject || 'Lecture')}</span>
               </div>
             </div>
           </td>
-          <td class="py-2.5 px-3 text-center font-mono border-r border-stone-200 text-xs whitespace-nowrap text-stone-700">
+          <td class="py-2 px-3 text-center font-mono-code border-r border-[#D6D3CD] text-[11px] text-[#78716C] whitespace-nowrap">
             ${fileDate}
           </td>
-          <td class="py-2.5 px-3 text-center border-r border-stone-200 whitespace-nowrap space-y-1">
+          <td class="py-2 px-3 text-center border-r border-[#D6D3CD] whitespace-nowrap">
             <div>${sourceBadgeHtml}</div>
-            <div class="flex items-center justify-center gap-1 text-[9px] font-mono text-stone-500">
-              <span class="px-1.5 py-0.2 bg-stone-100 border border-stone-200 rounded font-bold text-stone-700">${ext}</span>
-              ${byteSizeBadge}
-            </div>
+            ${byteSizeBadge}
           </td>
-          <td class="py-2.5 px-4 border-r border-stone-200" id="status-cell-${file.id}">
+          <td class="py-2 px-4 border-r border-[#D6D3CD]" id="status-cell-${file.id}">
             ${statusHtml}
           </td>
-          <td class="py-2.5 px-4 text-center">
+          <td class="py-2 px-4 text-center">
             ${actionHtml}
           </td>
         `;
@@ -2279,16 +2034,16 @@
       }
 
       if (connectionBadge) {
-        connectionBadge.className = 'flex items-center gap-1.5 px-3 h-8.5 rounded-lg text-xs font-medium bg-amber-50 text-amber-800 border border-amber-300';
-        connectionBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span><span>Connecting SSE...</span>`;
+        connectionBadge.className = 'flex items-center gap-1.5 px-2.5 h-8 rounded border border-amber-300 bg-amber-50 text-amber-800 text-[11px] font-semibold font-mono-code';
+        connectionBadge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping"></span><span>SSE...</span>`;
       }
 
       eventSource = new EventSource(`/api/events?clientId=${clientId}`);
 
       eventSource.onopen = () => {
         if (connectionBadge) {
-          connectionBadge.className = 'flex items-center gap-1.5 px-3 h-8.5 rounded-lg text-xs font-semibold bg-white text-emerald-700 border border-emerald-300 shadow-2xs';
-          connectionBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span><span>Live SSE Connected</span>`;
+          connectionBadge.className = 'flex items-center gap-1.5 px-2.5 h-8 rounded border border-[#D6D3CD] bg-[#F6F4F0] text-emerald-800 text-[11px] font-semibold font-mono-code';
+          connectionBadge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-600 inline-block"></span><span>Live</span>`;
         }
       };
 
@@ -2303,8 +2058,8 @@
 
       eventSource.onerror = () => {
         if (connectionBadge) {
-          connectionBadge.className = 'flex items-center gap-1.5 px-3 h-8.5 rounded-lg text-xs font-medium bg-rose-50 text-rose-700 border border-rose-200';
-          connectionBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-500 inline-block"></span><span>Reconnecting SSE...</span>`;
+          connectionBadge.className = 'flex items-center gap-1.5 px-2.5 h-8 rounded border border-rose-300 bg-rose-50 text-rose-800 text-[11px] font-semibold font-mono-code';
+          connectionBadge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-rose-500 inline-block"></span><span>Offline</span>`;
         }
       };
     }
@@ -2333,9 +2088,9 @@
         const etaEl = document.getElementById(`eta-${event.fileId}`);
 
         if (bar) bar.style.width = `${event.percentage}%`;
-        if (bytesEl) bytesEl.textContent = `${formatBytes(event.uploadedBytes)} / ${formatBytes(event.totalBytes)}`;
+        if (bytesEl) bytesEl.textContent = `${formatBytes(event.uploadedBytes)}`;
         if (speedEl) speedEl.textContent = event.speedMBps ? `⚡ ${event.speedMBps} MB/s` : 'Streaming...';
-        if (etaEl) etaEl.textContent = event.etaSeconds ? `${event.etaSeconds}s left` : '';
+        if (etaEl) etaEl.textContent = event.etaSeconds ? `${event.etaSeconds}s` : '';
 
         if (currentState && currentState.files) {
           const f = currentState.files.find(item => item.id === event.fileId);
@@ -2383,7 +2138,7 @@
           renderState(currentState);
         }
         showQuotaAlertBanner();
-        showToast(event.message || 'YouTube daily upload quota reached. Click "Convert Remaining to Drive Player" for instant playback!', 'warn');
+        showToast(event.message || 'YouTube upload limit reached. You can convert to Drive Player!', 'warn');
       } else if (event.type === 'job_cancelled') {
         if (currentState) {
           currentState.isProcessing = false;
@@ -2392,7 +2147,7 @@
         }
         showToast('Process was stopped.', 'info');
       } else if (event.type === 'process_completed') {
-        showToast('All processing completed successfully!', 'success');
+        showToast('Processing completed successfully!', 'success');
         loadJobStatus();
       } else if (event.type === 'job_status') {
         if (event.state) {
@@ -2413,7 +2168,7 @@
     };
 
     window.convertToDrive = async function(fileId) {
-      showToast('Converting video to Secure Drive Player...', 'info');
+      showToast('Converting to Drive Player...', 'info');
       try {
         const res = await fetch('/api/convert-to-drive', {
           method: 'POST',
@@ -2422,19 +2177,19 @@
         });
         const data = await res.json();
         if (data.success) {
-          showToast('✔ Successfully converted video to Secure Drive Player!', 'success');
+          showToast('✔ Converted to Drive Player!', 'success');
           loadJobStatus();
         } else {
-          showToast('Error converting video: ' + (data.error || 'Unknown error'), 'error');
+          showToast('Error: ' + (data.error || 'Unknown error'), 'error');
         }
       } catch (err) {
-        showToast('Convert failed: ' + err.message, 'error');
+        showToast('Error: ' + err.message, 'error');
       }
     };
 
     window.convertAllToDrivePlayer = async function() {
-      if (!confirm('Do you want to convert all remaining and failed videos to Google Drive Secure Player embed links? They will be immediately playable!')) return;
-      showToast('Converting videos to Secure Drive Player...', 'info');
+      if (!confirm('Convert remaining and failed videos to Google Drive Player embed links?')) return;
+      showToast('Converting to Drive Player...', 'info');
       try {
         const res = await fetch('/api/convert-to-drive', {
           method: 'POST',
@@ -2443,14 +2198,14 @@
         });
         const data = await res.json();
         if (data.success) {
-          showToast(`✔ Converted ${data.convertedCount} video(s) to Secure Drive Player!`, 'success');
+          showToast(`✔ Converted ${data.convertedCount} video(s)!`, 'success');
           dismissQuotaBanner();
           loadJobStatus();
         } else {
           showToast('Error: ' + (data.error || 'Failed to convert'), 'error');
         }
       } catch (err) {
-        showToast('Convert failed: ' + err.message, 'error');
+        showToast('Error: ' + err.message, 'error');
       }
     };
 
@@ -2462,12 +2217,12 @@
 
       if (state.isProcessing || state.status === 'processing' || state.status === 'scanning') {
         startButton.disabled = true;
-        buttonText.textContent = state.status === 'scanning' ? 'Scanning...' : 'Processing...';
+        buttonText.textContent = state.status === 'scanning' ? 'SCANNING FOLDER...' : 'UPLOADING VIDEOS...';
         if (stopBtn) stopBtn.classList.remove('hidden');
         if (bgNoticeBanner) bgNoticeBanner.classList.remove('hidden');
       } else {
         startButton.disabled = false;
-        buttonText.textContent = 'Start Process';
+        buttonText.textContent = 'OPEN THIS FOLDER →';
         if (stopBtn) stopBtn.classList.add('hidden');
         if (bgNoticeBanner) bgNoticeBanner.classList.add('hidden');
       }
@@ -2478,7 +2233,7 @@
 
       if (state.playlistUrl && playlistPill && playlistPillTitle) {
         playlistPill.href = state.playlistUrl;
-        playlistPillTitle.textContent = state.playlistTitle || 'View Playlist';
+        playlistPillTitle.textContent = state.playlistTitle || 'View';
         playlistPill.classList.remove('hidden');
         playlistPill.classList.add('inline-flex');
       } else if (playlistPill) {
@@ -2511,22 +2266,21 @@
     window.startProcessing = async function(force = false) {
       const folder = folderInput.value.trim();
       if (!folder) {
-        showToast('Please enter a Google Drive folder link or ID', 'error');
+        showToast('Please enter a Google Drive folder URL or ID', 'error');
         folderInput.focus();
         return;
       }
 
-      const modeInput = document.querySelector('input[name="processingMode"]:checked');
-      const processingMode = modeInput ? modeInput.value : 'youtube';
+      const processingMode = 'youtube';
       const playlistName = playlistNameInput ? playlistNameInput.value.trim() : '';
       const startDate = startDateInput ? startDateInput.value : '';
       const endDate = endDateInput ? endDateInput.value : '';
 
       startButton.disabled = true;
-      buttonText.textContent = 'Scanning...';
+      buttonText.textContent = 'SCANNING FOLDER...';
       const stopBtn = document.getElementById('stopProcessBtn');
       if (stopBtn) stopBtn.classList.remove('hidden');
-      showToast('Scanning Drive folder for video files...', 'info');
+      showToast('Scanning Drive folder...', 'info');
 
       try {
         const res = await fetch('/api/process-folder', {
@@ -2548,45 +2302,44 @@
 
         const data = await res.json();
         if (data.success) {
-          showToast(`Found ${data.totalFiles} video(s)! Processing started.`, 'success');
+          showToast(`Found ${data.totalFiles} video(s)! Starting upload.`, 'success');
           loadJobStatus();
         } else if (data.isJobRunning) {
-          if (confirm('A previous video upload job is currently active in the background. Would you like to stop it and start uploading this folder now?')) {
+          if (confirm('A previous upload job is running. Stop it and upload this folder now?')) {
             window.startProcessing(true);
           } else {
             startButton.disabled = false;
-            buttonText.textContent = 'Start Process';
+            buttonText.textContent = 'OPEN THIS FOLDER →';
           }
         } else {
           showToast('Failed to start: ' + (data.error || 'Unknown error'), 'error');
           startButton.disabled = false;
-          buttonText.textContent = 'Start Process';
+          buttonText.textContent = 'OPEN THIS FOLDER →';
           if (stopBtn) stopBtn.classList.add('hidden');
         }
       } catch (err) {
-        showToast('Error connecting to server: ' + err.message, 'error');
+        showToast('Error connecting: ' + err.message, 'error');
         startButton.disabled = false;
-        buttonText.textContent = 'Start Process';
+        buttonText.textContent = 'OPEN THIS FOLDER →';
         if (stopBtn) stopBtn.classList.add('hidden');
       }
     };
 
     window.cancelProcessingJob = async function() {
-      if (!confirm('Are you sure you want to stop current processing?')) return;
+      if (!confirm('Stop current processing task?')) return;
       showToast('Stopping task...', 'info');
       try {
         const res = await fetch('/api/cancel-job', { method: 'POST' });
         const data = await res.json();
         if (data.success) {
-          showToast('Job cancelled successfully.', 'info');
+          showToast('Task stopped.', 'info');
           loadJobStatus();
         }
       } catch (err) {
-        showToast('Error cancelling job: ' + err.message, 'error');
+        showToast('Error: ' + err.message, 'error');
       }
     };
 
-    // Initialize after DOM Ready
     window.addEventListener('DOMContentLoaded', () => {
       connectionBadge = document.getElementById('connectionBadge');
       navAuthBtn = document.getElementById('navAuthBtn');
@@ -2622,7 +2375,7 @@
       if (downloadCsvBtn) {
         downloadCsvBtn.addEventListener('click', () => {
           if (!currentState || !currentState.files || currentState.files.length === 0) {
-            showToast('No videos available to export.', 'error');
+            showToast('No videos to export.', 'error');
             return;
           }
 
@@ -2654,12 +2407,11 @@
           document.body.appendChild(link);
           link.click();
           document.body.removeChild(link);
-          showToast('CSV downloaded successfully!', 'success');
+          showToast('CSV downloaded!', 'success');
         });
       }
 
       loadClientIds();
-      updateProcessingModeCards();
 
       const token = localStorage.getItem('oauth_access_token');
       const expiry = localStorage.getItem('oauth_token_expiry');
