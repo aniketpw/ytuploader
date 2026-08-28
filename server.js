@@ -1536,11 +1536,11 @@ app.post(['/api/process', '/api/process-folder'], async (req, res) => {
         return;
       }
 
-      // Setup Playlist Name
-      const targetPlaylistTitle = jobState.playlistTitle || autoDetectedFolderName || 'Unlisted Uploads';
-      jobState.playlistTitle = targetPlaylistTitle;
+      // Setup Playlist Name (Only if explicitly provided by user)
+      const targetPlaylistTitle = (jobState.playlistTitle && jobState.playlistTitle.trim()) ? jobState.playlistTitle.trim() : null;
+      jobState.playlistTitle = targetPlaylistTitle || '';
 
-      if (jobState.processingMode !== 'drive_secure') {
+      if (targetPlaylistTitle && jobState.processingMode !== 'drive_secure') {
         try {
           addJobLog(`Setting up YouTube Playlist: "${targetPlaylistTitle}" (Unlisted)...`);
           const pId = await getOrCreatePlaylist(youtube, targetPlaylistTitle);
@@ -1556,6 +1556,9 @@ app.post(['/api/process', '/api/process-folder'], async (req, res) => {
         } catch (pErr) {
           addJobLog(`Playlist notice: ${pErr.message}. Videos will still upload directly.`, 'warn');
         }
+      } else {
+        jobState.playlistId = null;
+        jobState.playlistUrl = null;
       }
 
       const customTitlesMap = (req.body.customTitles && typeof req.body.customTitles === 'object') ? req.body.customTitles : {};

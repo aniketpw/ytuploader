@@ -1166,6 +1166,81 @@
       return formatDateToYMD(d);
     }
 
+    function getFileTimestamp(file) {
+      if (!file) return 0;
+      if (file.createdTime) {
+        const t = new Date(file.createdTime).getTime();
+        if (!isNaN(t) && t > 0) return t;
+      }
+      const name = (file.name || file.customTitle || file.originalName || '');
+      const matchFull = name.match(/(\d{4})[_-](\d{2})[_-](\d{2})[_\sT]+(\d{2})[_-](\d{2})(?:[_-](\d{2}))?/);
+      if (matchFull) {
+        const [, y, m, d, hh, mm, ss] = matchFull;
+        const t = new Date(`${y}-${m}-${d}T${hh}:${mm}:${ss || '00'}`).getTime();
+        if (!isNaN(t)) return t;
+      }
+      const ymdMatch = name.match(/(\d{4})[_-](\d{2})[_-](\d{2})/);
+      if (ymdMatch) {
+        const [, y, m, d] = ymdMatch;
+        const t = new Date(`${y}-${m}-${d}T00:00:00`).getTime();
+        if (!isNaN(t)) return t;
+      }
+      const dmyMatch = name.match(/(\d{2})[_-](\d{2})[_-](\d{4})/);
+      if (dmyMatch) {
+        const [, d, m, y] = dmyMatch;
+        const t = new Date(`${y}-${m}-${d}T00:00:00`).getTime();
+        if (!isNaN(t)) return t;
+      }
+      return 0;
+    }
+
+    function formatFileDateTime(file) {
+      if (!file) return { date: formatDateToDMY(new Date()), time: '' };
+      let dateObj = null;
+
+      if (file.createdTime) {
+        const d = new Date(file.createdTime);
+        if (!isNaN(d.getTime())) dateObj = d;
+      }
+
+      const name = (file.name || file.customTitle || file.originalName || '');
+      const matchFull = name.match(/(\d{4})[_-](\d{2})[_-](\d{2})[_\sT]+(\d{2})[_-](\d{2})(?:[_-](\d{2}))?/);
+
+      if (!dateObj && matchFull) {
+        const [, y, m, d, hh, mm, ss] = matchFull;
+        dateObj = new Date(`${y}-${m}-${d}T${hh}:${mm}:${ss || '00'}`);
+      } else if (!dateObj) {
+        const ymd = getFileYMD(file);
+        if (ymd) {
+          const parts = ymd.split('-');
+          if (parts.length === 3) dateObj = new Date(`${parts[0]}-${parts[1]}-${parts[2]}T00:00:00`);
+        }
+      }
+
+      if (!dateObj || isNaN(dateObj.getTime())) {
+        return { date: formatDateToDMY(new Date()), time: '' };
+      }
+
+      const dmy = dateObj.toLocaleDateString('en-GB'); // DD/MM/YYYY
+      let timeStr = '';
+
+      if (matchFull) {
+        const [, , , hh, mm] = matchFull;
+        const hour = parseInt(hh, 10);
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        const hour12 = hour % 12 || 12;
+        timeStr = `${String(hour12).padStart(2, '0')}:${mm} ${ampm}`;
+      } else if (file.createdTime) {
+        const h = dateObj.getHours();
+        const m = dateObj.getMinutes();
+        if (h !== 0 || m !== 0) {
+          timeStr = dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+        }
+      }
+
+      return { date: dmy, time: timeStr };
+    }
+
     function getFileYMD(file) {
       if (!file) return getTodayYMD();
       if (file.createdTime) {
@@ -2579,7 +2654,13 @@
         return;
       }
 
-      let allFiles = currentState.files;
+      let allFiles = [...(currentState.files || [])];
+      allFiles.sort((a, b) => {
+        const tA = getFileTimestamp(a);
+        const tB = getFileTimestamp(b);
+        if (tA !== tB) return tB - tA;
+        return 0;
+      });
 
       const countAll = allFiles.length;
       const countYt = allFiles.filter(f => isYouTubeVideo(f)).length;
@@ -2797,10 +2878,7 @@
           </div>
         `;
 
-        const fileDateYmd = getFileYMD(file);
-        const dateParts = fileDateYmd ? fileDateYmd.split('-') : [];
-        const fileDate = (dateParts.length === 3) ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}` : (file.createdTime ? new Date(file.createdTime).toLocaleDateString('en-GB') : formatDateToDMY(new Date()));
-
+        const dt = formatFileDateTime(file);
         const rawBytes = file.totalBytes || file.size || 0;
         const byteSizeBadge = rawBytes > 0 ? `<span class="text-[9px] text-[#78716C] block">${formatBytes(rawBytes)}</span>` : '';
 
@@ -2820,8 +2898,9 @@
               </div>
             </div>
           </td>
-          <td class="py-2 px-3 text-center font-mono-code border-r border-[#D6D3CD] text-[11px] text-[#78716C] whitespace-nowrap">
-            ${fileDate}
+          <td class="py-2 px-3 text-center font-mono-code border-r border-[#D6D3CD] whitespace-nowrap">
+            <div class="text-[11px] font-bold text-[#1B1B1B]">${dt.date}</div>
+            ${dt.time ? `<div class="text-[9px] text-[#78716C] mt-0.5 font-normal tracking-tight">⏱ ${dt.time}</div>` : ''}
           </td>
           <td class="py-2 px-3 text-center border-r border-[#D6D3CD] whitespace-nowrap">
             <div>${sourceBadgeHtml}</div>
