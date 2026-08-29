@@ -55,6 +55,7 @@ function saveCompletedFileToHistory(fileObj) {
     batch: fileObj.batch || 'Batch',
     subject: fileObj.subject || 'Lecture',
     folderPath: fileObj.folderPath || '',
+    channelId: fileObj.channelId || activeJobChannelId || null,
     size: fileObj.size || fileObj.totalBytes || 0,
     createdTime: fileObj.createdTime || new Date().toISOString(),
     status: 'completed',
@@ -84,6 +85,41 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Store active SSE client connections
 const clients = new Map();
+
+// Per-User Isolation: token → channelId cache (auto-expires)
+const tokenChannelCache = new Map();
+let activeJobChannelId = null; // Track which user started the current upload job
+
+async function resolveChannelId(req) {
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+  if (!token) return null;
+
+  if (tokenChannelCache.has(token)) {
+    return tokenChannelCache.get(token);
+  }
+
+  try {
+    const auth = getOAuth2Client(req);
+    if (!auth) return null;
+    const yt = google.youtube({ version: 'v3', auth });
+    const chRes = await yt.channels.list({ part: ['id'], mine: true });
+    const chId = chRes.data.items?.[0]?.id || null;
+    if (chId) {
+      tokenChannelCache.set(token, chId);
+      setTimeout(() => tokenChannelCache.delete(token), 3600 * 1000);
+    }
+    return chId;
+  } catch (e) {
+    console.warn('Channel ID resolve error:', e.message);
+    return null;
+  }
+}
+
+function filterHistoryByChannel(history, channelId) {
+  if (!channelId) return [];
+  return history.filter(h => h.channelId === channelId);
+}
 
 // Full Scopes for Uploading, Updating Metadata, and Playlist Management
 const SCOPES = [
@@ -608,34 +644,63 @@ app.get('/api/events', (req, res) => {
   });
 });
 
-app.get(['/api/status', '/api/job-status'], (req, res) => {
+app.get(['/api/status', '/api/job-status'], async (req, res) => {
   const authHeader = req.headers.authorization || '';
   const token = authHeader.replace(/^Bearer\s+/i, '').trim();
 
-  // If no auth token provided, return empty history to protect user privacy
   if (!token) {
     return res.json({
       success: true,
-      state: {
-        ...jobState,
-        files: (jobState.status === 'processing' || jobState.status === 'uploading') ? jobState.files : []
-      },
+      state: getDefaultJobState(),
       history: []
     });
   }
 
-  const history = loadUploadedHistory();
-  res.json({ success: true, state: jobState, history });
+  try {
+    const channelId = await resolveChannelId(req);
+    const allHistory = loadUploadedHistory();
+    const userHistory = channelId ? filterHistoryByChannel(allHistory, channelId) : [];
+
+    // Build a user-scoped state view
+    const userState = { ...jobState };
+
+    // If this user owns the active job, show live files; otherwise show only their history
+    if (activeJobChannelId && activeJobChannelId === channelId) {
+      // This user started the current job — show live job files
+    } else {
+      // Different user or no active job — show only their own completed history
+      userState.files = userHistory;
+      userState.status = 'idle';
+      userState.stats = {
+        total: userHistory.length,
+        pending: 0,
+        completed: userHistory.filter(f => f.status === 'completed').length,
+        failed: userHistory.filter(f => f.status === 'failed').length
+      };
+    }
+
+    res.json({ success: true, state: userState, history: userHistory });
+  } catch (err) {
+    console.warn('Status endpoint error:', err.message);
+    res.json({ success: true, state: getDefaultJobState(), history: [] });
+  }
 });
 
-app.get('/api/history', (req, res) => {
+app.get('/api/history', async (req, res) => {
   const authHeader = req.headers.authorization || '';
   const token = authHeader.replace(/^Bearer\s+/i, '').trim();
   if (!token) {
     return res.json({ success: true, history: [] });
   }
-  const history = loadUploadedHistory();
-  res.json({ success: true, history });
+
+  try {
+    const channelId = await resolveChannelId(req);
+    const allHistory = loadUploadedHistory();
+    const userHistory = channelId ? filterHistoryByChannel(allHistory, channelId) : [];
+    res.json({ success: true, history: userHistory });
+  } catch (err) {
+    res.json({ success: true, history: [] });
+  }
 });
 
 /**
@@ -651,9 +716,9 @@ app.post(['/api/sync-youtube', '/api/sync-youtube-uploads', '/api/channel-videos
   try {
     const youtube = google.youtube({ version: 'v3', auth });
     
-    // 1. Fetch channel's uploads playlist ID
+    // 1. Fetch channel's uploads playlist ID & channel ID
     const channelRes = await youtube.channels.list({
-      part: ['contentDetails', 'snippet'],
+      part: ['contentDetails', 'snippet', 'id'],
       mine: true
     });
 
@@ -664,6 +729,15 @@ app.post(['/api/sync-youtube', '/api/sync-youtube-uploads', '/api/channel-videos
     const channelItem = channelRes.data.items[0];
     const uploadsPlaylistId = channelItem.contentDetails?.relatedPlaylists?.uploads;
     const channelTitle = channelItem.snippet?.title || 'YouTube Channel';
+    const channelId = channelItem.id;
+
+    // Cache this user's channelId for future /api/status calls
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+    if (token && channelId) {
+      tokenChannelCache.set(token, channelId);
+      setTimeout(() => tokenChannelCache.delete(token), 3600 * 1000);
+    }
 
     if (!uploadsPlaylistId) {
       return res.status(400).json({ success: false, error: 'Uploads playlist not found on YouTube channel.' });
@@ -702,6 +776,7 @@ app.post(['/api/sync-youtube', '/api/sync-youtube-uploads', '/api/channel-videos
           batch: channelTitle,
           subject: 'Lecture',
           folderPath: channelTitle,
+          channelId: channelId,
           size: 0,
           createdTime: publishedAt,
           status: 'completed',
@@ -722,28 +797,19 @@ app.post(['/api/sync-youtube', '/api/sync-youtube-uploads', '/api/channel-videos
       pageToken = listRes.data.nextPageToken;
     } while (pageToken && channelVideos.length < 300);
 
-    // Merge into jobState.files so they are immediately visible in the live table
-    const history = loadUploadedHistory();
-    if (jobState.files.length === 0 || jobState.status === 'idle' || jobState.status === 'completed') {
-      jobState.files = history;
-      jobState.stats = {
-        total: history.length,
-        pending: 0,
-        completed: history.length,
-        failed: 0
-      };
-      persistJobState();
-    }
+    // Return only THIS user's videos from history
+    const allHistory = loadUploadedHistory();
+    const userHistory = filterHistoryByChannel(allHistory, channelId);
 
     addJobLog(`✔ Synced ${channelVideos.length} uploaded video(s) directly from YouTube channel "${channelTitle}".`, 'success');
-    broadcastSSE({ type: 'state_sync', state: jobState });
 
     return res.json({
       success: true,
       channelTitle,
+      channelId,
       count: channelVideos.length,
       videos: channelVideos,
-      state: jobState
+      history: userHistory
     });
   } catch (err) {
     console.error('Error syncing YouTube channel uploads:', err);
@@ -1510,6 +1576,14 @@ app.post(['/api/process', '/api/process-folder'], async (req, res) => {
     try {
       const drive = google.drive({ version: 'v3', auth });
       const youtube = google.youtube({ version: 'v3', auth });
+
+      // Resolve this user's channelId for tagging uploaded videos
+      try {
+        const chRes = await youtube.channels.list({ part: ['id'], mine: true });
+        activeJobChannelId = chRes.data.items?.[0]?.id || null;
+      } catch (e) {
+        activeJobChannelId = null;
+      }
 
       addJobLog(`Scanning Google Drive Folder(s) & subfolders recursively...`);
 

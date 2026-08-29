@@ -2815,7 +2815,21 @@
         const data = await res.json();
         if (data.success) {
           showToast(`✔ Synced ${data.count} uploaded video(s) from channel "${data.channelTitle}"!`, 'success');
-          loadJobStatus();
+          // Use channel-filtered history directly from sync response
+          if (data.history && Array.isArray(data.history)) {
+            if (!currentState) currentState = {};
+            currentState.files = data.history;
+            currentState.status = 'idle';
+            currentState.stats = {
+              total: data.history.length,
+              pending: 0,
+              completed: data.history.length,
+              failed: 0
+            };
+            renderState(currentState);
+          } else {
+            loadJobStatus();
+          }
         } else {
           showToast('Sync note: ' + (data.error || 'Could not fetch channel uploads'), 'error');
         }
@@ -4005,11 +4019,13 @@
       const ytId = extractYouTubeVideoId(file);
       const modalPosterContainer = document.getElementById('modalPosterContainer');
 
-      if (modalPosterContainer) modalPosterContainer.classList.add('hidden');
-
       if (isYt && ytId) {
-        modalIframe.src = `https://www.youtube.com/embed/${ytId}?autoplay=1&rel=0`;
+        // Open YouTube directly in new tab (avoids Error 153 on proxy domains like Codespaces)
+        window.open(`https://youtu.be/${ytId}`, '_blank');
+        closeVideoModal();
       } else {
+        // Drive videos play fine in iframe
+        if (modalPosterContainer) modalPosterContainer.classList.add('hidden');
         const driveId = file.id || file.videoId;
         modalIframe.src = `https://drive.google.com/file/d/${driveId}/preview`;
       }
