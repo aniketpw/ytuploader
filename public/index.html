@@ -335,22 +335,37 @@
         </div>
       </div>
 
-      <!-- Drive URL Underline Input -->
-      <div class="space-y-1">
-        <label class="block font-mono-code text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
-          GOOGLE DRIVE FOLDER URL
-        </label>
-        <div class="relative flex items-center">
-          <input
-            type="text"
+      <!-- Multi-Folder Drive URL Input -->
+      <div class="space-y-1.5">
+        <div class="flex items-center justify-between font-mono-code text-[10px]">
+          <label class="font-bold uppercase tracking-widest text-[var(--text-muted)] flex items-center gap-2">
+            <span>GOOGLE DRIVE FOLDER URL(S)</span>
+            <span id="folderCountBadge" class="hidden px-1.5 py-0.2 bg-orange-500/15 text-orange-600 dark:text-orange-400 border border-orange-500/30 text-[9px] font-bold">1 FOLDER</span>
+          </label>
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              id="multiFolderToggleBtn"
+              onclick="toggleMultiFolderMode()"
+              class="text-orange-500 hover:underline font-bold cursor-pointer"
+            >
+              + Multi-Folder Queue (3-4 Folders)
+            </button>
+          </div>
+        </div>
+
+        <div class="relative">
+          <textarea
             id="folderInput"
-            placeholder="https://drive.google.com/drive/folders/..."
-            class="w-full py-2.5 pr-10 om-input font-mono-code text-sm placeholder:text-[var(--text-subtle)]"
-          />
+            rows="1"
+            oninput="handleFolderInputChange()"
+            placeholder="https://drive.google.com/drive/folders/... (Paste single link or 3-4 folders on new lines)"
+            class="w-full py-2.5 pr-10 om-input font-mono-code text-xs sm:text-sm placeholder:text-[var(--text-subtle)] resize-y min-h-[42px] transition-all"
+          ></textarea>
           <button
             type="button"
             onclick="pasteFromClipboard()"
-            class="absolute right-1 text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors cursor-pointer p-1"
+            class="absolute right-2 top-2.5 text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors cursor-pointer p-1"
             title="Paste from clipboard"
           >
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -358,8 +373,9 @@
             </svg>
           </button>
         </div>
-        <p class="font-mono-code text-[10px] text-[var(--text-subtle)] pt-0.5">
-          paste any google drive folder link or id • recursive scan • duplicate protection
+        <p class="font-mono-code text-[10px] text-[var(--text-subtle)] pt-0.5 flex items-center justify-between">
+          <span>paste 1 or multiple drive folder links (one per line or comma-separated) • auto-recursive scan</span>
+          <span id="multiFolderHint" class="hidden text-orange-500 font-semibold">Multi-Folder Queue Active</span>
         </p>
       </div>
 
@@ -2351,10 +2367,95 @@
       }
     }
 
+    window.toggleMultiFolderMode = function() {
+      const textarea = document.getElementById('folderInput');
+      const toggleBtn = document.getElementById('multiFolderToggleBtn');
+      if (!textarea) return;
+      if (textarea.rows <= 1) {
+        textarea.rows = 4;
+        textarea.placeholder = "Paste multiple Google Drive folder links (one per line):\nhttps://drive.google.com/drive/folders/folder_1\nhttps://drive.google.com/drive/folders/folder_2\nhttps://drive.google.com/drive/folders/folder_3";
+        if (toggleBtn) toggleBtn.textContent = '– Collapse to Single Folder';
+      } else {
+        textarea.rows = 1;
+        textarea.placeholder = "https://drive.google.com/drive/folders/... (Paste single link or 3-4 folders on new lines)";
+        if (toggleBtn) toggleBtn.textContent = '+ Multi-Folder Queue (3-4 Folders)';
+      }
+      handleFolderInputChange();
+    };
+
+    window.handleFolderInputChange = function() {
+      const textarea = document.getElementById('folderInput');
+      const badge = document.getElementById('folderCountBadge');
+      const hint = document.getElementById('multiFolderHint');
+      if (!textarea) return;
+
+      const lines = textarea.value.split(/[\n,;]+/).map(s => s.trim()).filter(Boolean);
+      const count = lines.length;
+
+      if (count > 1) {
+        if (textarea.rows === 1) textarea.rows = Math.min(count + 1, 5);
+        if (badge) {
+          badge.classList.remove('hidden');
+          badge.textContent = `📁 ${count} FOLDERS IN QUEUE`;
+        }
+        if (hint) hint.classList.remove('hidden');
+      } else if (count === 1) {
+        if (badge) {
+          badge.classList.remove('hidden');
+          badge.textContent = `📁 1 FOLDER`;
+        }
+        if (hint) hint.classList.add('hidden');
+      } else {
+        if (badge) badge.classList.add('hidden');
+        if (hint) hint.classList.add('hidden');
+      }
+    };
+
+    window.formatVideoDurationBadge = function(file) {
+      if (!file) return '';
+      const ms = file.durationMillis || (file.videoMediaMetadata && file.videoMediaMetadata.durationMillis);
+      if (!ms || isNaN(ms) || ms <= 0) {
+        return '';
+      }
+
+      const totalSeconds = Math.floor(ms / 1000);
+      const minutes = Math.floor(totalSeconds / 60);
+      const hours = Math.floor(minutes / 60);
+      const remainingMinutes = minutes % 60;
+      const remainingSeconds = totalSeconds % 60;
+
+      let timeStr = '';
+      if (hours > 0) {
+        timeStr = `${hours}h ${remainingMinutes}m`;
+      } else if (minutes > 0) {
+        timeStr = `${minutes}m ${remainingSeconds > 0 ? remainingSeconds + 's' : ''}`.trim();
+      } else {
+        timeStr = `${remainingSeconds}s`;
+      }
+
+      const isShort = minutes < 30; // Under 30 mins Short Badge!
+
+      if (isShort) {
+        return `
+          <span class="inline-flex items-center gap-1 px-1.5 py-0.2 bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 text-[9px] font-bold uppercase tracking-wider font-mono-code rounded-xs" title="Short Video (under 30 mins): ${timeStr}">
+            <span>⚡ SHORT</span>
+            <span class="text-amber-500 font-semibold">• ${timeStr}</span>
+          </span>
+        `;
+      } else {
+        return `
+          <span class="inline-flex items-center gap-1 px-1 py-0.2 text-[9px] text-[var(--text-muted)] font-mono-code" title="Lecture Duration: ${timeStr}">
+            <span>⏱️ ${timeStr}</span>
+          </span>
+        `;
+      }
+    };
+
     function pasteFromClipboard() {
       navigator.clipboard.readText().then(text => {
         if (text) {
           folderInput.value = text;
+          handleFolderInputChange();
           showToast('Pasted from clipboard', 'info');
         }
       }).catch(() => {
@@ -2885,7 +2986,8 @@
             </div>
           </td>
           <td class="py-2.5 px-3 text-center font-mono-code border-r border-[var(--border-main)] text-[11px] text-[var(--text-muted)] whitespace-nowrap">
-            ${formatBytes(file.size)}
+            <div>${formatBytes(file.size)}</div>
+            ${formatVideoDurationBadge(file) ? `<div class="mt-1">${formatVideoDurationBadge(file)}</div>` : ''}
           </td>
           <td class="py-2.5 px-3 text-center font-mono-code border-r border-[var(--border-main)] text-[11px] text-[var(--text-muted)] whitespace-nowrap">
             ${fileDate}
@@ -4386,14 +4488,15 @@
         const embedLink = isYt && ytId ? `https://www.youtube.com/embed/${ytId}` : `https://drive.google.com/file/d/${file.id}/preview`;
         const embedLabel = isYt ? 'YouTube Embed Link' : 'Drive Embed Link';
 
-        const sourceBadgeHtml = isYt ? `
-          <span class="inline-flex items-center px-1.5 py-0.2 text-[10px] font-bold font-mono-code bg-rose-500/20 text-rose-600 dark:text-rose-300 border border-rose-400 dark:border-rose-800 uppercase">
-            YouTube
-          </span>
-        ` : `
-          <span class="inline-flex items-center px-1.5 py-0.2 text-[10px] font-bold font-mono-code bg-[var(--bg-card)] text-[var(--text-muted)] border border-[var(--border-main)] uppercase">
-            Drive
-          </span>
+        const durationBadgeHtml = formatVideoDurationBadge(file);
+
+        const sourceBadgeHtml = `
+          <div class="flex flex-col gap-1 items-center justify-center">
+            <span class="inline-flex items-center px-1.5 py-0.2 text-[10px] font-bold font-mono-code ${isYt ? 'bg-rose-500/20 text-rose-600 dark:text-rose-300 border border-rose-400 dark:border-rose-800' : 'bg-[var(--bg-card)] text-[var(--text-muted)] border border-[var(--border-main)]'} uppercase">
+              ${isYt ? 'YouTube' : 'Drive'}
+            </span>
+            ${durationBadgeHtml ? `<div class="mt-0.5">${durationBadgeHtml}</div>` : ''}
+          </div>
         `;
 
         let statusHtml = '';

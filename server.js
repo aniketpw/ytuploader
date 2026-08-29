@@ -456,7 +456,7 @@ async function scanDriveFolderRecursively(drive, rootFolderId, startDateIso, end
       try {
         const listRes = await drive.files.list({
           q: `'${current.folderId}' in parents and trashed = false`,
-          fields: 'nextPageToken, files(id, name, mimeType, size, createdTime, modifiedTime)',
+          fields: 'nextPageToken, files(id, name, mimeType, size, createdTime, modifiedTime, videoMediaMetadata)',
           pageSize: 1000,
           supportsAllDrives: true,
           includeItemsFromAllDrives: true,
@@ -538,12 +538,19 @@ async function scanDriveFolderRecursively(drive, rootFolderId, startDateIso, end
                 }
               }
 
+              const durationMillis = file.videoMediaMetadata?.durationMillis ? parseInt(file.videoMediaMetadata.durationMillis, 10) : null;
+              const width = file.videoMediaMetadata?.width || null;
+              const height = file.videoMediaMetadata?.height || null;
+
               discoveredVideos.set(file.id, {
                 ...file,
                 batch,
                 subject,
                 folderPath: current.folderPath || rootFolderName || 'Root',
-                subfolders
+                subfolders,
+                durationMillis,
+                width,
+                height
               });
             }
           }
@@ -1373,6 +1380,9 @@ app.post('/api/scan-preview', async (req, res) => {
         subject: f.subject || 'Lecture',
         folderPath: f.folderPath || '',
         size: parseInt(f.size || '0', 10),
+        durationMillis: f.durationMillis || null,
+        width: f.width || null,
+        height: f.height || null,
         createdTime: f.createdTime,
         isDuplicate: Boolean(isDuplicate),
         existingVideoId: existingRecord?.videoId || null,
@@ -1611,6 +1621,9 @@ app.post(['/api/process', '/api/process-folder'], async (req, res) => {
           subject: f.subject || 'Lecture',
           folderPath: f.folderPath || '',
           size: parseInt(f.size || '0', 10),
+          durationMillis: f.durationMillis || null,
+          width: f.width || null,
+          height: f.height || null,
           createdTime: f.createdTime,
           status: 'queued',
           percentage: 0,
