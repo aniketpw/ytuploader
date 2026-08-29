@@ -80,6 +80,11 @@ function saveCompletedFileToHistory(fileObj) {
 
 // Middleware
 app.use(cors());
+app.use((req, res, next) => {
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  next();
+});
 app.use(express.json({ limit: '50mb' })); // Increased for thumbnails
 app.use(express.static(path.join(__dirname, 'public')));
 
