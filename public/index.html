@@ -410,13 +410,13 @@
           <div class="flex items-center justify-between font-mono-code text-[10px]">
             <label class="font-bold uppercase tracking-wider text-[var(--text-muted)]">SCAN DATE FILTER</label>
             <div class="flex items-center gap-1 text-[10px]">
-              <button type="button" onclick="setDatePreset('all')" class="text-orange-500 hover:underline font-bold cursor-pointer">All</button>
+              <button type="button" onclick="setScanDatePreset('today')" class="text-orange-500 hover:underline font-bold cursor-pointer">Today</button>
               <span class="text-[var(--border-main)]">|</span>
-              <button type="button" onclick="setDatePreset('today')" class="text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer">Today</button>
+              <button type="button" onclick="setScanDatePreset('yesterday')" class="text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer">Yest</button>
               <span class="text-[var(--border-main)]">|</span>
-              <button type="button" onclick="setDatePreset('yesterday')" class="text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer">Yest</button>
+              <button type="button" onclick="setScanDatePreset('all')" class="text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer">All</button>
               <span class="text-[var(--border-main)]">|</span>
-              <button type="button" onclick="setDatePreset('clear')" class="text-rose-500 hover:underline cursor-pointer">Clear</button>
+              <button type="button" onclick="setScanDatePreset('clear')" class="text-rose-500 hover:underline cursor-pointer">Clear</button>
             </div>
           </div>
           <div class="flex items-center gap-1.5 font-mono-code">
@@ -2264,18 +2264,31 @@
         showToast('Showing all dates', 'info');
       }
 
-      if (startDateInput && endDateInput) {
-        startDateInput.value = dateFilterRange.start || '';
-        endDateInput.value = dateFilterRange.end || '';
-      }
-
       renderCalendarGrid();
       updateDateFilterDisplayAndFilter();
       closeCalendarPopover();
     };
 
+    window.setScanDatePreset = function(preset) {
+      const todayStr = getTodayYMD();
+      if (preset === 'today') {
+        if (startDateInput) startDateInput.value = todayStr;
+        if (endDateInput) endDateInput.value = todayStr;
+        showToast('Scan Date Filter set to Today', 'info');
+      } else if (preset === 'yesterday') {
+        const yestStr = getYesterdayYMD();
+        if (startDateInput) startDateInput.value = yestStr;
+        if (endDateInput) endDateInput.value = yestStr;
+        showToast('Scan Date Filter set to Yesterday', 'info');
+      } else if (preset === 'all' || preset === 'clear') {
+        if (startDateInput) startDateInput.value = '';
+        if (endDateInput) endDateInput.value = '';
+        showToast('Scan Date Filter cleared (Scanning All)', 'info');
+      }
+    };
+
     window.setDatePreset = function(preset) {
-      applyPresetRange(preset);
+      setScanDatePreset(preset);
     };
 
     function updateDateFilterDisplayAndFilter() {
@@ -2977,16 +2990,68 @@
       showToast(`✔ Created ${scannedFilesList.length} branded thumbnails! Will auto-apply on upload.`, 'success');
     };
 
-    window.copyNotionMarkdownTable = function() {
+    window.getCurrentlyFilteredFiles = function() {
       if (!currentState || !currentState.files || currentState.files.length === 0) {
-        showToast('No videos in library to copy.', 'error');
+        return [];
+      }
+
+      let allFiles = [...(currentState.files || [])];
+      allFiles.sort((a, b) => {
+        const tA = getFileTimestamp(a);
+        const tB = getFileTimestamp(b);
+        if (tA !== tB) return tB - tA;
+        return 0;
+      });
+
+      let filteredFiles = allFiles;
+
+      if (currentSourceFilter === 'youtube') {
+        filteredFiles = filteredFiles.filter(f => isYouTubeVideo(f));
+      } else if (currentSourceFilter === 'drive') {
+        filteredFiles = filteredFiles.filter(f => !isYouTubeVideo(f));
+      }
+
+      if (currentSearchQuery) {
+        filteredFiles = filteredFiles.filter(f => {
+          const t = (f.customTitle || f.name || '').toLowerCase();
+          const b = (f.batch || '').toLowerCase();
+          const s = (f.subject || '').toLowerCase();
+          return t.includes(currentSearchQuery) || b.includes(currentSearchQuery) || s.includes(currentSearchQuery);
+        });
+      }
+
+      const { start, end } = dateFilterRange;
+      if (start && end) {
+        filteredFiles = filteredFiles.filter(f => {
+          const fileYMD = getFileYMD(f);
+          return fileYMD >= start && fileYMD <= end;
+        });
+      } else if (start) {
+        filteredFiles = filteredFiles.filter(f => getFileYMD(f) === start);
+      }
+      
+      if (currentFilter === 'completed') {
+        filteredFiles = filteredFiles.filter(f => f.status === 'completed');
+      } else if (currentFilter === 'pending') {
+        filteredFiles = filteredFiles.filter(f => f.status === 'uploading' || f.status === 'queued');
+      } else if (currentFilter === 'failed') {
+        filteredFiles = filteredFiles.filter(f => f.status === 'failed');
+      }
+
+      return filteredFiles;
+    };
+
+    window.copyNotionMarkdownTable = function() {
+      const filesToExport = getCurrentlyFilteredFiles();
+      if (filesToExport.length === 0) {
+        showToast('No videos matching active date filter to copy.', 'error');
         return;
       }
 
       let md = '| # | Title | Batch | Subject | Date | Size | YouTube Link | Drive / Embed |\n';
       md += '|---|---|---|---|---|---|---|---|\n';
 
-      currentState.files.forEach((f, idx) => {
+      filesToExport.forEach((f, idx) => {
         const title = (f.customTitle || f.name || 'Lecture Video').replace(/\|/g, '-');
         const batch = (f.batch || 'Batch').replace(/\|/g, '-');
         const subject = (f.subject || 'Lecture').replace(/\|/g, '-');
@@ -3002,7 +3067,7 @@
       });
 
       navigator.clipboard.writeText(md).then(() => {
-        showToast('✔ Formatted Notion Table copied to clipboard!', 'success');
+        showToast(`✔ Copied ${filesToExport.length} filtered video(s) for Notion!`, 'success');
       }).catch(() => {
         showToast('Failed to copy Notion table', 'error');
       });
@@ -3042,15 +3107,16 @@
     });
 
     window.triggerDownloadCSV = function() {
-      if (!currentState || !currentState.files || currentState.files.length === 0) {
-        showToast('No videos to export.', 'error');
+      const filesToExport = getCurrentlyFilteredFiles();
+      if (filesToExport.length === 0) {
+        showToast('No videos matching active date filter to export.', 'error');
         return;
       }
 
       let csvContent = "data:text/csv;charset=utf-8,";
       csvContent += "Index,File Name,Batch,Subject,Created Date,File Size,Status,YouTube Video ID,Embed Link,Studio Edit Link\n";
 
-      currentState.files.forEach((f, idx) => {
+      filesToExport.forEach((f, idx) => {
         const embed = f.videoId ? `https://www.youtube.com/embed/${f.videoId}` : '';
         const studio = f.studioUrl || (f.videoId ? `https://studio.youtube.com/video/${f.videoId}/edit` : '');
         const row = [
@@ -3068,25 +3134,27 @@
         csvContent += row.join(",") + "\n";
       });
 
+      const dateSuffix = dateFilterRange.start ? `_${dateFilterRange.start}${dateFilterRange.end && dateFilterRange.end !== dateFilterRange.start ? '_to_' + dateFilterRange.end : ''}` : `_${formatDateToYMD(new Date())}`;
       const encodedUri = encodeURI(csvContent);
       const link = document.createElement('a');
       link.setAttribute('href', encodedUri);
-      link.setAttribute('download', `YouTube_Upload_Report_${formatDateToYMD(new Date())}.csv`);
+      link.setAttribute('download', `YouTube_Report${dateSuffix}.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      showToast('✔ CSV spreadsheet downloaded!', 'success');
+      showToast(`✔ Downloaded CSV for ${filesToExport.length} filtered video(s)!`, 'success');
     };
 
     window.copyGoogleSheetsTable = function() {
-      if (!currentState || !currentState.files || currentState.files.length === 0) {
-        showToast('No videos to export.', 'error');
+      const filesToExport = getCurrentlyFilteredFiles();
+      if (filesToExport.length === 0) {
+        showToast('No videos matching active date filter to copy.', 'error');
         return;
       }
 
       // TSV (Tab Separated Values) format pastes cleanly into Google Sheets cells
       let tsv = "Index\tTitle\tBatch\tSubject\tDate\tSize\tStatus\tYouTube Link\tEmbed Link\n";
-      currentState.files.forEach((f, idx) => {
+      filesToExport.forEach((f, idx) => {
         const title = f.customTitle || f.name || 'Lecture Video';
         const batch = f.batch || 'PW Batch';
         const subject = f.subject || 'Lecture';
@@ -3099,26 +3167,62 @@
       });
 
       navigator.clipboard.writeText(tsv).then(() => {
-        showToast('✔ Google Sheets TSV copied! Paste directly (Ctrl+V) into Google Sheets.', 'success');
+        showToast(`✔ Copied ${filesToExport.length} filtered video(s) for Google Sheets!`, 'success');
       }).catch(() => {
         showToast('Failed to copy Google Sheets data', 'error');
       });
     };
 
-    window.exportRawJSONData = function() {
-      if (!currentState || !currentState.files || currentState.files.length === 0) {
-        showToast('No data to export.', 'error');
+    window.copyAllVideoLinks = function() {
+      const filesToExport = getCurrentlyFilteredFiles();
+      if (filesToExport.length === 0) {
+        showToast('No videos matching active date filter to copy.', 'error');
         return;
       }
 
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(currentState, null, 2));
+      const completed = filesToExport.filter(f => f.status === 'completed' || f.videoId);
+      if (completed.length === 0) {
+        showToast('No completed/ready videos found in active filter.', 'error');
+        return;
+      }
+
+      const links = completed.map((f, i) => {
+        const isYt = isYouTubeVideo(f);
+        const ytId = extractYouTubeVideoId(f);
+        const embedLink = isYt && ytId ? `https://www.youtube.com/embed/${ytId}` : (f.youtubeUrl || `https://drive.google.com/file/d/${f.id}/preview`);
+        return `${i + 1}. ${f.customTitle || f.name} - ${embedLink}`;
+      }).join('\n');
+
+      navigator.clipboard.writeText(links).then(() => {
+        showToast(`✔ Copied ${completed.length} video link(s) for active filter!`, 'success');
+      }).catch(() => {
+        showToast('Failed to copy', 'error');
+      });
+    };
+
+    window.exportRawJSONData = function() {
+      const filesToExport = getCurrentlyFilteredFiles();
+      if (filesToExport.length === 0) {
+        showToast('No videos matching active date filter to export.', 'error');
+        return;
+      }
+
+      const exportObj = {
+        exportedAt: new Date().toISOString(),
+        activeDateFilter: dateFilterRange,
+        totalVideos: filesToExport.length,
+        files: filesToExport
+      };
+
+      const dateSuffix = dateFilterRange.start ? `_${dateFilterRange.start}` : '';
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportObj, null, 2));
       const downloadAnchor = document.createElement('a');
       downloadAnchor.setAttribute("href", dataStr);
-      downloadAnchor.setAttribute("download", `ytuploader_library_backup_${formatDateToYMD(new Date())}.json`);
+      downloadAnchor.setAttribute("download", `ytuploader_filtered${dateSuffix}_backup.json`);
       document.body.appendChild(downloadAnchor);
       downloadAnchor.click();
       downloadAnchor.remove();
-      showToast('✔ Raw JSON backup downloaded!', 'success');
+      showToast(`✔ Exported JSON for ${filesToExport.length} filtered video(s)!`, 'success');
     };
 
     window.handlePrivacySelectChange = function() {
@@ -4078,32 +4182,6 @@
       }
     };
 
-    window.copyAllVideoLinks = function() {
-      if (!currentState?.files || currentState.files.length === 0) {
-        showToast('No videos to copy.', 'error');
-        return;
-      }
-
-      const completed = currentState.files.filter(f => f.status === 'completed');
-      if (completed.length === 0) {
-        showToast('No completed videos found to copy.', 'error');
-        return;
-      }
-
-      const links = completed.map((f, i) => {
-        const isYt = isYouTubeVideo(f);
-        const ytId = extractYouTubeVideoId(f);
-        const embedLink = isYt && ytId ? `https://www.youtube.com/embed/${ytId}` : `https://drive.google.com/file/d/${f.id}/preview`;
-        return `${i + 1}. ${f.customTitle || f.name} - ${embedLink}`;
-      }).join('\n');
-
-      navigator.clipboard.writeText(links).then(() => {
-        showToast(`✔ Copied ${completed.length} embed link(s)!`, 'success');
-      }).catch(() => {
-        showToast('Failed to copy', 'error');
-      });
-    };
-
     window.triggerThumbnailUpload = function(videoId) {
       window.currentThumbnailVideoId = videoId;
       const fileInput = document.getElementById('thumbnailFileInput');
@@ -4865,6 +4943,9 @@
 
       if (folderInput) folderInput.value = '';
       if (playlistNameInput) playlistNameInput.value = '';
+      const todayStr = getTodayYMD();
+      if (startDateInput) startDateInput.value = todayStr;
+      if (endDateInput) endDateInput.value = todayStr;
 
       if (downloadCsvBtn) {
         downloadCsvBtn.addEventListener('click', triggerDownloadCSV);
