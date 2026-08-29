@@ -855,16 +855,6 @@
         <div class="flex items-center gap-2 shrink-0 text-xs">
           <button
             type="button"
-            id="modalDriveStreamBtn"
-            onclick="playDriveStreamInModal()"
-            class="px-2.5 py-1 bg-[var(--bg-card)] hover:bg-[var(--btn-secondary-hover)] text-[var(--text-main)] border border-[var(--border-main)] text-[11px] font-bold uppercase tracking-wider cursor-pointer"
-            title="Stream directly from Google Drive"
-          >
-            ▶ Drive Stream
-          </button>
-
-          <button
-            type="button"
             onclick="openEditModalFromPlayer()"
             class="px-2.5 py-1 bg-[var(--btn-secondary-bg)] hover:bg-[var(--btn-secondary-hover)] text-[var(--text-main)] border border-[var(--border-main)] text-[11px] font-bold uppercase tracking-wider cursor-pointer"
           >
@@ -4022,45 +4012,16 @@
       videoModal.classList.remove('hidden');
     };
 
-    window.playDriveStreamInModal = function() {
-      if (!currentActiveEditFile) return;
-      const file = currentActiveEditFile;
-      const driveId = file.id || file.videoId;
-      const modalPosterContainer = document.getElementById('modalPosterContainer');
-      if (modalPosterContainer) modalPosterContainer.classList.add('hidden');
-      modalIframe.src = `https://drive.google.com/file/d/${driveId}/preview`;
-      showToast('Streaming lecture directly from Drive preview...', 'info');
-    };
-
-    window.playYouTubeInModal = function() {
-      if (!currentActiveEditFile) return;
-      const file = currentActiveEditFile;
-      const ytId = extractYouTubeVideoId(file);
-      const modalPosterContainer = document.getElementById('modalPosterContainer');
-      if (modalPosterContainer) modalPosterContainer.classList.add('hidden');
-      if (ytId) {
-        modalIframe.src = `https://www.youtube.com/embed/${ytId}?autoplay=1&rel=0&enablejsapi=1`;
-      }
-    };
-
     window.startModalPlayback = function() {
       if (!currentActiveEditFile) return;
       const file = currentActiveEditFile;
-      const isYt = isYouTubeVideo(file);
       const ytId = extractYouTubeVideoId(file);
       const modalPosterContainer = document.getElementById('modalPosterContainer');
 
       if (modalPosterContainer) modalPosterContainer.classList.add('hidden');
 
-      const isCodespaces = window.location.hostname.includes('github.dev') || window.location.hostname.includes('app.github.dev');
-      const driveId = file.id;
-
-      if (isCodespaces && driveId) {
-        modalIframe.src = `https://drive.google.com/file/d/${driveId}/preview`;
-      } else if (isYt && ytId) {
-        modalIframe.src = `https://www.youtube.com/embed/${ytId}?autoplay=1&rel=0&enablejsapi=1`;
-      } else if (driveId) {
-        modalIframe.src = `https://drive.google.com/file/d/${driveId}/preview`;
+      if (ytId) {
+        modalIframe.src = `https://www.youtube.com/embed/${ytId}?autoplay=1&rel=0`;
       }
     };
 
