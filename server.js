@@ -2226,7 +2226,9 @@ async function runUploadQueue(auth) {
 
           let videoStatus = {
             privacyStatus: finalPrivacy,
-            selfDeclaredMadeForKids: false
+            selfDeclaredMadeForKids: false,
+            embeddable: true,
+            license: 'youtube'
           };
           if (isScheduled) {
             try {
