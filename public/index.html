@@ -486,7 +486,7 @@
               <svg class="w-3.5 h-3.5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
               </svg>
-              <span id="dateRangeInputText" class="font-bold text-[var(--text-main)]">All Dates</span>
+              <span id="dateRangeInputText" class="font-bold text-[var(--text-main)]">Today</span>
               <svg class="w-3 h-3 text-[var(--text-muted)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
               </svg>
@@ -505,11 +505,11 @@
               <div id="calendarDaysGrid" class="grid grid-cols-7 gap-1 text-center font-mono-code text-xs"></div>
               <div class="pt-2.5 mt-2.5 border-t border-[var(--border-main)] flex items-center justify-between font-mono-code text-[11px]">
                 <div class="flex items-center gap-1">
-                  <button type="button" onclick="applyPresetRange('today')" class="px-1.5 py-0.5 bg-[var(--bg-subcard)] hover:bg-[var(--btn-primary-bg)] hover:text-[var(--btn-primary-text)] border border-[var(--border-main)] cursor-pointer">Today</button>
-                  <button type="button" onclick="applyPresetRange('yesterday')" class="px-1.5 py-0.5 bg-[var(--bg-subcard)] hover:bg-[var(--btn-primary-bg)] hover:text-[var(--btn-primary-text)] border border-[var(--border-main)] cursor-pointer">Yest</button>
-                  <button type="button" onclick="applyPresetRange('last7')" class="px-1.5 py-0.5 bg-[var(--bg-subcard)] hover:bg-[var(--btn-primary-bg)] hover:text-[var(--btn-primary-text)] border border-[var(--border-main)] cursor-pointer">7D</button>
+                  <button type="button" id="popoverPresetToday" onclick="applyPresetRange('today')" class="px-2 py-1 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] border border-[var(--btn-primary-bg)] text-[10px] font-bold uppercase transition-colors cursor-pointer shadow-xs">Today</button>
+                  <button type="button" id="popoverPresetYest" onclick="applyPresetRange('yesterday')" class="px-2 py-1 bg-[var(--bg-subcard)] hover:bg-[var(--btn-primary-bg)] hover:text-[var(--btn-primary-text)] border border-[var(--border-main)] text-[10px] font-bold uppercase transition-colors cursor-pointer">Yest</button>
+                  <button type="button" id="popoverPreset7D" onclick="applyPresetRange('last7')" class="px-2 py-1 bg-[var(--bg-subcard)] hover:bg-[var(--btn-primary-bg)] hover:text-[var(--btn-primary-text)] border border-[var(--border-main)] text-[10px] font-bold uppercase transition-colors cursor-pointer">7D</button>
                 </div>
-                <button type="button" onclick="applyPresetRange('all')" class="text-orange-500 hover:underline font-bold cursor-pointer">All</button>
+                <button type="button" id="popoverPresetAll" onclick="applyPresetRange('all')" class="text-[var(--text-muted)] hover:text-[var(--text-main)] font-semibold cursor-pointer text-[11px]">All Dates</button>
               </div>
             </div>
           </div>
@@ -1829,39 +1829,8 @@
     let scannedFilesList = [];
     let customFileTitlesMap = {};
 
-    // Date Range Picker State
-    let dateFilterRange = {
-      start: null,
-      end: null,
-      preset: 'all'
-    };
-    let calendarDisplayYear = new Date().getFullYear();
-    let calendarDisplayMonth = new Date().getMonth();
-    let isCalendarOpen = false;
-
     const MONTH_NAMES_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const MONTH_NAMES_FULL = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-
-    // DOM Elements
-    let connectionBadge, navAuthBtn, navConnectedBadge, bgNoticeBanner, cancelJobBtn;
-    let folderInput, playlistNameInput, playlistPill, playlistPillTitle, startDateInput, endDateInput;
-    let startButton, buttonText, downloadCsvBtn, trackingTableBody, toast, toastMessage, toastIcon;
-    let filterPillAll, filterPillCompleted, filterPillPending, filterPillFailed;
-    let videoModal, modalIframe, modalVideoTitle, modalBatchTag, modalSubjectTag, modalYtLink;
-    let currentModalEmbedLink = '';
-
-    function extractGoogleDriveFileId(input) {
-      if (!input) return null;
-      const str = String(input).trim();
-      if (/^[a-zA-Z0-9_-]{25,50}$/.test(str)) return str;
-      const fileMatch = str.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-      if (fileMatch) return fileMatch[1];
-      const idParam = str.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-      if (idParam) return idParam[1];
-      const lhMatch = str.match(/googleusercontent\.com\/d\/([a-zA-Z0-9_-]+)/);
-      if (lhMatch) return lhMatch[1];
-      return null;
-    }
 
     function formatDateToYMD(d) {
       if (!d || isNaN(d.getTime())) return '';
@@ -1892,6 +1861,38 @@
       const d = new Date();
       d.setDate(d.getDate() - 1);
       return formatDateToYMD(d);
+    }
+
+    // Date Range Picker State (Defaults strictly to Today)
+    const initialTodayYMD = getTodayYMD();
+    let dateFilterRange = {
+      start: initialTodayYMD,
+      end: initialTodayYMD,
+      preset: 'today'
+    };
+    let calendarDisplayYear = new Date().getFullYear();
+    let calendarDisplayMonth = new Date().getMonth();
+    let isCalendarOpen = false;
+
+    // DOM Elements
+    let connectionBadge, navAuthBtn, navConnectedBadge, bgNoticeBanner, cancelJobBtn;
+    let folderInput, playlistNameInput, playlistPill, playlistPillTitle, startDateInput, endDateInput;
+    let startButton, buttonText, downloadCsvBtn, trackingTableBody, toast, toastMessage, toastIcon;
+    let filterPillAll, filterPillCompleted, filterPillPending, filterPillFailed;
+    let videoModal, modalIframe, modalVideoTitle, modalBatchTag, modalSubjectTag, modalYtLink;
+    let currentModalEmbedLink = '';
+
+    function extractGoogleDriveFileId(input) {
+      if (!input) return null;
+      const str = String(input).trim();
+      if (/^[a-zA-Z0-9_-]{25,50}$/.test(str)) return str;
+      const fileMatch = str.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+      if (fileMatch) return fileMatch[1];
+      const idParam = str.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+      if (idParam) return idParam[1];
+      const lhMatch = str.match(/googleusercontent\.com\/d\/([a-zA-Z0-9_-]+)/);
+      if (lhMatch) return lhMatch[1];
+      return null;
     }
 
     function getFileTimestamp(file) {
@@ -2186,11 +2187,15 @@
 
     function updateDateFilterDisplayAndFilter() {
       const displayText = document.getElementById('dateRangeInputText');
-      const { start, end } = dateFilterRange;
+      const { start, end, preset } = dateFilterRange;
 
       if (displayText) {
         if (!start && !end) {
           displayText.textContent = 'All Dates';
+        } else if (preset === 'today' || (start === getTodayYMD() && end === getTodayYMD())) {
+          displayText.textContent = `Today (${formatDisplayDate(start)})`;
+        } else if (preset === 'yesterday' || (start === getYesterdayYMD() && end === getYesterdayYMD())) {
+          displayText.textContent = `Yesterday (${formatDisplayDate(start)})`;
         } else if (start && !end) {
           displayText.textContent = formatDisplayDate(start);
         } else if (start && end) {
@@ -2201,6 +2206,20 @@
           }
         }
       }
+
+      // Update preset buttons in calendar popover
+      const btnToday = document.getElementById('popoverPresetToday');
+      const btnYest = document.getElementById('popoverPresetYest');
+      const btn7D = document.getElementById('popoverPreset7D');
+      const btnAll = document.getElementById('popoverPresetAll');
+
+      const inactiveClass = "px-2 py-1 bg-[var(--bg-subcard)] hover:bg-[var(--btn-primary-bg)] hover:text-[var(--btn-primary-text)] border border-[var(--border-main)] text-[10px] font-bold uppercase transition-colors cursor-pointer";
+      const activeClass = "px-2 py-1 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] border border-[var(--btn-primary-bg)] text-[10px] font-bold uppercase transition-colors cursor-pointer shadow-xs";
+
+      if (btnToday) btnToday.className = (preset === 'today') ? activeClass : inactiveClass;
+      if (btnYest) btnYest.className = (preset === 'yesterday') ? activeClass : inactiveClass;
+      if (btn7D) btn7D.className = (preset === 'last7') ? activeClass : inactiveClass;
+      if (btnAll) btnAll.className = (preset === 'all') ? "text-orange-500 hover:underline font-bold cursor-pointer underline text-[11px]" : "text-[var(--text-muted)] hover:text-[var(--text-main)] font-semibold cursor-pointer text-[11px]";
 
       renderFilteredTable();
       if (currentState) {
@@ -3981,10 +4000,28 @@
       }
 
       if (filteredFiles.length === 0) {
+        let dateMsg = 'for active filter';
+        if (dateFilterRange.preset === 'today') {
+          dateMsg = `for Today (${formatDisplayDate(dateFilterRange.start)})`;
+        } else if (dateFilterRange.preset === 'yesterday') {
+          dateMsg = `for Yesterday (${formatDisplayDate(dateFilterRange.start)})`;
+        } else if (dateFilterRange.start && dateFilterRange.end) {
+          dateMsg = `between ${formatDisplayDate(dateFilterRange.start)} – ${formatDisplayDate(dateFilterRange.end)}`;
+        } else if (dateFilterRange.start) {
+          dateMsg = `for ${formatDisplayDate(dateFilterRange.start)}`;
+        }
+
         trackingTableBody.innerHTML = `
-          <tr class="text-[#78716C]">
-            <td colspan="6" class="py-10 text-center font-mono-code text-xs">
-              no matching videos found for active filter.
+          <tr class="text-[var(--text-muted)]">
+            <td colspan="6" class="py-12 text-center font-mono-code text-xs space-y-2">
+              <div class="text-2xl">📅</div>
+              <div class="font-bold text-[var(--text-main)]">No videos found ${dateMsg}</div>
+              <p class="text-[11px] text-[var(--text-muted)]">Pick another date or click below to view all uploaded lectures</p>
+              <div class="pt-2">
+                <button type="button" onclick="applyPresetRange('all')" class="px-3.5 py-1.5 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] font-bold text-xs uppercase cursor-pointer hover:opacity-90 transition-opacity">
+                  View All Uploaded Videos ➔
+                </button>
+              </div>
             </td>
           </tr>
         `;
@@ -4677,6 +4714,7 @@
       checkAuthStatus();
       connectSSE();
       loadJobStatus();
+      updateDateFilterDisplayAndFilter();
       updateThemeControlsUI(document.documentElement.classList.contains('dark'));
     });
 
