@@ -112,6 +112,21 @@
       100% { transform: rotate(360deg) scale(1); opacity: 1; }
     }
     
+    /* Animated Cascading Dropdown (Smooth Top-Down Entrance) */
+    @keyframes dropdownCascadeDown {
+      0% {
+        opacity: 0;
+        transform: translateY(-8px) scale(0.96);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+    .animate-dropdown-cascade {
+      animation: dropdownCascadeDown 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
     .font-serif-editorial {
       font-family: 'Newsreader', Georgia, serif;
     }
@@ -574,32 +589,110 @@
             <button type="button" id="sourceFilterDrive" onclick="setSourceFilter('drive')" class="px-2 py-0.5 text-[var(--text-muted)] hover:text-[var(--text-main)]">Drive (<span id="sourceCountDrive">0</span>)</button>
           </div>
 
-          <button
-            type="button"
-            onclick="copyAllVideoLinks()"
-            class="px-2.5 py-1 bg-[var(--bg-subcard)] border border-[var(--border-main)] text-[var(--text-main)] text-[10px] font-bold uppercase tracking-wider hover:bg-[var(--btn-secondary-hover)] cursor-pointer"
-            title="Copy list of all video links"
-          >
-            Copy Links
-          </button>
+          <!-- Single Unified Export & Share Dropdown (Animated Cascading Drop) -->
+          <div class="relative" id="exportDropdownWrapper">
+            <button
+              type="button"
+              id="exportDropdownBtn"
+              onclick="toggleExportDropdown(event)"
+              class="flex items-center gap-1.5 px-3 py-1 bg-[var(--bg-subcard)] hover:bg-[var(--btn-secondary-hover)] border border-[var(--border-main)] hover:border-[var(--btn-primary-bg)] text-[var(--text-main)] text-[10px] font-bold uppercase tracking-wider cursor-pointer transition-all duration-150 select-none shadow-xs group"
+              title="Export, Download CSV & Share Links"
+            >
+              <svg class="w-3.5 h-3.5 text-orange-500 transition-transform group-hover:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+              </svg>
+              <span>Export</span>
+              <svg id="exportChevron" class="w-3 h-3 text-[var(--text-muted)] transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+              </svg>
+            </button>
 
-          <button
-            type="button"
-            onclick="copyNotionMarkdownTable()"
-            class="px-2.5 py-1 bg-[var(--bg-subcard)] border border-[var(--border-main)] text-[var(--text-main)] text-[10px] font-bold uppercase tracking-wider hover:bg-[var(--btn-secondary-hover)] cursor-pointer flex items-center gap-1"
-            title="Copy formatted Markdown table ready to paste directly into Notion"
-          >
-            <span>📝 Notion</span>
-          </button>
+            <!-- Animated Cascading Dropdown Menu -->
+            <div
+              id="exportDropdownMenu"
+              class="hidden absolute right-0 top-9 z-50 w-56 bg-[var(--bg-card)] border-2 border-[var(--border-main)] shadow-2xl p-1 space-y-0.5 font-mono-code text-xs select-none origin-top"
+            >
+              <!-- 1. Download CSV -->
+              <button
+                type="button"
+                onclick="triggerDownloadCSV(); closeExportDropdown();"
+                class="w-full flex items-center justify-between px-2.5 py-2 hover:bg-[var(--btn-secondary-hover)] text-left text-[11px] text-[var(--text-main)] font-semibold border-b border-[var(--border-subtle)] cursor-pointer group transition-colors"
+              >
+                <div class="flex items-center gap-2">
+                  <span class="text-sm">📊</span>
+                  <div>
+                    <div class="font-bold text-[var(--text-main)] group-hover:text-orange-500">Download CSV</div>
+                    <div class="text-[9px] text-[var(--text-muted)]">Excel &amp; full upload report</div>
+                  </div>
+                </div>
+                <span class="text-[10px] text-[var(--text-muted)] font-mono-code">.csv</span>
+              </button>
 
-          <button
-            type="button"
-            id="downloadCsvBtn"
-            class="px-2.5 py-1 bg-[var(--bg-subcard)] border border-[var(--border-main)] text-[var(--text-main)] text-[10px] font-bold uppercase tracking-wider hover:bg-[var(--btn-secondary-hover)] cursor-pointer"
-            title="Download full CSV report for Google Sheets & Excel"
-          >
-            📊 Sheets / CSV
-          </button>
+              <!-- 2. Copy for Notion Table -->
+              <button
+                type="button"
+                onclick="copyNotionMarkdownTable(); closeExportDropdown();"
+                class="w-full flex items-center justify-between px-2.5 py-2 hover:bg-[var(--btn-secondary-hover)] text-left text-[11px] text-[var(--text-main)] font-semibold border-b border-[var(--border-subtle)] cursor-pointer group transition-colors"
+              >
+                <div class="flex items-center gap-2">
+                  <span class="text-sm">📝</span>
+                  <div>
+                    <div class="font-bold text-[var(--text-main)] group-hover:text-orange-500">Copy for Notion</div>
+                    <div class="text-[9px] text-[var(--text-muted)]">Markdown table format</div>
+                  </div>
+                </div>
+                <span class="text-[10px] text-emerald-500 font-bold">Copy</span>
+              </button>
+
+              <!-- 3. Copy for Google Sheets -->
+              <button
+                type="button"
+                onclick="copyGoogleSheetsTable(); closeExportDropdown();"
+                class="w-full flex items-center justify-between px-2.5 py-2 hover:bg-[var(--btn-secondary-hover)] text-left text-[11px] text-[var(--text-main)] font-semibold border-b border-[var(--border-subtle)] cursor-pointer group transition-colors"
+              >
+                <div class="flex items-center gap-2">
+                  <span class="text-sm">📈</span>
+                  <div>
+                    <div class="font-bold text-[var(--text-main)] group-hover:text-orange-500">Google Sheets TSV</div>
+                    <div class="text-[9px] text-[var(--text-muted)]">Direct paste in Sheets</div>
+                  </div>
+                </div>
+                <span class="text-[10px] text-emerald-500 font-bold">Copy</span>
+              </button>
+
+              <!-- 4. Copy All Links (Raw URLs) -->
+              <button
+                type="button"
+                onclick="copyAllVideoLinks(); closeExportDropdown();"
+                class="w-full flex items-center justify-between px-2.5 py-2 hover:bg-[var(--btn-secondary-hover)] text-left text-[11px] text-[var(--text-main)] font-semibold border-b border-[var(--border-subtle)] cursor-pointer group transition-colors"
+              >
+                <div class="flex items-center gap-2">
+                  <span class="text-sm">🔗</span>
+                  <div>
+                    <div class="font-bold text-[var(--text-main)] group-hover:text-orange-500">Copy All Links</div>
+                    <div class="text-[9px] text-[var(--text-muted)]">Raw URLs for Telegram</div>
+                  </div>
+                </div>
+                <span class="text-[10px] text-sky-500 font-bold">URLs</span>
+              </button>
+
+              <!-- 5. Export Raw JSON -->
+              <button
+                type="button"
+                onclick="exportRawJSONData(); closeExportDropdown();"
+                class="w-full flex items-center justify-between px-2.5 py-2 hover:bg-[var(--btn-secondary-hover)] text-left text-[11px] text-[var(--text-main)] font-semibold cursor-pointer group transition-colors"
+              >
+                <div class="flex items-center gap-2">
+                  <span class="text-sm">📦</span>
+                  <div>
+                    <div class="font-bold text-[var(--text-main)] group-hover:text-orange-500">Export Raw JSON</div>
+                    <div class="text-[9px] text-[var(--text-muted)]">Complete state &amp; metadata</div>
+                  </div>
+                </div>
+                <span class="text-[10px] text-[var(--text-muted)] font-mono-code">.json</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -2915,6 +3008,119 @@
       });
     };
 
+    // Animated Export & Share Dropdown Controls
+    window.toggleExportDropdown = function(e) {
+      if (e) e.stopPropagation();
+      const menu = document.getElementById('exportDropdownMenu');
+      const chevron = document.getElementById('exportChevron');
+      if (!menu) return;
+      
+      const isHidden = menu.classList.contains('hidden');
+      if (isHidden) {
+        menu.classList.remove('hidden');
+        menu.classList.remove('animate-dropdown-cascade');
+        void menu.offsetWidth; // DOM reflow to restart animation
+        menu.classList.add('animate-dropdown-cascade');
+        if (chevron) chevron.style.transform = 'rotate(180deg)';
+      } else {
+        closeExportDropdown();
+      }
+    };
+
+    window.closeExportDropdown = function() {
+      const menu = document.getElementById('exportDropdownMenu');
+      const chevron = document.getElementById('exportChevron');
+      if (menu) menu.classList.add('hidden');
+      if (chevron) chevron.style.transform = 'rotate(0deg)';
+    };
+
+    document.addEventListener('click', (e) => {
+      const wrapper = document.getElementById('exportDropdownWrapper');
+      if (wrapper && !wrapper.contains(e.target)) {
+        closeExportDropdown();
+      }
+    });
+
+    window.triggerDownloadCSV = function() {
+      if (!currentState || !currentState.files || currentState.files.length === 0) {
+        showToast('No videos to export.', 'error');
+        return;
+      }
+
+      let csvContent = "data:text/csv;charset=utf-8,";
+      csvContent += "Index,File Name,Batch,Subject,Created Date,File Size,Status,YouTube Video ID,Embed Link,Studio Edit Link\n";
+
+      currentState.files.forEach((f, idx) => {
+        const embed = f.videoId ? `https://www.youtube.com/embed/${f.videoId}` : '';
+        const studio = f.studioUrl || (f.videoId ? `https://studio.youtube.com/video/${f.videoId}/edit` : '');
+        const row = [
+          idx + 1,
+          `"${(f.customTitle || f.name || '').replace(/"/g, '""')}"`,
+          `"${(f.batch || '').replace(/"/g, '""')}"`,
+          `"${(f.subject || '').replace(/"/g, '""')}"`,
+          `"${f.createdTime || ''}"`,
+          `"${formatBytes(f.totalBytes || f.size)}"`,
+          `"${f.status}"`,
+          `"${f.videoId || ''}"`,
+          `"${embed}"`,
+          `"${studio}"`
+        ];
+        csvContent += row.join(",") + "\n";
+      });
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement('a');
+      link.setAttribute('href', encodedUri);
+      link.setAttribute('download', `YouTube_Upload_Report_${formatDateToYMD(new Date())}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast('✔ CSV spreadsheet downloaded!', 'success');
+    };
+
+    window.copyGoogleSheetsTable = function() {
+      if (!currentState || !currentState.files || currentState.files.length === 0) {
+        showToast('No videos to export.', 'error');
+        return;
+      }
+
+      // TSV (Tab Separated Values) format pastes cleanly into Google Sheets cells
+      let tsv = "Index\tTitle\tBatch\tSubject\tDate\tSize\tStatus\tYouTube Link\tEmbed Link\n";
+      currentState.files.forEach((f, idx) => {
+        const title = f.customTitle || f.name || 'Lecture Video';
+        const batch = f.batch || 'PW Batch';
+        const subject = f.subject || 'Lecture';
+        const dt = formatFileDateTime(f);
+        const dateStr = dt.time ? `${dt.date} ${dt.time}` : dt.date;
+        const sizeStr = formatBytes(f.totalBytes || f.size || 0);
+        const ytUrl = f.youtubeUrl || (f.videoId ? `https://youtu.be/${f.videoId}` : '');
+        const embedUrl = f.videoId ? `https://www.youtube.com/embed/${f.videoId}` : (f.id ? `https://drive.google.com/file/d/${f.id}/preview` : '');
+        tsv += `${idx + 1}\t${title}\t${batch}\t${subject}\t${dateStr}\t${sizeStr}\t${f.status}\t${ytUrl}\t${embedUrl}\n`;
+      });
+
+      navigator.clipboard.writeText(tsv).then(() => {
+        showToast('✔ Google Sheets TSV copied! Paste directly (Ctrl+V) into Google Sheets.', 'success');
+      }).catch(() => {
+        showToast('Failed to copy Google Sheets data', 'error');
+      });
+    };
+
+    window.exportRawJSONData = function() {
+      if (!currentState || !currentState.files || currentState.files.length === 0) {
+        showToast('No data to export.', 'error');
+        return;
+      }
+
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(currentState, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `ytuploader_library_backup_${formatDateToYMD(new Date())}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      showToast('✔ Raw JSON backup downloaded!', 'success');
+    };
+
     window.handlePrivacySelectChange = function() {
       const select = document.getElementById('videoPrivacySelect');
       const badge = document.getElementById('privacyStatusBadge');
@@ -4661,42 +4867,7 @@
       if (playlistNameInput) playlistNameInput.value = '';
 
       if (downloadCsvBtn) {
-        downloadCsvBtn.addEventListener('click', () => {
-          if (!currentState || !currentState.files || currentState.files.length === 0) {
-            showToast('No videos to export.', 'error');
-            return;
-          }
-
-          let csvContent = "data:text/csv;charset=utf-8,";
-          csvContent += "Index,File Name,Batch,Subject,Created Date,File Size,Status,YouTube Video ID,Embed Link,Studio Edit Link\n";
-
-          currentState.files.forEach((f, idx) => {
-            const embed = f.videoId ? `https://www.youtube.com/embed/${f.videoId}` : '';
-            const studio = f.studioUrl || (f.videoId ? `https://studio.youtube.com/video/${f.videoId}/edit` : '');
-            const row = [
-              idx + 1,
-              `"${(f.customTitle || f.name || '').replace(/"/g, '""')}"`,
-              `"${(f.batch || '').replace(/"/g, '""')}"`,
-              `"${(f.subject || '').replace(/"/g, '""')}"`,
-              `"${f.createdTime || ''}"`,
-              `"${formatBytes(f.totalBytes || f.size)}"`,
-              `"${f.status}"`,
-              `"${f.videoId || ''}"`,
-              `"${embed}"`,
-              `"${studio}"`
-            ];
-            csvContent += row.join(",") + "\n";
-          });
-
-          const encodedUri = encodeURI(csvContent);
-          const link = document.createElement('a');
-          link.setAttribute('href', encodedUri);
-          link.setAttribute('download', `YouTube_Upload_Report_${formatDateToYMD(new Date())}.csv`);
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          showToast('CSV downloaded!', 'success');
-        });
+        downloadCsvBtn.addEventListener('click', triggerDownloadCSV);
       }
 
       loadClientIds();
