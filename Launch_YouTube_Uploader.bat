@@ -1,9 +1,9 @@
 @echo off
-title Drive to YouTube Uploader - 1-Click Launcher
+title Drive to YouTube Uploader - Desktop App
 cd /d "%~dp0"
 
 echo ========================================================
-echo   🚀 DRIVE TO YOUTUBE UPLOADER - 1-CLICK LAUNCHER (WINDOWS)
+echo   🚀 DRIVE TO YOUTUBE UPLOADER - DESKTOP APP (WINDOWS)
 echo ========================================================
 
 :: 1. Check if Node.js is installed
@@ -21,20 +21,20 @@ if not exist "node_modules\" (
     call npm install
 )
 
-:: 3. Start Node.js server in background if not already running
-netstat -ano | findstr :3000 >nul
-if %errorlevel% equ 0 (
-    echo [*] Server is already running on port 3000.
+:: 3. Launch Desktop App Window
+if exist "node_modules\electron\" (
+    echo [*] Launching Native Desktop App Window...
+    call npx electron electron-main.js
 ) else (
-    echo [*] Starting local server on http://localhost:3000 ...
-    start /min "DriveToYouTubeServer" node server.js
-    timeout /t 2 /nobreak >nul
+    :: Fallback to background server + browser
+    netstat -ano | findstr :3000 >nul
+    if %errorlevel% neq 0 (
+        echo [*] Starting local server on http://localhost:3000 ...
+        start /min "DriveToYouTubeServer" node server.js
+        timeout /t 2 /nobreak >nul
+    )
+    echo [*] Opening application in your browser...
+    start http://localhost:3000
 )
 
-:: 4. Open default browser
-echo [*] Opening application in your browser...
-start http://localhost:3000
-
-echo.
-echo [SUCCESS] App is running! You can minimize this window.
 echo ========================================================

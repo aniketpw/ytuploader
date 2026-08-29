@@ -5,6 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
+    "app": "electron electron-main.js",
     "build": "echo 'Build complete'",
     "dev": "node server.js",
     "lint": "node --check server.js get-refresh-token.js",
@@ -24,5 +25,8 @@
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "googleapis": "^144.0.0"
+  },
+  "devDependencies": {
+    "electron": "^44.0.0"
   }
 }
