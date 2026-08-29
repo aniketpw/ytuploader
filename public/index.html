@@ -2665,9 +2665,14 @@
       AppStorage.removeItem('oauth_token_expiry');
       window.gAccessToken = null;
       window.isAuthenticated = false;
+      if (currentState) {
+        currentState.files = [];
+      }
       checkAuthStatus();
       closeAuthModal();
-      showToast('Logged out from Google Account', 'info');
+      renderFilteredTable();
+      updateDynamicMetrics();
+      showToast('Logged out. Session cleared.', 'info');
     };
 
     window.loadClientIds = function() {
@@ -2818,6 +2823,12 @@
     // Scan & File Selection / Review Modal Engine
     // ==========================================
     window.openScanReviewModal = async function() {
+      if (!window.isAuthenticated || !window.gAccessToken) {
+        showToast('Please connect your Google Account first.', 'error');
+        handleConnectClick();
+        return;
+      }
+
       const folder = folderInput.value.trim();
       if (!folder) {
         showToast('Please paste a Google Drive folder link or ID first.', 'error');
@@ -4288,6 +4299,24 @@
     function renderFilteredTable() {
       if (!trackingTableBody) return;
 
+      if (!window.isAuthenticated) {
+        trackingTableBody.innerHTML = `
+          <tr id="authGateRow">
+            <td colspan="6" class="py-14 text-center">
+              <div class="max-w-md mx-auto space-y-3 font-mono-code">
+                <div class="text-3xl">🔒</div>
+                <h4 class="font-bold text-xs uppercase tracking-widest text-[var(--text-main)]">Google Account Not Connected</h4>
+                <p class="text-[11px] text-[var(--text-muted)]">Connect your Google Account to view your channel uploads, scan Drive folders, and stream lectures.</p>
+                <button type="button" onclick="handleConnectClick()" class="px-4 py-2 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] font-bold text-xs uppercase tracking-wider cursor-pointer shadow-sm hover:opacity-90 transition-opacity">
+                  🔴 CONNECT GOOGLE ACCOUNT
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
       if (!currentState || !currentState.files || currentState.files.length === 0) {
         trackingTableBody.innerHTML = `
           <tr id="emptyRow" class="text-[#A8A29E]">
@@ -4844,8 +4873,19 @@
     }
 
     async function loadJobStatus() {
+      if (!window.isAuthenticated || !window.gAccessToken) {
+        if (currentState) currentState.files = [];
+        renderFilteredTable();
+        updateDynamicMetrics();
+        return;
+      }
+
       try {
-        const res = await fetch('/api/status');
+        const res = await fetch('/api/status', {
+          headers: {
+            'Authorization': `Bearer ${window.gAccessToken}`
+          }
+        });
         const data = await res.json();
         if (data.state) {
           currentState = data.state;
@@ -4862,6 +4902,12 @@
     }
 
     window.startProcessing = async function(force = false, selectedFileIds = null, customTitles = null) {
+      if (!window.isAuthenticated || !window.gAccessToken) {
+        showToast('Please connect your Google Account first.', 'error');
+        handleConnectClick();
+        return;
+      }
+
       const folder = folderInput.value.trim();
       if (!folder) {
         showToast('Please enter a Google Drive folder URL or ID', 'error');

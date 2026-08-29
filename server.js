@@ -608,17 +608,32 @@ app.get('/api/events', (req, res) => {
   });
 });
 
-app.get('/api/job-status', (req, res) => {
-  const history = loadUploadedHistory();
-  res.json({ success: true, state: jobState, history });
-});
+app.get(['/api/status', '/api/job-status'], (req, res) => {
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.replace(/^Bearer\s+/i, '').trim();
 
-app.get('/api/status', (req, res) => {
+  // If no auth token provided, return empty history to protect user privacy
+  if (!token) {
+    return res.json({
+      success: true,
+      state: {
+        ...jobState,
+        files: (jobState.status === 'processing' || jobState.status === 'uploading') ? jobState.files : []
+      },
+      history: []
+    });
+  }
+
   const history = loadUploadedHistory();
   res.json({ success: true, state: jobState, history });
 });
 
 app.get('/api/history', (req, res) => {
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+  if (!token) {
+    return res.json({ success: true, history: [] });
+  }
   const history = loadUploadedHistory();
   res.json({ success: true, history });
 });
