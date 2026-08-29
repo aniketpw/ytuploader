@@ -1430,7 +1430,7 @@
               <input
                 type="text"
                 id="manualBatchInput"
-                placeholder="e.g. 27-AJ251NP 2026"
+                placeholder="e.g. Batch Name or Code"
                 class="w-full h-8 px-2 om-box-input text-xs text-[var(--text-main)]"
               />
             </div>
@@ -1439,7 +1439,7 @@
               <input
                 type="text"
                 id="manualSubjectInput"
-                placeholder="e.g. PHYSICS"
+                placeholder="e.g. Subject / Topic"
                 class="w-full h-8 px-2 om-box-input text-xs text-[var(--text-main)]"
               />
             </div>
@@ -3420,9 +3420,11 @@
       const batchInput = document.getElementById('manualBatchInput');
       const subjectInput = document.getElementById('manualSubjectInput');
       const titleInput = document.getElementById('manualTitleInput');
+      const playlistInput = document.getElementById('manualPlaylistInput');
       if (titleInput) titleInput.value = '';
-      if (batchInput && !batchInput.value) batchInput.value = 'PW BATCH 2026';
-      if (subjectInput && !subjectInput.value) subjectInput.value = 'PHYSICS';
+      if (batchInput) batchInput.value = '';
+      if (subjectInput) subjectInput.value = '';
+      if (playlistInput) playlistInput.value = '';
 
       const thumbPreview = document.getElementById('manualThumbPreview');
       if (thumbPreview) thumbPreview.src = 'https://placehold.co/1280x720/1c1917/ffffff?text=Thumbnail+Preview';
@@ -3487,8 +3489,8 @@
       const subjectInput = document.getElementById('manualSubjectInput');
 
       const title = (titleInput && titleInput.value.trim()) ? titleInput.value.trim() : (manualSelectedFile ? manualSelectedFile.name.replace(/\.[^/.]+$/, '') : 'Lecture Video');
-      const batch = (batchInput && batchInput.value.trim()) ? batchInput.value.trim() : 'PW BATCH 2026';
-      const subject = (subjectInput && subjectInput.value.trim()) ? subjectInput.value.trim() : 'PHYSICS';
+      const batch = (batchInput && batchInput.value.trim()) ? batchInput.value.trim() : 'BATCH';
+      const subject = (subjectInput && subjectInput.value.trim()) ? subjectInput.value.trim() : 'LECTURE';
 
       const canvas = document.createElement('canvas');
       canvas.width = 1280;
@@ -4084,9 +4086,9 @@
     };
 
     window.generateSmartThumbnail = function() {
-      const title = document.getElementById('editModalTitleInput').value.trim() || 'Physics Lecture';
-      const batch = document.getElementById('editModalBatchInput').value.trim() || 'PW BATCH 2026';
-      const subject = document.getElementById('editModalSubjectInput').value.trim() || 'PHYSICS';
+      const title = document.getElementById('editModalTitleInput').value.trim() || (currentActiveEditFile?.customTitle || currentActiveEditFile?.name || 'Lecture Video');
+      const batch = document.getElementById('editModalBatchInput').value.trim() || (currentActiveEditFile?.batch || 'Batch');
+      const subject = document.getElementById('editModalSubjectInput').value.trim() || (currentActiveEditFile?.subject || 'Lecture');
 
       const canvas = document.createElement('canvas');
       canvas.width = 1280;
