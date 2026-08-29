@@ -895,7 +895,13 @@
           </div>
         </div>
 
-        <iframe id="modalIframe" src="" class="w-full h-full border-0 relative z-0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+        <iframe id="modalIframe" src="" class="w-full h-full border-0 relative z-0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+      </div>
+
+      <!-- Modal Footer Info -->
+      <div class="px-4 py-2 bg-[var(--bg-subcard)] border-t border-[var(--border-main)] font-mono-code text-[10px] text-[var(--text-muted)] flex items-center justify-between flex-wrap gap-2">
+        <span>⚡ <strong>Tip:</strong> Freshly uploaded videos take 1–2 mins for YouTube to process HD quality.</span>
+        <span class="text-[var(--text-subtle)]">Click <strong>Open ↗</strong> to view directly on YouTube Studio.</span>
       </div>
     </div>
   </div>
@@ -4002,7 +4008,7 @@
       if (modalPosterContainer) modalPosterContainer.classList.add('hidden');
 
       if (isYt && ytId) {
-        modalIframe.src = `https://www.youtube-nocookie.com/embed/${ytId}?autoplay=1&rel=0`;
+        modalIframe.src = `https://www.youtube.com/embed/${ytId}?autoplay=1&rel=0`;
       } else {
         const driveId = file.id || file.videoId;
         modalIframe.src = `https://drive.google.com/file/d/${driveId}/preview`;
