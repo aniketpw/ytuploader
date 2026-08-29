@@ -257,39 +257,6 @@
   <!-- Main Container -->
   <main class="flex-1 max-w-[1400px] w-full mx-auto px-6 py-6 space-y-6">
 
-    <!-- Active Live Streaming Progress Hero Banner -->
-    <div id="liveStreamBanner" class="hidden p-3.5 bg-[#191715] text-[#FAF7F2] font-mono-code text-xs space-y-2 shadow-xl border-2 border-orange-500">
-      <div class="flex items-center justify-between flex-wrap gap-2">
-        <div class="flex items-center gap-2.5 overflow-hidden">
-          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
-          <span class="font-bold uppercase tracking-wider text-orange-400 shrink-0">STREAMING TO YOUTUBE:</span>
-          <span class="font-bold text-[#FAF7F2] truncate" id="liveStreamTitle">Lecture Video.mp4</span>
-        </div>
-        <div class="flex items-center gap-3 shrink-0">
-          <span class="text-orange-400 font-bold" id="liveStreamSpeed">⚡ 0.0 MB/s</span>
-          <span class="text-emerald-400 font-bold text-sm" id="liveStreamPercent">0%</span>
-        </div>
-      </div>
-      <div class="w-full bg-[#2C2926] h-2 overflow-hidden">
-        <div id="liveStreamProgressBar" class="bg-gradient-to-r from-orange-500 to-emerald-400 h-full transition-all duration-200" style="width: 0%"></div>
-      </div>
-      <div class="flex items-center justify-between text-[10px] text-[#8C857E]">
-        <span id="liveStreamBytes">0 MB / 0 MB</span>
-        <span id="liveStreamEta">Estimating time remaining...</span>
-      </div>
-    </div>
-
-    <!-- Background Notice Banner -->
-    <div id="bgNoticeBanner" class="hidden border border-[#2C2926] bg-[#191715] p-3 flex items-center justify-between text-xs text-[#FAF7F2]">
-      <div class="flex items-center gap-2.5 font-mono-code">
-        <span class="w-2 h-2 rounded-full bg-orange-500 animate-ping"></span>
-        <span class="font-bold text-[11px] uppercase tracking-wider" id="bgStatusText">Upload task active in background...</span>
-      </div>
-      <button type="button" id="cancelJobBtn" onclick="cancelProcessingJob()" class="px-2.5 py-1 bg-rose-950/40 hover:bg-rose-950/70 border border-rose-800 font-bold text-rose-300 cursor-pointer font-mono-code text-[10px] uppercase tracking-wider">
-        Stop Task
-      </button>
-    </div>
-
     <!-- Quota Alert Banner -->
     <div id="quotaAlertBanner" class="hidden border border-amber-700/60 bg-amber-950/30 p-3.5 flex items-center justify-between flex-wrap gap-3">
       <div class="space-y-0.5">
@@ -4523,7 +4490,7 @@
           statusHtml = `
             <div class="space-y-1 max-w-[220px] font-mono-code">
               <div class="flex items-center justify-between text-[10px] font-bold text-orange-500">
-                <span>Uploading ${file.percentage || 0}%</span>
+                <span id="progress-pct-${file.id}">Uploading ${file.percentage || 0}%</span>
                 <span class="text-[var(--text-muted)]" id="progress-bytes-${file.id}">${formatBytes(file.uploadedBytes || 0)}</span>
               </div>
               <div class="w-full bg-[var(--border-main)] h-1.5 overflow-hidden">
@@ -4684,29 +4651,13 @@
       const bytesEl = document.getElementById(`progress-bytes-${event.fileId}`);
       const speedEl = document.getElementById(`speed-${event.fileId}`);
       const etaEl = document.getElementById(`eta-${event.fileId}`);
+      const pctEl = document.getElementById(`progress-pct-${event.fileId}`);
 
       if (bar) bar.style.width = `${event.percentage}%`;
       if (bytesEl) bytesEl.textContent = `${formatBytes(event.uploadedBytes)}`;
       if (speedEl) speedEl.textContent = event.speedMBps ? `⚡ ${event.speedMBps} MB/s` : 'Streaming...';
       if (etaEl) etaEl.textContent = event.etaSeconds ? `${event.etaSeconds}s` : '';
-
-      const banner = document.getElementById('liveStreamBanner');
-      const titleEl = document.getElementById('liveStreamTitle');
-      const speedTop = document.getElementById('liveStreamSpeed');
-      const percentTop = document.getElementById('liveStreamPercent');
-      const barTop = document.getElementById('liveStreamProgressBar');
-      const bytesTop = document.getElementById('liveStreamBytes');
-      const etaTop = document.getElementById('liveStreamEta');
-
-      if (banner) {
-        banner.classList.remove('hidden');
-        if (titleEl && event.fileName) titleEl.textContent = event.fileName;
-        if (speedTop) speedTop.textContent = event.speedMBps ? `⚡ ${event.speedMBps} MB/s` : 'Streaming...';
-        if (percentTop) percentTop.textContent = `${event.percentage}%`;
-        if (barTop) barTop.style.width = `${event.percentage}%`;
-        if (bytesTop) bytesTop.textContent = `${formatBytes(event.uploadedBytes)} / ${formatBytes(event.totalBytes)}`;
-        if (etaTop) etaTop.textContent = event.etaSeconds ? `${event.etaSeconds}s remaining` : 'Direct Pipe to YouTube CDN';
-      }
+      if (pctEl) pctEl.textContent = `Uploading ${event.percentage || 0}%`;
     }
 
     function handleSSEEvent(event) {
@@ -4726,12 +4677,6 @@
           renderFilteredTable();
           updateDynamicMetrics();
         }
-        const banner = document.getElementById('liveStreamBanner');
-        const titleEl = document.getElementById('liveStreamTitle');
-        if (banner) {
-          banner.classList.remove('hidden');
-          if (titleEl) titleEl.textContent = event.fileName || 'Streaming video...';
-        }
       } else if (event.type === 'upload_progress') {
         scheduleProgressDOMUpdate(event);
 
@@ -4746,9 +4691,6 @@
           }
         }
       } else if (event.type === 'file_completed') {
-        const banner = document.getElementById('liveStreamBanner');
-        if (banner) banner.classList.add('hidden');
-
         if (currentState && currentState.files) {
           const f = currentState.files.find(item => item.id === event.fileId);
           if (f) {
@@ -4763,8 +4705,6 @@
           updateDynamicMetrics();
         }
       } else if (event.type === 'file_error') {
-        const banner = document.getElementById('liveStreamBanner');
-        if (banner) banner.classList.add('hidden');
         if (currentState && currentState.files) {
           const f = currentState.files.find(item => item.id === event.fileId);
           if (f) {

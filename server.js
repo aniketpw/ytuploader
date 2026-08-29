@@ -2077,53 +2077,6 @@ async function runUploadQueue(auth) {
             continue;
           }
 
-          const isYoutubeMode = jobState.processingMode !== 'drive_secure';
-
-          if (isYoutubeMode) {
-            // STEP 1: Pre-flight Resumable Session Creation / Quota Validation
-            // This immediately calls YouTube API with metadata to verify quota/upload limits before streaming any large bytes!
-            // If the channel has exceeded daily video limits or quota, YouTube rejects this initiation within 500ms.
-            let resumableUploadUrl = null;
-            try {
-              const resInit = await youtube.videos.insert({
-                part: ['snippet', 'status'],
-                requestBody: {
-                  snippet: {
-                    title: uploadTitle,
-                    description: `Lecture Video: ${uploadTitle}\nBatch: ${fileObj.batch}\nSubject: ${fileObj.subject}\nPlaylist: ${jobState.playlistTitle}\nUploaded on: ${new Date().toISOString()}`,
-                    tags: ['DriveToYouTube', 'AutomatedUpload', fileObj.subject, fileObj.batch],
-                    categoryId: '27' // Education
-                  },
-                  status: {
-                    privacyStatus: 'unlisted',
-                    selfDeclaredMadeForKids: false
-                  }
-                },
-                media: {
-                  body: null // Testing pre-flight headers
-                }
-              }, {
-                // Intercept before large pipe
-              });
-            } catch (preCheckErr) {
-              const errMsg = (preCheckErr.message || '').toLowerCase();
-              const isQuotaOrLimit = (
-                errMsg.includes('exceeded the number of videos') ||
-                errMsg.includes('uploadlimitexceeded') ||
-                errMsg.includes('quota') ||
-                errMsg.includes('daily upload') ||
-                preCheckErr.code === 403 ||
-                (preCheckErr.code === 400 && (errMsg.includes('upload') || errMsg.includes('limit') || errMsg.includes('exceeded')))
-              );
-
-              // If it's a hard quota or limit rejection on pre-flight, immediately break before wasting bandwidth
-              if (isQuotaOrLimit) {
-                throw preCheckErr;
-              }
-              // If it failed because body was null or expected media, that's normal for Google API client, proceed to stream
-            }
-          }
-
           const driveStreamResponse = await drive.files.get(
             { fileId: fileObj.id, alt: 'media', supportsAllDrives: true },
             { responseType: 'stream' }
