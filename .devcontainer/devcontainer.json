@@ -1,0 +1,14 @@
+{
+  "name": "Drive to YouTube Uploader",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
+  "forwardPorts": [3000],
+  "portsAttributes": {
+    "3000": {
+      "label": "Drive to YouTube Web App",
+      "onAutoForward": "openBrowser",
+      "visibility": "public"
+    }
+  },
+  "postCreateCommand": "npm install",
+  "postStartCommand": "nohup node server.js > /tmp/server.log 2>&1 &"
+}
