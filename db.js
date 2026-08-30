@@ -22,11 +22,15 @@ if (!fs.existsSync(DATA_DIR)) {
 
 // Open database with WAL mode for concurrent read/write safety
 const db = new Database(DB_PATH);
-db.pragma('journal_mode = WAL');
-db.pragma('synchronous = NORMAL');
-db.pragma('cache_size = -64000'); // 64MB cache
-db.pragma('busy_timeout = 5000');
-db.pragma('foreign_keys = ON');
+try {
+  db.pragma('journal_mode = WAL');
+} catch (walErr) {
+  console.warn('[db] WAL mode not supported on filesystem, falling back to DELETE mode:', walErr.message);
+  try { db.pragma('journal_mode = DELETE'); } catch (e) {}
+}
+try { db.pragma('synchronous = NORMAL'); } catch (e) {}
+try { db.pragma('busy_timeout = 5000'); } catch (e) {}
+try { db.pragma('foreign_keys = ON'); } catch (e) {}
 
 // ─── Schema ──────────────────────────────────────────────────────────────────
 
