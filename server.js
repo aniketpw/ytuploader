@@ -10,75 +10,18 @@ const path = require('path');
 const fs = require('fs');
 const { google } = require('googleapis');
 const { Transform } = require('stream');
+const db = require('./db');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const DATA_DIR = path.join(__dirname, 'data');
-const STATE_FILE = path.join(DATA_DIR, 'job_state.json');
-const HISTORY_FILE = path.join(DATA_DIR, 'uploaded_history.json');
 
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-}
+function loadUploadedHistory() { return db.loadUploadedHistory(); }
+function persistUploadedHistory(history) { db.persistUploadedHistory(history); }
+function saveCompletedFileToHistory(fileObj) { db.saveCompletedFileToHistory(fileObj); }
 
-function loadUploadedHistory() {
-  try {
-    if (fs.existsSync(HISTORY_FILE)) {
-      const data = fs.readFileSync(HISTORY_FILE, 'utf8');
-      const parsed = JSON.parse(data);
-      if (Array.isArray(parsed)) return parsed;
-    }
-  } catch (err) {
-    console.error('Error reading upload history:', err);
-  }
-  return [];
-}
-
-function persistUploadedHistory(history) {
-  try {
-    fs.writeFileSync(HISTORY_FILE, JSON.stringify(history, null, 2), 'utf8');
-  } catch (err) {
-    console.error('Error saving upload history:', err);
-  }
-}
-
-function saveCompletedFileToHistory(fileObj) {
-  if (!fileObj || !fileObj.id) return;
-  const history = loadUploadedHistory();
-  const existingIdx = history.findIndex(h => (h.videoId && h.videoId === fileObj.videoId) || h.id === fileObj.id);
-  const record = {
-    id: fileObj.id,
-    videoId: fileObj.videoId || fileObj.id,
-    name: fileObj.customTitle || fileObj.name || fileObj.originalName,
-    originalName: fileObj.originalName || fileObj.name,
-    customTitle: fileObj.customTitle || fileObj.name,
-    batch: fileObj.batch || 'Batch',
-    subject: fileObj.subject || 'Lecture',
-    folderPath: fileObj.folderPath || '',
-    channelId: fileObj.channelId || activeJobChannelId || null,
-    size: fileObj.size || fileObj.totalBytes || 0,
-    createdTime: fileObj.createdTime || new Date().toISOString(),
-    status: 'completed',
-    percentage: 100,
-    uploadedBytes: fileObj.totalBytes || fileObj.size || 0,
-    totalBytes: fileObj.totalBytes || fileObj.size || 0,
-    speedMBps: fileObj.speedMBps || 0,
-    etaSeconds: 0,
-    youtubeUrl: fileObj.youtubeUrl || (fileObj.videoId ? `https://youtu.be/${fileObj.videoId}` : ''),
-    thumbnailUrl: fileObj.thumbnailUrl || (fileObj.videoId ? `https://img.youtube.com/vi/${fileObj.videoId}/mqdefault.jpg` : ''),
-    studioUrl: fileObj.studioUrl || (fileObj.videoId ? `https://studio.youtube.com/video/${fileObj.videoId}/edit` : ''),
-    error: null
-  };
-
-  if (existingIdx >= 0) {
-    history[existingIdx] = { ...history[existingIdx], ...record };
-  } else {
-    history.unshift(record);
-  }
-  persistUploadedHistory(history);
-}
 
 // Middleware
 app.use(helmet({
@@ -142,6 +85,24 @@ function filterHistoryByChannel(history, channelId) {
   return history.filter(h => h.channelId === channelId);
 }
 
+function fetchUrlAsBuffer(url) {
+  return new Promise((resolve, reject) => {
+    const proto = url.startsWith('https') ? require('https') : require('http');
+    proto.get(url, (res) => {
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        return fetchUrlAsBuffer(res.headers.location).then(resolve, reject);
+      }
+      if (res.statusCode !== 200) {
+        return reject(new Error(`HTTP ${res.statusCode}`));
+      }
+      const chunks = [];
+      res.on('data', chunk => chunks.push(chunk));
+      res.on('end', () => resolve(Buffer.concat(chunks)));
+      res.on('error', reject);
+    }).on('error', reject);
+  });
+}
+
 // Scopes narrowed to minimum required for upload, playlist, title/thumbnail management
 const SCOPES = [
   'https://www.googleapis.com/auth/drive.readonly',
@@ -173,9 +134,8 @@ function getDefaultJobState() {
 function loadJobState() {
   const history = loadUploadedHistory();
   try {
-    if (fs.existsSync(STATE_FILE)) {
-      const data = fs.readFileSync(STATE_FILE, 'utf8');
-      const parsed = JSON.parse(data);
+    const parsed = db.loadJobStateFromDB();
+    if (parsed) {
       if (parsed.status === 'processing' || parsed.status === 'scanning') {
         parsed.status = 'error';
         if (parsed.logs) {
@@ -230,14 +190,7 @@ function loadJobState() {
 
 let saveStateTimeout = null;
 function persistJobState() {
-  try {
-    if (saveStateTimeout) clearTimeout(saveStateTimeout);
-    saveStateTimeout = setTimeout(() => {
-      fs.writeFileSync(STATE_FILE, JSON.stringify(jobState, null, 2), 'utf8');
-    }, 200);
-  } catch (err) {
-    console.error('Error saving job state:', err);
-  }
+  db.persistJobStateToDB(jobState);
 }
 
 function broadcastSSE(data) {
@@ -731,9 +684,6 @@ app.get('/api/history', async (req, res) => {
 app.get('/api/quota-health', async (req, res) => {
   try {
     const channelId = await resolveChannelId(req);
-    const allHistory = loadUploadedHistory();
-    const userHistory = channelId ? filterHistoryByChannel(allHistory, channelId) : allHistory;
-
     // Calculate current IST time (UTC + 5:30)
     const now = new Date();
     const istOffsetMs = (5 * 60 + 30) * 60 * 1000;
@@ -762,11 +712,8 @@ app.get('/api/quota-health', async (req, res) => {
     const resetsInSeconds = Math.max(0, Math.floor((nextResetUtc.getTime() - now.getTime()) / 1000));
 
     // Count videos uploaded in current cycle
-    const uploadsInCycle = userHistory.filter(f => {
-      const created = f.createdTime || f.uploadedAt || f.timestamp;
-      if (!created) return false;
-      return created >= cycleStartIso;
-    }).length;
+    const uploadsInCycle = db.getUploadsInCycle(cycleStartIso, channelId);
+
 
     const keysCount = Math.max(1, parseInt(req.query.keysCount || '1', 10));
     const limitPerKey = 100;
@@ -1003,9 +950,7 @@ app.post('/api/retry-pending', async (req, res) => {
   (async () => {
     activeAbortController = new AbortController();
     try {
-      const drive = google.drive({ version: 'v3', auth });
-      const youtube = google.youtube({ version: 'v3', auth });
-      await runUploadQueue(drive, youtube, auth, activeAbortController.signal);
+      await runUploadQueue(auth);
     } catch (err) {
       console.error('Error during retry-pending queue:', err);
     }
@@ -1142,10 +1087,7 @@ app.post('/api/thumbnail', async (req, res) => {
           buffer = Buffer.from(rawData, 'base64');
         } else if (imageUrl && (imageUrl.startsWith('http://') || imageUrl.startsWith('https://'))) {
           try {
-            const imgRes = await axios.get(imageUrl, { responseType: 'arraybuffer', timeout: 8000 });
-            buffer = Buffer.from(imgRes.data);
-            const contentType = imgRes.headers['content-type'];
-            if (contentType) mimeType = contentType.split(';')[0];
+            buffer = await fetchUrlAsBuffer(imageUrl);
           } catch (fetchErr) {
             console.warn('Could not download image from URL for YouTube:', fetchErr.message);
           }
@@ -1293,10 +1235,7 @@ app.post('/api/edit-video', async (req, res) => {
 
             if (!buffer && (thumbnailUrl.startsWith('http://') || thumbnailUrl.startsWith('https://'))) {
               try {
-                const imgRes = await axios.get(thumbnailUrl, { responseType: 'arraybuffer', timeout: 8000 });
-                buffer = Buffer.from(imgRes.data);
-                const contentType = imgRes.headers['content-type'];
-                if (contentType) mimeType = contentType.split(';')[0];
+                buffer = await fetchUrlAsBuffer(thumbnailUrl);
               } catch (dlErr) {
                 console.warn('Could not download image from URL:', dlErr.message);
               }
@@ -1563,9 +1502,54 @@ app.post('/api/resume', async (req, res) => {
   return res.json({ success: true, message: 'Queue resumed successfully.' });
 });
 
+// ─── Settings API ────────────────────────────────────────────────────────────
+app.get('/api/settings', (req, res) => {
+  res.json({ success: true, settings: db.getAllSettings() });
+});
+
+app.post('/api/settings', (req, res) => {
+  const { key, value } = req.body;
+  if (!key) return res.status(400).json({ success: false, error: 'Setting key is required.' });
+  db.setSetting(key, value);
+  res.json({ success: true, message: `Setting '${key}' updated.` });
+});
+
+app.get('/api/settings/credentials', (req, res) => {
+  res.json({ success: true, credentials: db.getAllCredentials() });
+});
+
+app.post('/api/settings/credentials', (req, res) => {
+  const { clientId, clientSecret, refreshToken, label } = req.body;
+  if (!clientId || !clientSecret || !refreshToken) {
+    return res.status(400).json({ success: false, error: 'clientId, clientSecret, and refreshToken are required.' });
+  }
+  db.addCredential(clientId, clientSecret, refreshToken, label || 'New Key');
+  res.json({ success: true, message: 'Credential added successfully.' });
+});
+
+app.delete('/api/settings/credentials/:id', (req, res) => {
+  db.removeCredential(parseInt(req.params.id, 10));
+  res.json({ success: true, message: 'Credential removed.' });
+});
+
+// In-memory TTL cache for Drive folder scan results (60s)
+const folderScanCache = new Map();
+function getCachedScan(folderId, startDate, endDate) {
+  const key = `${folderId}:${startDate || ''}:${endDate || ''}`;
+  const cached = folderScanCache.get(key);
+  if (cached && Date.now() < cached.expiresAt) return cached.data;
+  folderScanCache.delete(key);
+  return null;
+}
+function setCachedScan(folderId, startDate, endDate, data) {
+  const key = `${folderId}:${startDate || ''}:${endDate || ''}`;
+  folderScanCache.set(key, { data, expiresAt: Date.now() + 60000 });
+}
+
 /**
  * Drive Scan & File Preview Endpoint (Review Files & Detect Duplicates before Upload)
  */
+
 app.post('/api/scan-preview', async (req, res) => {
   const folderInput = req.body.folderInput || req.body.folderUrl || '';
   const startDate = req.body.startDate || '';
@@ -1609,7 +1593,11 @@ app.post('/api/scan-preview', async (req, res) => {
     let autoDetectedFolderName = null;
 
     for (const fId of folderIds) {
-      const scanResult = await scanDriveFolderRecursively(drive, fId, startDateIso, endDateIso);
+      let scanResult = getCachedScan(fId, startDateIso, endDateIso);
+      if (!scanResult) {
+        scanResult = await scanDriveFolderRecursively(drive, fId, startDateIso, endDateIso);
+        setCachedScan(fId, startDateIso, endDateIso, scanResult);
+      }
       if (!autoDetectedFolderName && scanResult.rootFolderName) {
         autoDetectedFolderName = scanResult.rootFolderName;
       }
@@ -1621,7 +1609,6 @@ app.post('/api/scan-preview', async (req, res) => {
     }
 
     const rawFiles = Array.from(discoveredMap.values());
-    const history = loadUploadedHistory();
 
     const formattedFiles = rawFiles.map((f, idx) => {
       const cleanOriginalName = (f.name || 'Video').replace(/\.[^/.]+$/, '');
@@ -1644,17 +1631,9 @@ app.post('/api/scan-preview', async (req, res) => {
         combinedTitle = combinedTitle.substring(0, 95) + '...';
       }
 
-      const isDuplicate = history.some(h => 
-        (h.id && h.id === f.id) || 
-        (h.customTitle && h.customTitle.trim().toLowerCase() === combinedTitle.trim().toLowerCase()) ||
-        (h.name && h.name.trim().toLowerCase() === f.name.trim().toLowerCase())
-      );
-
-      const existingRecord = isDuplicate ? history.find(h => 
-        (h.id && h.id === f.id) || 
-        (h.customTitle && h.customTitle.trim().toLowerCase() === combinedTitle.trim().toLowerCase()) ||
-        (h.name && h.name.trim().toLowerCase() === f.name.trim().toLowerCase())
-      ) : null;
+      const duplicateCheck = db.isDuplicate(f.id, combinedTitle, f.name);
+      const isDuplicate = duplicateCheck.isDuplicate;
+      const existingRecord = duplicateCheck.existing;
 
       return {
         index: idx + 1,
@@ -1822,7 +1801,11 @@ app.post(['/api/process', '/api/process-folder'], async (req, res) => {
       let autoDetectedFolderName = null;
 
       for (const fId of folderIds) {
-        const scanResult = await scanDriveFolderRecursively(drive, fId, startDateIso, endDateIso);
+        let scanResult = getCachedScan(fId, startDateIso, endDateIso);
+      if (!scanResult) {
+        scanResult = await scanDriveFolderRecursively(drive, fId, startDateIso, endDateIso);
+        setCachedScan(fId, startDateIso, endDateIso, scanResult);
+      }
         if (!autoDetectedFolderName && scanResult.rootFolderName) {
           autoDetectedFolderName = scanResult.rootFolderName;
         }
@@ -1977,51 +1960,7 @@ app.post(['/api/process', '/api/process-folder'], async (req, res) => {
 
 
 
-/**
- * Update YouTube Thumbnail Endpoint
- */
-app.post('/api/thumbnail', async (req, res) => {
-  const auth = getOAuth2Client(req);
-  if (!auth) {
-    return res.status(401).json({ success: false, error: 'Google OAuth2 access token missing.' });
-  }
 
-  const { videoId, imageBase64 } = req.body;
-  if (!videoId || !imageBase64) {
-    return res.status(400).json({ success: false, error: 'Missing videoId or image data.' });
-  }
-
-  try {
-    const { google } = require('googleapis');
-    const youtube = google.youtube({ version: 'v3', auth });
-    const { Readable } = require('stream');
-
-    const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, '');
-    const buffer = Buffer.from(base64Data, 'base64');
-    
-    // Guess mime type from base64 header if possible, else default to jpeg
-    let mimeType = 'image/jpeg';
-    if (imageBase64.startsWith('data:image/png')) mimeType = 'image/png';
-
-    const readable = new Readable();
-    readable._read = () => {};
-    readable.push(buffer);
-    readable.push(null);
-
-    const result = await youtube.thumbnails.set({
-      videoId: videoId,
-      media: {
-        mimeType: mimeType,
-        body: readable
-      }
-    });
-
-    res.json({ success: true, url: result.data.items[0].default.url });
-  } catch (err) {
-    console.error('Thumbnail upload error:', err);
-    res.status(500).json({ success: false, error: 'An internal error occurred. Please try again.' });
-  }
-});
 
 /**
  * Proxy Google Drive Images for real-time frontend preview without CORS restrictions
@@ -2418,302 +2357,424 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`====================================================`);
   console.log(` Drive-to-YouTube Background Streaming Service Live `);
   console.log(` Web UI: http://localhost:${PORT}                   `);
-  console.log(` State File: ${STATE_FILE}                          `);
+  console.log(` Database: ${path.join(DATA_DIR, 'app.db')}         `);
   console.log(`====================================================`);
 });
 
-async function runUploadQueue(auth) {
+// ─── Concurrency Limiter ─────────────────────────────────────────────────────
+function createLimiter(concurrency) {
+  let active = 0;
+  const queue = [];
+  function next() {
+    while (active < concurrency && queue.length > 0) {
+      active++;
+      const { fn, resolve, reject } = queue.shift();
+      fn().then(resolve, reject).finally(() => { active--; next(); });
+    }
+  }
+  return function limit(fn) {
+    return new Promise((resolve, reject) => {
+      queue.push({ fn, resolve, reject });
+      next();
+    });
+  };
+}
+
+// ─── Retry & Quota Helpers ───────────────────────────────────────────────────
+const RETRY_DELAYS = [2000, 8000, 30000]; // 2s, 8s, 30s exponential backoff
+
+function isQuotaError(err) {
+  const msg = (err.message || '').toLowerCase();
+  return (
+    msg.includes('exceeded the number of videos') ||
+    msg.includes('uploadlimitexceeded') ||
+    msg.includes('quota') ||
+    msg.includes('daily upload') ||
+    err.code === 403 ||
+    (err.code === 400 && (msg.includes('upload') || msg.includes('limit') || msg.includes('exceeded')))
+  );
+}
+
+function scheduleQuotaResume(auth) {
+  const now = new Date();
+  const istOffsetMs = (5 * 60 + 30) * 60 * 1000;
+  const nowIst = new Date(now.getTime() + istOffsetMs);
+  const todayReset = new Date(nowIst);
+  todayReset.setUTCHours(12, 30, 0, 0);
+  let nextReset = todayReset;
+  if (nowIst >= todayReset) {
+    nextReset = new Date(todayReset.getTime() + 24 * 3600 * 1000);
+  }
+  const msUntilReset = new Date(nextReset.getTime() - istOffsetMs).getTime() - now.getTime();
+  const resumeMs = Math.max(msUntilReset + 60000, 60000); // +1 min buffer
+
+  addJobLog(`Quota exhausted. Remaining uploads scheduled for auto-resume in ${Math.round(resumeMs / 60000)} minutes.`, 'warn');
+
+  setTimeout(async () => {
+    // Reset credential quotas
+    db.resetAllCredentialQuotas();
+
+    // Move scheduled_for_tomorrow → queued
+    jobState.files.forEach(f => {
+      if (f.status === 'scheduled_for_tomorrow') f.status = 'queued';
+    });
+    jobState.status = 'processing';
+    persistJobState();
+    addJobLog('Quota reset detected — auto-resuming scheduled uploads.', 'highlight');
+    broadcastSSE({ type: 'state_sync', state: jobState });
+
+    // Try to get auth from stored credentials
+    try {
+      const nextAuth = await getNextAvailableAuth();
+      if (nextAuth) {
+        await runUploadQueue(nextAuth.auth, nextAuth.credentialId);
+        if (jobState.status !== 'cancelled' && jobState.status !== 'paused_quota') {
+          jobState.status = 'completed';
+          jobState.finishedAt = new Date().toISOString();
+          addJobLog('All scheduled uploads completed successfully after quota reset.', 'success');
+          broadcastSSE({ type: 'process_completed', message: 'All videos processed successfully.' });
+          persistJobState();
+        }
+      } else {
+        addJobLog('No valid credentials available for auto-resume. Please connect Google account manually.', 'error');
+        broadcastSSE({ type: 'auth_required', message: 'Auto-resume failed: no stored credentials. Please re-authorize.' });
+      }
+    } catch (err) {
+      console.error('Auto-resume error:', err);
+      addJobLog('Auto-resume failed: ' + err.message, 'error');
+    }
+  }, resumeMs);
+}
+
+async function getNextAvailableAuth() {
+  const creds = db.getActiveCredentials(); // Ordered by quotaUsedToday ASC
+  for (const cred of creds) {
+    if (cred.quotaUsedToday < 100) {
+      try {
+        const { google } = require('googleapis');
+        const oauth2 = new google.auth.OAuth2(cred.clientId, cred.clientSecret);
+        oauth2.setCredentials({ refresh_token: cred.refreshToken });
+        // Verify token works by refreshing
+        await oauth2.getAccessToken();
+        return { auth: oauth2, credentialId: cred.id };
+      } catch (err) {
+        console.warn(`Credential ${cred.label} (id=${cred.id}) failed auth: ${err.message}`);
+        continue;
+      }
+    }
+  }
+  return null;
+}
+
+// ─── Single File Upload with Retry ───────────────────────────────────────────
+async function uploadSingleFile(drive, youtube, auth, fileObj, index, total, credentialId) {
+  const uploadTitle = fileObj.customTitle || fileObj.name || fileObj.originalName;
+  fileObj.status = 'uploading';
+  persistJobState();
+
+  addJobLog(`[${index + 1}/${total}] Streaming: "${uploadTitle}" (${fileObj.subject})`, 'highlight');
+  broadcastSSE({
+    type: 'file_start',
+    fileId: fileObj.id,
+    fileName: uploadTitle,
+    subject: fileObj.subject,
+    batch: fileObj.batch,
+    index: index + 1,
+    total: total,
+    totalBytes: fileObj.totalBytes
+  });
+
+  let lastError = null;
+
+  for (let attempt = 0; attempt <= RETRY_DELAYS.length; attempt++) {
+    if (jobState.status === 'cancelled' || jobState.status === 'paused_quota') return;
+
+    try {
+      await executeFileUpload(drive, youtube, auth, fileObj, uploadTitle, credentialId);
+      return; // Success
+    } catch (err) {
+      lastError = err;
+      console.error(`Error processing ${uploadTitle} (attempt ${attempt + 1}):`, err.message);
+
+      if (isQuotaError(err)) {
+        // Quota error — don't retry, handle at queue level
+        fileObj.status = 'failed';
+        fileObj.error = 'YouTube daily limit reached (10-15 videos/day for channel). Click "Use Drive Player" for instant playback.';
+
+        jobState.stats.pending = Math.max(0, jobState.stats.pending - 1);
+        jobState.stats.failed += 1;
+
+        addJobLog(`YouTube API Daily Upload Limit reached. Paused remaining uploads.`, 'warn');
+        persistJobState();
+
+        broadcastSSE({
+          type: 'quota_exceeded',
+          fileId: fileObj.id,
+          fileName: uploadTitle,
+          error: fileObj.error,
+          message: 'YouTube daily upload limit reached. You can convert remaining videos to Secure Drive Player instantly.'
+        });
+
+        // Mark remaining queued files as scheduled_for_tomorrow
+        jobState.status = 'paused_quota';
+        jobState.files.forEach(f => {
+          if (f.status === 'queued') f.status = 'scheduled_for_tomorrow';
+        });
+        persistJobState();
+
+        // Try rotating to next credential
+        const nextAuth = await getNextAvailableAuth();
+        if (nextAuth) {
+          addJobLog(`Rotating to next API credential: ${db.getCredentialById(nextAuth.credentialId)?.label || 'Unknown'}`, 'highlight');
+          jobState.files.forEach(f => {
+            if (f.status === 'scheduled_for_tomorrow') f.status = 'queued';
+          });
+          jobState.status = 'processing';
+          persistJobState();
+          broadcastSSE({ type: 'state_sync', state: jobState });
+          // The caller (runUploadQueue) will detect credential rotation
+          throw Object.assign(new Error('CREDENTIAL_ROTATION'), { nextAuth });
+        }
+
+        // No more credentials — schedule for tomorrow
+        scheduleQuotaResume(auth);
+        throw err; // Propagate to stop the queue
+      }
+
+      if (attempt < RETRY_DELAYS.length) {
+        const delay = RETRY_DELAYS[attempt];
+        addJobLog(`Retry ${attempt + 1}/3 for "${uploadTitle}" in ${delay / 1000}s...`, 'warn');
+        broadcastSSE({ type: 'file_retry', fileId: fileObj.id, fileName: uploadTitle, attempt: attempt + 1, delayMs: delay });
+        await new Promise(r => setTimeout(r, delay));
+        fileObj.status = 'uploading';
+        fileObj.percentage = 0;
+        fileObj.uploadedBytes = 0;
+      }
+    }
+  }
+
+  // All retries exhausted
+  fileObj.status = 'failed';
+  fileObj.error = lastError?.message || 'Upload failed after 3 retries';
+  jobState.stats.pending = Math.max(0, jobState.stats.pending - 1);
+  jobState.stats.failed += 1;
+  addJobLog(`Failed to upload "${uploadTitle}" after 3 retries: ${fileObj.error}`, 'error');
+  persistJobState();
+  broadcastSSE({ type: 'file_error', fileId: fileObj.id, fileName: uploadTitle, error: fileObj.error });
+}
+
+// ─── Execute Single Upload (Drive → YouTube stream) ──────────────────────────
+async function executeFileUpload(drive, youtube, auth, fileObj, uploadTitle, credentialId) {
+  const { Transform } = require('stream');
+
+  if (jobState.processingMode === 'drive_secure') {
+    // Drive Secure mode — just set permissions
+    fileObj.percentage = 10;
+    broadcastSSE({
+      type: 'upload_progress', fileId: fileObj.id, fileName: uploadTitle,
+      uploadedBytes: 0, totalBytes: fileObj.totalBytes, percentage: 10, speedMBps: 0, etaSeconds: 0
+    });
+
+    fileObj.percentage = 50;
+    broadcastSSE({
+      type: 'upload_progress', fileId: fileObj.id, fileName: uploadTitle,
+      uploadedBytes: 0, totalBytes: fileObj.totalBytes, percentage: 50, speedMBps: 0, etaSeconds: 0
+    });
+
+    try {
+      await drive.permissions.create({
+        fileId: fileObj.id,
+        requestBody: { role: 'reader', type: 'anyone' },
+        supportsAllDrives: true
+      });
+    } catch (permErr) {
+      if (!permErr.message?.includes('already has access')) throw permErr;
+    }
+
+    const embedUrl = `https://drive.google.com/file/d/${fileObj.id}/preview`;
+    fileObj.status = 'completed';
+    fileObj.percentage = 100;
+    fileObj.videoId = fileObj.id;
+    fileObj.youtubeUrl = embedUrl;
+    fileObj.studioUrl = '';
+    fileObj.thumbnailUrl = `https://drive.google.com/thumbnail?id=${fileObj.id}&sz=w320`;
+
+    jobState.stats.pending = Math.max(0, jobState.stats.pending - 1);
+    jobState.stats.completed += 1;
+
+    saveCompletedFileToHistory(fileObj);
+    persistJobState();
+    broadcastSSE({
+      type: 'file_completed', fileId: fileObj.id, fileName: uploadTitle,
+      videoId: fileObj.videoId, youtubeUrl: embedUrl,
+      studioUrl: '', thumbnailUrl: fileObj.thumbnailUrl
+    });
+    return;
+  }
+
+  // YouTube Standard mode — stream from Drive to YouTube
+  const driveStreamResponse = await drive.files.get(
+    { fileId: fileObj.id, alt: 'media', supportsAllDrives: true },
+    { responseType: 'stream' }
+  );
+
+  let uploadedBytes = 0;
+  let lastReportedPercent = -1;
+  let lastReportTime = Date.now();
+  let startTime = Date.now();
+  let speedMBps = 0;
+  let etaSeconds = 0;
+
+  const progressMonitor = new Transform({
+    highWaterMark: 2 * 1024 * 1024, // 2MB buffer for reduced chunking overhead
+    transform(chunk, encoding, callback) {
+      uploadedBytes += chunk.length;
+      fileObj.uploadedBytes = uploadedBytes;
+
+      const currentTime = Date.now();
+      const percent = fileObj.totalBytes > 0
+        ? Math.min(100, Math.round((uploadedBytes / fileObj.totalBytes) * 100))
+        : 0;
+      fileObj.percentage = percent;
+
+      const timeDiffSec = (currentTime - startTime) / 1000;
+      if (timeDiffSec > 0.5) {
+        speedMBps = ((uploadedBytes / (1024 * 1024)) / timeDiffSec);
+        fileObj.speedMBps = parseFloat(speedMBps.toFixed(2));
+        const remainingBytes = Math.max(0, fileObj.totalBytes - uploadedBytes);
+        etaSeconds = speedMBps > 0 ? Math.round((remainingBytes / (1024 * 1024)) / speedMBps) : 0;
+        fileObj.etaSeconds = etaSeconds;
+      }
+
+      // Throttle SSE to max 1 event per 500ms per file
+      if ((percent !== lastReportedPercent && (currentTime - lastReportTime >= 500 || percent === 100)) || uploadedBytes === chunk.length) {
+        lastReportedPercent = percent;
+        lastReportTime = currentTime;
+        broadcastSSE({
+          type: 'upload_progress',
+          fileId: fileObj.id, fileName: uploadTitle,
+          uploadedBytes, totalBytes: fileObj.totalBytes,
+          percentage: percent, speedMBps: fileObj.speedMBps, etaSeconds: fileObj.etaSeconds
+        });
+      }
+      callback(null, chunk);
+    }
+  });
+
+  const monitoredStream = driveStreamResponse.data.pipe(progressMonitor);
+
+  const targetPrivacy = jobState.privacyStatus || 'unlisted';
+  const isScheduled = targetPrivacy === 'scheduled' && jobState.scheduledPublishAt;
+  const finalPrivacy = isScheduled ? 'private' : (targetPrivacy === 'public' ? 'public' : (targetPrivacy === 'private' ? 'private' : 'unlisted'));
+
+  let videoStatus = {
+    privacyStatus: finalPrivacy,
+    selfDeclaredMadeForKids: false,
+    embeddable: true,
+  };
+  if (isScheduled) {
+    videoStatus.publishAt = jobState.scheduledPublishAt;
+  }
+
+  const insertResponse = await youtube.videos.insert({
+    part: ['snippet', 'status'],
+    requestBody: {
+      snippet: {
+        title: uploadTitle,
+        description: `${fileObj.batch || 'Batch'} — ${fileObj.subject || 'Lecture'}\nUploaded via Drive2YT Pipeline`,
+        tags: [fileObj.batch, fileObj.subject, 'lecture', 'education'].filter(Boolean),
+        categoryId: '27'
+      },
+      status: videoStatus
+    },
+    media: { body: monitoredStream }
+  });
+
+  const videoId = insertResponse.data.id;
+  const youtubeUrl = `https://youtu.be/${videoId}`;
+  const studioUrl = `https://studio.youtube.com/video/${videoId}/edit`;
+  let thumbnailUrl = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
+
+  // Increment credential quota counter
+  if (credentialId) {
+    db.incrementCredentialQuota(credentialId);
+  }
+
+  // Custom thumbnail upload
+  const customThumbData = jobState.customThumbnails?.[fileObj.id];
+  if (customThumbData) {
+    try {
+      const thumbBuf = Buffer.from(customThumbData, 'base64');
+      await youtube.thumbnails.set({
+        videoId: videoId,
+        media: { mimeType: 'image/jpeg', body: require('stream').Readable.from(thumbBuf) }
+      });
+      addJobLog(`Custom thumbnail applied for "${uploadTitle}"`, 'info');
+    } catch (thumbErr) {
+      addJobLog(`Thumbnail upload failed for "${uploadTitle}": ${thumbErr.message}`, 'warn');
+    }
+  }
+
+  // Playlist insertion
+  if (jobState.playlistId) {
+    try {
+      await addVideoToPlaylist(youtube, jobState.playlistId, videoId);
+    } catch (plErr) {
+      addJobLog(`Playlist insert error for "${uploadTitle}": ${plErr.message}`, 'warn');
+    }
+  }
+
+  fileObj.status = 'completed';
+  fileObj.percentage = 100;
+  fileObj.videoId = videoId;
+  fileObj.youtubeUrl = youtubeUrl;
+  fileObj.studioUrl = studioUrl;
+  fileObj.thumbnailUrl = thumbnailUrl;
+
+  jobState.stats.pending = Math.max(0, jobState.stats.pending - 1);
+  jobState.stats.completed += 1;
+
+  saveCompletedFileToHistory(fileObj);
+  persistJobState();
+
+  addJobLog(`✔ Uploaded "${uploadTitle}" → ${youtubeUrl}`, 'success');
+  broadcastSSE({
+    type: 'file_completed', fileId: fileObj.id, fileName: uploadTitle,
+    videoId, youtubeUrl, studioUrl, thumbnailUrl
+  });
+}
+
+// ─── Concurrent Upload Queue ─────────────────────────────────────────────────
+async function runUploadQueue(auth, credentialId) {
+  const concurrency = parseInt(db.getSetting('upload_concurrency') || '3', 10);
+  const limit = createLimiter(Math.max(1, Math.min(concurrency, 10)));
   const { google } = require('googleapis');
   const drive = google.drive({ version: 'v3', auth });
   const youtube = google.youtube({ version: 'v3', auth });
-  const { Transform } = require('stream');
 
-      for (let i = 0; i < jobState.files.length; i++) {
-        if (jobState.status === 'cancelled' || jobState.status === 'paused_quota') {
-          addJobLog('Pipeline stopped during queue execution.', 'warn');
-          break;
+  const pendingFiles = jobState.files.filter(f =>
+    f.status !== 'completed' && f.status !== 'failed' && f.status !== 'scheduled_for_tomorrow'
+  );
+
+  if (pendingFiles.length === 0) return;
+
+  addJobLog(`Starting concurrent upload queue (${pendingFiles.length} files, concurrency=${concurrency})`, 'highlight');
+
+  const uploadTasks = pendingFiles.map((fileObj, idx) =>
+    limit(async () => {
+      if (jobState.status === 'cancelled' || jobState.status === 'paused_quota') return;
+      try {
+        await uploadSingleFile(drive, youtube, auth, fileObj, idx, pendingFiles.length, credentialId);
+      } catch (err) {
+        if (err.message === 'CREDENTIAL_ROTATION' && err.nextAuth) {
+          // Credential rotation — restart queue with new auth
+          addJobLog('Restarting upload queue with rotated credentials...', 'highlight');
+          await runUploadQueue(err.nextAuth.auth, err.nextAuth.credentialId);
         }
-
-        if (jobState.files[i].status === 'completed' || jobState.files[i].status === 'failed') {
-          continue;
-        }
-
-        const fileObj = jobState.files[i];
-        fileObj.status = 'uploading';
-        persistJobState();
-
-        const uploadTitle = fileObj.customTitle || fileObj.name || fileObj.originalName;
-
-        addJobLog(`[${i + 1}/${jobState.files.length}] Streaming: "${uploadTitle}" (${fileObj.subject})`, 'highlight');
-        broadcastSSE({
-          type: 'file_start',
-          fileId: fileObj.id,
-          fileName: uploadTitle,
-          subject: fileObj.subject,
-          batch: fileObj.batch,
-          index: i + 1,
-          total: jobState.files.length,
-          totalBytes: fileObj.totalBytes
-        });
-
-        try {
-          if (jobState.processingMode === 'drive_secure') {
-            fileObj.percentage = 10;
-            broadcastSSE({
-              type: 'upload_progress', fileId: fileObj.id, fileName: uploadTitle,
-              uploadedBytes: 0, totalBytes: fileObj.totalBytes, percentage: 10, speedMBps: 0, etaSeconds: 0
-            });
-
-            // 1. (Option B chosen by user: We bypass the lock so it doesn't fail for non-owners)
-            // Removed: await drive.files.update({ fileId: fileObj.id, requestBody: { copyRequiresWriterPermission: true }, supportsAllDrives: true });
-
-            fileObj.percentage = 50;
-            // 2. Add permission to make it accessible to anyone with link
-            try {
-              await drive.permissions.create({
-                fileId: fileObj.id,
-                requestBody: { role: 'reader', type: 'anyone' },
-                supportsAllDrives: true
-              });
-            } catch (permErr) {
-              addJobLog(`Notice: Could not make "${uploadTitle}" public due to domain rules. Using existing sharing settings.`, 'warn');
-            }
-
-            fileObj.percentage = 100;
-            const embedUrl = `https://drive.google.com/file/d/${fileObj.id}/preview`;
-            
-            fileObj.status = 'completed';
-            fileObj.videoId = fileObj.id; // Store Drive ID as videoId for table
-            fileObj.youtubeUrl = embedUrl;
-            fileObj.studioUrl = embedUrl;
-            fileObj.thumbnailUrl = 'https://drive-thirdparty.googleusercontent.com/16/type/video/mp4';
-
-            jobState.stats.pending = Math.max(0, jobState.stats.pending - 1);
-            jobState.stats.completed += 1;
-            addJobLog(`Generated Secure Drive Player for: "${uploadTitle}"`, 'success');
-            saveCompletedFileToHistory(fileObj);
-            persistJobState();
-
-            broadcastSSE({
-              type: 'file_completed',
-              fileId: fileObj.id,
-              fileName: uploadTitle,
-              videoId: fileObj.id,
-              youtubeUrl: embedUrl,
-              studioUrl: embedUrl,
-              thumbnailUrl: fileObj.thumbnailUrl
-            });
-            continue;
-          }
-
-          const driveStreamResponse = await drive.files.get(
-            { fileId: fileObj.id, alt: 'media', supportsAllDrives: true },
-            { responseType: 'stream' }
-          );
-
-          let uploadedBytes = 0;
-          let lastReportedPercent = -1;
-          let lastReportTime = Date.now();
-          let startTime = Date.now();
-          let speedMBps = 0;
-          let etaSeconds = 0;
-
-          const progressMonitor = new Transform({
-            transform(chunk, encoding, callback) {
-              uploadedBytes += chunk.length;
-              fileObj.uploadedBytes = uploadedBytes;
-
-              const currentTime = Date.now();
-              const percent = fileObj.totalBytes > 0 
-                ? Math.min(100, Math.round((uploadedBytes / fileObj.totalBytes) * 100)) 
-                : 0;
-              fileObj.percentage = percent;
-
-              const timeDiffSec = (currentTime - startTime) / 1000;
-              if (timeDiffSec > 0.5) {
-                speedMBps = ((uploadedBytes / (1024 * 1024)) / timeDiffSec);
-                fileObj.speedMBps = parseFloat(speedMBps.toFixed(2));
-                const remainingBytes = Math.max(0, fileObj.totalBytes - uploadedBytes);
-                etaSeconds = speedMBps > 0 ? Math.round((remainingBytes / (1024 * 1024)) / speedMBps) : 0;
-                fileObj.etaSeconds = etaSeconds;
-              }
-
-              if ((percent !== lastReportedPercent && (currentTime - lastReportTime >= 150 || percent === 100)) || uploadedBytes === chunk.length) {
-                lastReportedPercent = percent;
-                lastReportTime = currentTime;
-
-                broadcastSSE({
-                  type: 'upload_progress',
-                  fileId: fileObj.id,
-                  fileName: uploadTitle,
-                  uploadedBytes,
-                  totalBytes: fileObj.totalBytes,
-                  percentage: percent,
-                  speedMBps: fileObj.speedMBps,
-                  etaSeconds: fileObj.etaSeconds
-                });
-              }
-
-              callback(null, chunk);
-            }
-          });
-
-          const monitoredStream = driveStreamResponse.data.pipe(progressMonitor);
-
-          const targetPrivacy = jobState.privacyStatus || 'unlisted';
-          const isScheduled = targetPrivacy === 'scheduled' && jobState.scheduledPublishAt;
-          const finalPrivacy = isScheduled ? 'private' : (targetPrivacy === 'public' ? 'public' : (targetPrivacy === 'private' ? 'private' : 'unlisted'));
-
-          let videoStatus = {
-            privacyStatus: finalPrivacy,
-            selfDeclaredMadeForKids: false,
-            embeddable: true,
-            license: 'youtube'
-          };
-          if (isScheduled) {
-            try {
-              videoStatus.publishAt = new Date(jobState.scheduledPublishAt).toISOString();
-            } catch (e) {}
-          }
-
-          let fullDescription = `Lecture Video: ${uploadTitle}\nBatch: ${fileObj.batch}\nSubject: ${fileObj.subject}`;
-          if (jobState.playlistTitle) fullDescription += `\nPlaylist: ${jobState.playlistTitle}`;
-          if (jobState.descriptionFooter) fullDescription += `\n\n${jobState.descriptionFooter}`;
-          fullDescription += `\n\nUploaded on: ${new Date().toISOString()}`;
-
-          const allTags = ['DriveToYouTube', 'AutomatedUpload', fileObj.subject, fileObj.batch, ...(jobState.customTags || [])].filter(Boolean);
-
-          const ytResponse = await youtube.videos.insert({
-            part: ['snippet', 'status'],
-            requestBody: {
-              snippet: {
-                title: uploadTitle,
-                description: fullDescription,
-                tags: allTags,
-                categoryId: '27' // Education
-              },
-              status: videoStatus
-            },
-            media: {
-              body: monitoredStream
-            }
-          });
-
-          const videoId = ytResponse.data.id;
-          const youtubeUrl = `https://youtu.be/${videoId}`;
-          const studioUrl = `https://studio.youtube.com/video/${videoId}/edit`;
-          let thumbnailUrl = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
-
-          // Handle automatic thumbnail push if provided in batch
-          if (jobState.customThumbnails && jobState.customThumbnails[fileObj.id] && videoId) {
-            try {
-              const rawThumb = jobState.customThumbnails[fileObj.id];
-              let thumbBuf = null;
-              if (rawThumb.startsWith('data:image/')) {
-                const b64 = rawThumb.replace(/^data:image\/\w+;base64,/, '');
-                thumbBuf = Buffer.from(b64, 'base64');
-              }
-              if (thumbBuf) {
-                await youtube.thumbnails.set({
-                  videoId: videoId,
-                  media: {
-                    mimeType: 'image/jpeg',
-                    body: require('stream').Readable.from(thumbBuf)
-                  }
-                });
-                thumbnailUrl = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg?t=${Date.now()}`;
-                addJobLog(`✔ Branded thumbnail uploaded for "${uploadTitle}"`, 'success');
-              }
-            } catch (tErr) {
-              console.warn('Batch thumbnail push note:', tErr.message);
-            }
-          }
-
-          fileObj.status = 'completed';
-          fileObj.percentage = 100;
-          fileObj.videoId = videoId;
-          fileObj.youtubeUrl = youtubeUrl;
-          fileObj.studioUrl = studioUrl;
-          fileObj.thumbnailUrl = thumbnailUrl;
-
-          if (jobState.playlistId && jobState.processingMode !== 'drive_secure') {
-            try {
-              await addVideoToPlaylist(youtube, jobState.playlistId, videoId);
-              addJobLog(`✔ Added "${uploadTitle}" to Playlist: "${jobState.playlistTitle}"`, 'info');
-            } catch (plErr) {
-              console.warn('Playlist item insert error:', plErr.message);
-            }
-          }
-
-          jobState.stats.pending = Math.max(0, jobState.stats.pending - 1);
-          jobState.stats.completed += 1;
-
-          const privacyLabel = isScheduled ? `Scheduled for ${new Date(jobState.scheduledPublishAt).toLocaleString()}` : (finalPrivacy.charAt(0).toUpperCase() + finalPrivacy.slice(1));
-          addJobLog(`Uploaded: "${uploadTitle}" ➔ ${youtubeUrl} (${privacyLabel})`, 'success');
-          saveCompletedFileToHistory(fileObj);
-          persistJobState();
-
-          broadcastSSE({
-            type: 'file_completed',
-            fileId: fileObj.id,
-            fileName: uploadTitle,
-            videoId,
-            youtubeUrl,
-            studioUrl,
-            thumbnailUrl
-          });
-
-        } catch (uploadErr) {
-          console.error(`Error processing ${uploadTitle}:`, uploadErr);
-          
-          const errMsg = (uploadErr.message || '').toLowerCase();
-          const isQuotaOrLimit = (
-            errMsg.includes('exceeded the number of videos') ||
-            errMsg.includes('uploadlimitexceeded') ||
-            errMsg.includes('quota') ||
-            errMsg.includes('daily upload') ||
-            uploadErr.code === 403 ||
-            (uploadErr.code === 400 && (errMsg.includes('upload') || errMsg.includes('limit') || errMsg.includes('exceeded')))
-          );
-
-          if (isQuotaOrLimit) {
-            fileObj.status = 'failed';
-            fileObj.error = 'YouTube daily limit reached (10-15 videos/day for channel). Click "Use Drive Player" for instant playback.';
-            jobState.status = 'paused_quota';
-            
-            jobState.stats.pending = Math.max(0, jobState.stats.pending - 1);
-            jobState.stats.failed += 1;
-
-            addJobLog(`YouTube API Daily Upload Limit reached on your channel. Paused remaining uploads. You can switch remaining videos to Secure Drive Player.`, 'warn');
-            persistJobState();
-
-            broadcastSSE({
-              type: 'quota_exceeded',
-              fileId: fileObj.id,
-              fileName: uploadTitle,
-              error: fileObj.error,
-              message: 'YouTube daily upload limit reached. You can convert remaining videos to Secure Drive Player instantly.'
-            });
-            break; // Stop streaming further files since YouTube will reject all of them
-          }
-
-          fileObj.status = 'failed';
-          fileObj.error = uploadErr.message || 'Processing failed';
-
-          jobState.stats.pending = Math.max(0, jobState.stats.pending - 1);
-          jobState.stats.failed += 1;
-
-          addJobLog(`Failed to upload "${uploadTitle}": ${fileObj.error}`, 'error');
-          persistJobState();
-
-          broadcastSSE({
-            type: 'file_error',
-            fileId: fileObj.id,
-            fileName: uploadTitle,
-            error: fileObj.error
-          });
-        }
+        // Other errors are already handled in uploadSingleFile
       }
+    })
+  );
 
-
+  await Promise.allSettled(uploadTasks);
 }

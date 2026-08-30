@@ -1,27 +1,32 @@
-# Use lightweight official Node.js image
-FROM node:20-alpine
+# Multi-stage build for better-sqlite3 native compilation
+FROM node:20-alpine AS builder
 
-# Install ffmpeg for Cloud Audio Sentry probing
-RUN apk add --no-cache ffmpeg
+# Install build tools for native addons (better-sqlite3)
+RUN apk add --no-cache python3 make g++
 
-# Set working directory
 WORKDIR /app
 
-# Copy package definition
+# Copy package definition and install
 COPY package*.json ./
+RUN npm ci --omit=dev
 
-# Install production dependencies
-RUN npm install --omit=dev
+# --- Production stage (minimal image) ---
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copy pre-built node_modules from builder
+COPY --from=builder /app/node_modules ./node_modules
 
 # Copy application files
 COPY server.js ./
+COPY db.js ./
 COPY public ./public
-COPY data ./data
 
-# Create data directory if not exists
+# Create data directory
 RUN mkdir -p data
 
-# Expose dynamic Cloud Run port
+# Expose port
 ENV PORT=3000
 EXPOSE 3000
 
