@@ -2482,16 +2482,20 @@
 
       if (start && end) {
         matchingFiles = matchingFiles.filter(f => {
+          if (f.status === 'uploading' || f.status === 'queued') return true;
           const fileYMD = getFileYMD(f);
           return fileYMD >= start && fileYMD <= end;
         });
       } else if (start) {
-        matchingFiles = matchingFiles.filter(f => getFileYMD(f) === start);
+        matchingFiles = matchingFiles.filter(f => {
+          if (f.status === 'uploading' || f.status === 'queued') return true;
+          return getFileYMD(f) === start;
+        });
       }
 
       const total = matchingFiles.length;
       const completed = matchingFiles.filter(f => f.status === 'completed').length;
-      const pending = matchingFiles.filter(f => f.status === 'uploading' || f.status === 'queued').length;
+      const pending = currentState.files.filter(f => f.status === 'uploading' || f.status === 'queued').length;
       const failed = matchingFiles.filter(f => f.status === 'failed').length;
 
       document.getElementById('metricTotal').textContent = total;
@@ -4346,6 +4350,10 @@
 
       let allFiles = [...(currentState.files || [])];
       allFiles.sort((a, b) => {
+        const isLiveA = (a.status === 'uploading' || a.status === 'queued') ? 1 : 0;
+        const isLiveB = (b.status === 'uploading' || b.status === 'queued') ? 1 : 0;
+        if (isLiveA !== isLiveB) return isLiveB - isLiveA;
+
         const tA = getFileTimestamp(a);
         const tB = getFileTimestamp(b);
         if (tA !== tB) return tB - tA;
@@ -4367,13 +4375,14 @@
       let filteredFiles = allFiles;
 
       if (currentSourceFilter === 'youtube') {
-        filteredFiles = filteredFiles.filter(f => isYouTubeVideo(f));
+        filteredFiles = filteredFiles.filter(f => isYouTubeVideo(f) || f.status === 'uploading' || f.status === 'queued');
       } else if (currentSourceFilter === 'drive') {
-        filteredFiles = filteredFiles.filter(f => !isYouTubeVideo(f));
+        filteredFiles = filteredFiles.filter(f => !isYouTubeVideo(f) || f.status === 'uploading' || f.status === 'queued');
       }
 
       if (currentSearchQuery) {
         filteredFiles = filteredFiles.filter(f => {
+          if (f.status === 'uploading' || f.status === 'queued') return true;
           const t = (f.customTitle || f.name || '').toLowerCase();
           const b = (f.batch || '').toLowerCase();
           const s = (f.subject || '').toLowerCase();
@@ -4384,11 +4393,15 @@
       const { start, end } = dateFilterRange;
       if (start && end) {
         filteredFiles = filteredFiles.filter(f => {
+          if (f.status === 'uploading' || f.status === 'queued') return true;
           const fileYMD = getFileYMD(f);
           return fileYMD >= start && fileYMD <= end;
         });
       } else if (start) {
-        filteredFiles = filteredFiles.filter(f => getFileYMD(f) === start);
+        filteredFiles = filteredFiles.filter(f => {
+          if (f.status === 'uploading' || f.status === 'queued') return true;
+          return getFileYMD(f) === start;
+        });
       }
       
       if (currentFilter === 'completed') {
@@ -4697,6 +4710,11 @@
       const speedEl = document.getElementById(`speed-${event.fileId}`);
       const etaEl = document.getElementById(`eta-${event.fileId}`);
       const pctEl = document.getElementById(`progress-pct-${event.fileId}`);
+
+      if (!bar && currentState && currentState.files) {
+        renderFilteredTable();
+        return;
+      }
 
       if (bar) bar.style.width = `${event.percentage}%`;
       if (bytesEl) bytesEl.textContent = `${formatBytes(event.uploadedBytes)}`;

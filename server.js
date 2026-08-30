@@ -664,30 +664,31 @@ app.get(['/api/status', '/api/job-status'], async (req, res) => {
   try {
     const channelId = await resolveChannelId(req);
     const allHistory = loadUploadedHistory();
-    const userHistory = channelId ? filterHistoryByChannel(allHistory, channelId) : [];
+    const userHistory = channelId ? filterHistoryByChannel(allHistory, channelId) : allHistory;
 
-    // Build a user-scoped state view
-    const userState = { ...jobState };
+    // If a job is actively running, always show the live jobState
+    // (single-server model: only one job runs at a time)
+    const isJobActive = jobState.status === 'processing' || jobState.status === 'scanning' || jobState.status === 'uploading';
 
-    // If this user owns the active job, show live files; otherwise show only their history
-    if (activeJobChannelId && activeJobChannelId === channelId) {
-      // This user started the current job — show live job files
+    if (isJobActive) {
+      // Show live job state with all files (including uploading/queued)
+      res.json({ success: true, state: jobState, history: userHistory });
     } else {
-      // Different user or no active job — show only their own completed history
+      // Job is idle/completed — show user-scoped history
+      const userState = { ...jobState };
       userState.files = userHistory;
-      userState.status = 'idle';
       userState.stats = {
         total: userHistory.length,
         pending: 0,
         completed: userHistory.filter(f => f.status === 'completed').length,
         failed: userHistory.filter(f => f.status === 'failed').length
       };
+      res.json({ success: true, state: userState, history: userHistory });
     }
-
-    res.json({ success: true, state: userState, history: userHistory });
   } catch (err) {
     console.warn('Status endpoint error:', err.message);
-    res.json({ success: true, state: getDefaultJobState(), history: [] });
+    // Fallback: return raw jobState so uploads aren't hidden
+    res.json({ success: true, state: jobState, history: [] });
   }
 });
 
