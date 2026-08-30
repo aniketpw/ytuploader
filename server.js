@@ -10,6 +10,8 @@ const path = require('path');
 const fs = require('fs');
 const { google } = require('googleapis');
 const { Transform } = require('stream');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -79,7 +81,21 @@ function saveCompletedFileToHistory(fileObj) {
 }
 
 // Middleware
-app.use(cors());
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false
+}));
+app.use(cors({
+  origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+  credentials: true
+}));
+app.use('/api/', rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: 'Too many requests, please try again later.' }
+}));
 app.use((req, res, next) => {
   res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
   res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
@@ -126,12 +142,11 @@ function filterHistoryByChannel(history, channelId) {
   return history.filter(h => h.channelId === channelId);
 }
 
-// Full Scopes for Uploading, Updating Metadata, and Playlist Management
+// Scopes narrowed to minimum required for upload, playlist, title/thumbnail management
 const SCOPES = [
-  'https://www.googleapis.com/auth/drive',
+  'https://www.googleapis.com/auth/drive.readonly',
   'https://www.googleapis.com/auth/youtube.upload',
-  'https://www.googleapis.com/auth/youtube.force-ssl',
-  'https://www.googleapis.com/auth/youtube'
+  'https://www.googleapis.com/auth/youtube.force-ssl'
 ];
 
 let jobState = loadJobState();
@@ -918,6 +933,9 @@ app.post(['/api/sync-youtube', '/api/sync-youtube-uploads', '/api/channel-videos
 });
 
 app.post('/api/clear-history', (req, res) => {
+  if (!getOAuth2Client(req)) {
+    return res.status(401).json({ success: false, error: 'Authentication required.' });
+  }
   persistUploadedHistory([]);
   jobState.files = [];
   jobState.stats = { total: 0, pending: 0, completed: 0, failed: 0 };
@@ -930,6 +948,9 @@ app.post('/api/clear-history', (req, res) => {
  * Purge only Pending / Queued / Failed items from memory without touching completed uploads
  */
 app.post('/api/clear-pending', (req, res) => {
+  if (!getOAuth2Client(req)) {
+    return res.status(401).json({ success: false, error: 'Authentication required.' });
+  }
   const initialPending = jobState.files.filter(f => f.status === 'queued' || f.status === 'failed' || f.status === 'uploading').length;
   jobState.files = jobState.files.filter(f => f.status === 'completed');
   if (jobState.status === 'processing' || jobState.status === 'paused_quota') {
@@ -1184,7 +1205,7 @@ app.post('/api/thumbnail', async (req, res) => {
     });
   } catch (err) {
     console.error('Thumbnail update error:', err);
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: 'An internal error occurred. Please try again.' });
   }
 });
 
@@ -1333,7 +1354,7 @@ app.post('/api/edit-video', async (req, res) => {
     });
   } catch (err) {
     console.error('Edit video error:', err);
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: 'An internal error occurred. Please try again.' });
   }
 });
 
@@ -1341,6 +1362,9 @@ app.post('/api/edit-video', async (req, res) => {
  * Delete Single Video from Portal / Queue
  */
 app.post('/api/delete-video', (req, res) => {
+  if (!getOAuth2Client(req)) {
+    return res.status(401).json({ success: false, error: 'Authentication required.' });
+  }
   const { fileId, videoId } = req.body;
   if (!fileId && !videoId) {
     return res.status(400).json({ success: false, error: 'File ID or Video ID is required.' });
@@ -1375,6 +1399,9 @@ app.post('/api/delete-video', (req, res) => {
  * Cancel Running Job Endpoint
  */
 app.post(['/api/cancel', '/api/cancel-job', '/api/stop'], (req, res) => {
+  if (!getOAuth2Client(req)) {
+    return res.status(401).json({ success: false, error: 'Authentication required.' });
+  }
   if (activeAbortController) {
     try {
       activeAbortController.abort();
@@ -1446,7 +1473,7 @@ app.post('/api/convert-to-drive', async (req, res) => {
     });
   } catch(err) {
     console.error('Convert to Drive error:', err);
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: 'An internal error occurred. Please try again.' });
   }
 });
 
@@ -1454,6 +1481,9 @@ app.post('/api/convert-to-drive', async (req, res) => {
  * Reset Job State Endpoint (Only clears inputs/queue, preserves completed video history)
  */
 app.post('/api/reset', (req, res) => {
+  if (!getOAuth2Client(req)) {
+    return res.status(401).json({ success: false, error: 'Authentication required.' });
+  }
   if (jobState.status === 'processing' || jobState.status === 'scanning') {
     return res.status(400).json({ success: false, error: 'Cannot reset while a job is running. Cancel it first.' });
   }
@@ -1644,7 +1674,7 @@ app.post('/api/scan-preview', async (req, res) => {
     });
   } catch (err) {
     console.error('Scan preview error:', err);
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: 'An internal error occurred. Please try again.' });
   }
 });
 
@@ -1979,7 +2009,7 @@ app.post('/api/thumbnail', async (req, res) => {
     res.json({ success: true, url: result.data.items[0].default.url });
   } catch (err) {
     console.error('Thumbnail upload error:', err);
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ success: false, error: 'An internal error occurred. Please try again.' });
   }
 });
 
@@ -1988,23 +2018,37 @@ app.post('/api/thumbnail', async (req, res) => {
  */
 app.get('/api/drive-image-proxy', async (req, res) => {
   const fileId = extractGoogleDriveFileId(req.query.id || req.query.url);
-  if (!fileId) return res.status(400).send('Invalid or missing Google Drive image file ID');
+  if (!fileId || !/^[a-zA-Z0-9_-]{10,80}$/.test(fileId)) {
+    return res.status(400).send('Invalid or missing Google Drive image file ID');
+  }
 
   const auth = getOAuth2Client(req);
   if (!auth) return res.status(401).send('Google authentication required');
 
   try {
-    const { google } = require('googleapis');
     const drive = google.drive({ version: 'v3', auth });
-    const meta = await drive.files.get({ fileId, fields: 'id, name, mimeType', supportsAllDrives: true });
+    const meta = await drive.files.get({ fileId, fields: 'id, name, mimeType, size', supportsAllDrives: true });
+
+    // Only allow image mime types to prevent open relay
+    const mimeType = meta.data.mimeType || '';
+    if (!mimeType.startsWith('image/')) {
+      return res.status(403).send('Only image files can be proxied.');
+    }
+
+    // Reject files larger than 10MB
+    const fileSize = parseInt(meta.data.size || '0', 10);
+    if (fileSize > 10 * 1024 * 1024) {
+      return res.status(413).send('Image file too large.');
+    }
+
     const streamRes = await drive.files.get({ fileId, alt: 'media', supportsAllDrives: true }, { responseType: 'stream' });
 
-    res.setHeader('Content-Type', meta.data.mimeType || 'image/jpeg');
+    res.setHeader('Content-Type', mimeType);
     res.setHeader('Cache-Control', 'public, max-age=86400');
     streamRes.data.pipe(res);
   } catch (err) {
     console.error('Drive image proxy error:', err.message);
-    res.status(500).send('Could not fetch image: ' + err.message);
+    res.status(500).send('Could not fetch image.');
   }
 });
 
@@ -2115,7 +2159,7 @@ app.post('/api/initiate-direct-upload', async (req, res) => {
     initReq.end();
   } catch (err) {
     console.error('Initiate direct upload error:', err);
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: 'An internal error occurred. Please try again.' });
   }
 });
 
