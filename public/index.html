@@ -1657,13 +1657,22 @@
           </div>
         </div>
 
-        <!-- Local Video Player Preview (Hidden until file selected) -->
-        <div id="manualLocalPlayerContainer" class="hidden space-y-2 border border-[var(--border-main)] bg-black p-2">
+        <!-- Local Video Player Preview (Replaces dropzone upon file selection) -->
+        <div id="manualLocalPlayerContainer" class="hidden space-y-2 border border-[var(--border-main)] bg-black p-2.5">
           <div class="flex items-center justify-between text-white text-[10px] px-1 font-bold">
-            <span class="text-emerald-400">▶ LOCAL VIDEO PREVIEW</span>
-            <span id="manualLocalFileInfo" class="text-stone-400">0 MB</span>
+            <div class="flex items-center gap-2 truncate max-w-[70%]">
+              <span class="text-emerald-400">▶ SELECTED VIDEO:</span>
+              <span id="manualLocalFileInfo" class="text-stone-300 font-mono-code truncate">0 MB</span>
+            </div>
+            <button
+              type="button"
+              onclick="document.getElementById('manualVideoFileInput').click()"
+              class="px-2.5 py-1 bg-[var(--bg-subcard)] hover:bg-[var(--btn-secondary-hover)] text-[var(--text-main)] border border-[var(--border-main)] text-[9px] font-bold uppercase cursor-pointer transition-colors shadow-2xs"
+            >
+              🔄 Change Video File
+            </button>
           </div>
-          <video id="manualLocalVideoPlayer" controls class="w-full aspect-video bg-black"></video>
+          <video id="manualLocalVideoPlayer" controls class="w-full aspect-video bg-black max-h-[260px]"></video>
         </div>
 
         <!-- Metadata Controls Grid -->
@@ -4057,6 +4066,8 @@
       }
       const fileInput = document.getElementById('manualVideoFileInput');
       if (fileInput) fileInput.value = '';
+      const dropzone = document.getElementById('manualDropzone');
+      if (dropzone) dropzone.classList.remove('hidden');
       const dropPrompt = document.getElementById('manualFileDropPrompt');
       if (dropPrompt) dropPrompt.textContent = 'Click or Drag & Drop a Video File Here';
       const playerContainer = document.getElementById('manualLocalPlayerContainer');
@@ -4141,6 +4152,10 @@
       if (!file) return;
 
       manualSelectedFile = file;
+
+      // Automatically hide the top dropzone to reclaim screen real estate
+      const dropzone = document.getElementById('manualDropzone');
+      if (dropzone) dropzone.classList.add('hidden');
 
       const dropPrompt = document.getElementById('manualFileDropPrompt');
       if (dropPrompt) {
