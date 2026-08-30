@@ -58,7 +58,15 @@ app.use((req, res, next) => {
   next();
 });
 app.use(express.json({ limit: '50mb' })); // Increased for thumbnails
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'), {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+    }
+  }
+}));
 
 // Store active SSE client connections
 const clients = new Map();
