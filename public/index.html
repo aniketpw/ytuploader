@@ -1645,11 +1645,16 @@
       <div class="p-5 space-y-4 max-h-[80vh] overflow-y-auto">
         
         <!-- Video File Selector / Drag & Drop Dropzone -->
-        <div id="manualDropzone" onclick="document.getElementById('manualVideoFileInput').click()" class="border-2 border-dashed border-[var(--border-main)] hover:border-orange-500 bg-[var(--bg-subcard)] hover:bg-[var(--btn-secondary-hover)] p-6 text-center cursor-pointer transition-colors space-y-2 select-none">
-          <input type="file" id="manualVideoFileInput" class="hidden" accept="video/mp4, video/mkv, video/x-matroska, video/webm, video/quicktime, video/avi" onchange="handleManualFileSelected(event)" />
+        <div id="manualDropzone" onclick="document.getElementById('manualVideoFileInput').click()" class="border-2 border-dashed border-[var(--border-main)] hover:border-orange-500 bg-[var(--bg-subcard)] hover:bg-[var(--btn-secondary-hover)] p-6 text-center cursor-pointer transition-colors space-y-2.5 select-none">
+          <input type="file" id="manualVideoFileInput" class="hidden" accept=".mkv, .mp4, .mov, .avi, .webm, .ts, .flv, .wmv, .m4v, .3gp, .m2ts, .mts, .vob, video/*, *" onchange="handleManualFileSelected(event)" />
           <div class="text-3xl">🎬</div>
-          <div class="font-bold text-xs uppercase tracking-wide text-[var(--text-main)]" id="manualFileDropPrompt">Click or Drag &amp; Drop a Video File Here</div>
-          <p class="text-[10px] text-[var(--text-muted)]">Supports MP4, MKV, WebM, MOV, AVI (no size limits)</p>
+          <div class="font-bold text-xs uppercase tracking-wide text-[var(--text-main)]" id="manualFileDropPrompt">Click or Drag &amp; Drop Any Video File Here</div>
+          <p class="text-[10px] text-[var(--text-muted)]">Full MKV, MP4, WebM, MOV, AVI, TS format support (No size limits)</p>
+          <div class="pt-1">
+            <span class="inline-block px-4 py-1.5 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] font-bold text-[10px] uppercase tracking-wider shadow-xs pointer-events-none">
+              📂 Browse Video File (.MKV / .MP4)
+            </span>
+          </div>
         </div>
 
         <!-- Local Video Player Preview (Hidden until file selected) -->
@@ -4082,8 +4087,39 @@
       const thumbPreview = document.getElementById('manualThumbPreview');
       if (thumbPreview) thumbPreview.src = 'https://placehold.co/1280x720/1c1917/ffffff?text=Thumbnail+Preview';
 
+      setupManualDropzoneListeners();
       modal.classList.remove('hidden');
     };
+
+    function setupManualDropzoneListeners() {
+      const dropzone = document.getElementById('manualDropzone');
+      if (!dropzone || dropzone._dragInit) return;
+      dropzone._dragInit = true;
+
+      ['dragenter', 'dragover'].forEach(eventName => {
+        dropzone.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropzone.classList.add('border-orange-500', 'bg-orange-500/10');
+        }, false);
+      });
+
+      ['dragleave', 'drop'].forEach(eventName => {
+        dropzone.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropzone.classList.remove('border-orange-500', 'bg-orange-500/10');
+        }, false);
+      });
+
+      dropzone.addEventListener('drop', (e) => {
+        const dt = e.dataTransfer;
+        const files = dt && dt.files;
+        if (files && files.length > 0) {
+          handleManualFileSelected({ target: { files } });
+        }
+      }, false);
+    }
 
     window.closeManualUploadModal = function() {
       const modal = document.getElementById('manualUploadModal');
