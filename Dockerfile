@@ -1,32 +1,23 @@
-# Multi-stage build for better-sqlite3 native compilation
-FROM node:20-alpine AS builder
+FROM node:20-bookworm-slim
 
-# Install build tools for native addons (better-sqlite3)
-RUN apk add --no-cache python3 make g++
+# Install native addon compilation tools for better-sqlite3
+RUN apt-get update && apt-get install -y python3 make g++ gcc libc6-dev && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Copy package definition and install
+# Copy package definitions
 COPY package*.json ./
-RUN npm ci --omit=dev
 
-# --- Production stage (minimal image) ---
-FROM node:20-alpine
+# Install production dependencies
+RUN npm install --omit=dev
 
-WORKDIR /app
+# Copy all application files
+COPY . .
 
-# Copy pre-built node_modules from builder
-COPY --from=builder /app/node_modules ./node_modules
-
-# Copy application files
-COPY server.js ./
-COPY db.js ./
-COPY public ./public
-
-# Create data directory
+# Ensure data directory exists
 RUN mkdir -p data
 
-# Expose port
+# Dynamic cloud port
 ENV PORT=3000
 EXPOSE 3000
 
