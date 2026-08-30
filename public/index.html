@@ -1284,7 +1284,27 @@
               class="w-full p-2 text-xs border border-[var(--border-main)] bg-[var(--bg-card)] text-[var(--text-main)] focus:outline-none focus:border-[var(--btn-primary-bg)]"
               onchange="saveMetadataPresets()"
             />
+        </div>
+
+        <!-- Concurrency & Performance Settings -->
+        <div class="p-3 bg-[var(--bg-subcard)] border border-[var(--border-main)] text-xs space-y-2">
+          <div class="flex items-center justify-between font-bold text-[var(--text-main)] uppercase text-[10px]">
+            <span>⚡ Concurrent Upload Streams</span>
+            <span class="text-[var(--text-muted)] font-normal lowercase" id="concurrencyHint">1-10 simultaneous</span>
           </div>
+          <div class="flex items-center gap-3">
+            <input
+              type="range"
+              id="concurrencySlider"
+              min="1"
+              max="10"
+              value="3"
+              class="flex-1 accent-sky-500 cursor-pointer"
+              oninput="handleConcurrencyChange(this.value)"
+            />
+            <span id="concurrencyValueBadge" class="px-2.5 py-0.5 bg-sky-500/20 text-sky-400 font-mono font-bold text-xs border border-sky-500/30">3</span>
+          </div>
+          <p class="text-[9px] text-[var(--text-muted)]">Controls how many Drive-to-YouTube video streams process in parallel using the SQLite queue.</p>
         </div>
 
         <!-- Direct Token -->
@@ -3086,6 +3106,38 @@
       quotaCountdownInterval = setInterval(renderCountdown, 1000);
     }
 
+    // ─── Concurrency Settings Engine (SQLite Synced) ──────────────────────
+    window.loadServerSettings = async function() {
+      try {
+        const res = await fetch('/api/settings');
+        const data = await res.json();
+        if (data.success && data.settings) {
+          const conc = data.settings.upload_concurrency || '3';
+          const slider = document.getElementById('concurrencySlider');
+          const badge = document.getElementById('concurrencyValueBadge');
+          if (slider) slider.value = conc;
+          if (badge) badge.textContent = conc;
+        }
+      } catch (err) {}
+    };
+
+    let concurrencySaveTimeout = null;
+    window.handleConcurrencyChange = function(val) {
+      const badge = document.getElementById('concurrencyValueBadge');
+      if (badge) badge.textContent = val;
+      if (concurrencySaveTimeout) clearTimeout(concurrencySaveTimeout);
+      concurrencySaveTimeout = setTimeout(async () => {
+        try {
+          await fetch('/api/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ key: 'upload_concurrency', value: String(val) })
+          });
+          showToast(`⚡ Upload concurrency set to ${val} parallel streams`, 'success');
+        } catch (e) {}
+      }, 300);
+    };
+
     window.openAuthModal = function() {
       const modal = document.getElementById('authConfigModal');
       const originDisplay = document.getElementById('originUrlDisplay');
@@ -3096,6 +3148,7 @@
       if (wizOrigin) wizOrigin.textContent = currentOrigin;
 
       loadClientIds();
+      loadServerSettings();
       showAuthLanding();
       if (modal) modal.classList.remove('hidden');
     };
