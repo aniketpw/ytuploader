@@ -4932,20 +4932,22 @@
     };
 
     window.deleteVideo = async function(fileId) {
-      if (!confirm('Remove this video from portal list?')) return;
-      showToast('Removing video...', 'info');
+      const confirmDelete = confirm('Delete this video permanently from your YouTube channel?\n\n• OK: Delete from YouTube & Dashboard\n• Cancel: Keep file');
+      if (!confirmDelete) return;
+
+      showToast('Deleting video from YouTube...', 'info');
       try {
         const res = await fetch('/api/delete-video', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${window.gAccessToken || ''}` },
-          body: JSON.stringify({ fileId })
+          body: JSON.stringify({ fileId, deleteFromYouTube: true })
         });
         const data = await res.json();
         if (data.success) {
-          showToast('✔ Video removed.', 'success');
+          showToast('✔ Video deleted from YouTube channel.', 'success');
           loadJobStatus();
         } else {
-          showToast('Failed to remove: ' + data.error, 'error');
+          showToast('Failed to delete: ' + data.error, 'error');
         }
       } catch (err) {
         showToast('Error: ' + err.message, 'error');

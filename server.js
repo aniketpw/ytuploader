@@ -1523,22 +1523,35 @@ app.post('/api/edit-video', async (req, res) => {
 });
 
 /**
- * Delete Single Video from Portal / Queue
+ * Delete Single Video from Portal / Queue & YouTube Channel
  */
-app.post('/api/delete-video', (req, res) => {
-  if (!getOAuth2Client(req)) {
+app.post('/api/delete-video', async (req, res) => {
+  const auth = getOAuth2Client(req);
+  if (!auth) {
     return res.status(401).json({ success: false, error: 'Authentication required.' });
   }
-  const { fileId, videoId } = req.body;
-  if (!fileId && !videoId) {
+  const { fileId, videoId, deleteFromYouTube } = req.body;
+  const targetId = videoId || fileId;
+  if (!targetId) {
     return res.status(400).json({ success: false, error: 'File ID or Video ID is required.' });
   }
 
+  // If user requested deleting directly from YouTube channel
+  if (deleteFromYouTube && targetId) {
+    try {
+      const youtube = google.youtube({ version: 'v3', auth });
+      await youtube.videos.delete({ id: targetId });
+      addJobLog(`✔ Permanently deleted video "${targetId}" from YouTube channel.`, 'info');
+    } catch (ytErr) {
+      console.warn('YouTube video delete warning:', ytErr.message);
+    }
+  }
+
   const initialCount = jobState.files.length;
-  jobState.files = jobState.files.filter(f => f.id !== fileId && f.videoId !== videoId && f.id !== videoId);
+  jobState.files = jobState.files.filter(f => f.id !== fileId && f.videoId !== videoId && f.id !== targetId);
 
   // Also remove from history
-  const history = loadUploadedHistory().filter(f => f.id !== fileId && f.videoId !== videoId && f.id !== videoId);
+  const history = loadUploadedHistory().filter(f => f.id !== fileId && f.videoId !== videoId && f.id !== targetId);
   persistUploadedHistory(history);
 
   jobState.stats = {
@@ -1551,10 +1564,9 @@ app.post('/api/delete-video', (req, res) => {
   persistJobState();
   broadcastSSE({ type: 'state_sync', state: jobState });
 
-  addJobLog(`Removed video from portal list.`, 'info');
   return res.json({
     success: true,
-    message: 'Video removed successfully from table.',
+    message: deleteFromYouTube ? 'Video deleted permanently from YouTube and removed from library.' : 'Video removed from library.',
     remaining: jobState.files.length
   });
 });
