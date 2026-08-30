@@ -28,14 +28,7 @@ function loadUploadedHistory() {
     if (fs.existsSync(HISTORY_FILE)) {
       const data = fs.readFileSync(HISTORY_FILE, 'utf8');
       const parsed = JSON.parse(data);
-      if (Array.isArray(parsed)) {
-        parsed.forEach(f => {
-          if (f.audioHealth && f.audioHealth.verdict === 'silent_all') {
-            delete f.audioHealth;
-          }
-        });
-        return parsed;
-      }
+      if (Array.isArray(parsed)) return parsed;
     }
   } catch (err) {
     console.error('Error reading upload history:', err);
@@ -1017,180 +1010,6 @@ app.post('/api/retry-pending', async (req, res) => {
       console.error('Error during retry-pending queue:', err);
     }
   })();
-});
-
-/**
- * =========================================================================
- * Cloud Audio Silence & Mute Anomaly Sentry Engine (Start, Mid, End Checks)
- * =========================================================================
- */
-const { execFile } = require('child_process');
-
-function parseDbValue(valStr) {
-  if (!valStr) return -999;
-  const clean = String(valStr).trim().toLowerCase();
-  if (clean.includes('-inf') || clean.includes('inf')) return -999;
-  const parsed = parseFloat(clean);
-  return isNaN(parsed) ? -999 : parsed;
-}
-
-async function inspectAudioSegment(fileId, token, seekSeconds, sampleDuration = 5) {
-  return new Promise((resolve) => {
-    const url = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&supportsAllDrives=true`;
-    const headers = `Authorization: Bearer ${token}\r\n`;
-
-    const args = [
-      '-headers', headers,
-      '-ss', String(Math.max(0, Math.floor(seekSeconds))),
-      '-t', String(sampleDuration),
-      '-i', url,
-      '-af', 'volumedetect',
-      '-f', 'null',
-      '-'
-    ];
-
-    execFile('ffmpeg', args, { timeout: 15000 }, (error, stdout, stderr) => {
-      const output = (stderr || '') + (stdout || '');
-      const meanMatch = output.match(/mean_volume:\s*(-?[\d.]+|-\w+|\w+)\s*dB/i);
-      const maxMatch = output.match(/max_volume:\s*(-?[\d.]+|-\w+|\w+)\s*dB/i);
-
-      if (meanMatch) {
-        const meanDb = parseDbValue(meanMatch[1]);
-        const maxDb = maxMatch ? parseDbValue(maxMatch[1]) : meanDb;
-        const isSilent = (meanDb <= -48 && maxDb <= -42) || meanDb === -999;
-        resolve({
-          success: true,
-          seekSeconds: Math.floor(seekSeconds),
-          meanDb: meanDb === -999 ? '-inf' : meanDb,
-          maxDb: maxDb === -999 ? '-inf' : maxDb,
-          silent: isSilent,
-          label: isSilent ? 'Silent' : 'Audible'
-        });
-      } else {
-        // If stream is not directly streamable via Drive (e.g. YouTube synced video or manual upload), default to Audible (do NOT false-flag as muted)
-        resolve({
-          success: false,
-          seekSeconds: Math.floor(seekSeconds),
-          meanDb: -21.5,
-          maxDb: -3.2,
-          silent: false,
-          label: 'Audible'
-        });
-      }
-    });
-  });
-}
-
-async function probeFileAudioCheckpoints(fileId, token, durationSeconds = 3600) {
-  const dur = Math.max(120, parseInt(durationSeconds || 3600, 10));
-  const startSeek = 30;
-  const midSeek = Math.floor(dur * 0.5);
-  const endSeek = Math.max(60, dur - 90);
-
-  const [startResult, midResult, endResult] = await Promise.all([
-    inspectAudioSegment(fileId, token, startSeek, 5),
-    inspectAudioSegment(fileId, token, midSeek, 5),
-    inspectAudioSegment(fileId, token, endSeek, 5)
-  ]);
-
-  const startSilent = startResult.silent;
-  const midSilent = midResult.silent;
-  const endSilent = endResult.silent;
-
-  const allThreeSilent = startSilent && midSilent && endSilent;
-  const silentCount = (startSilent ? 1 : 0) + (midSilent ? 1 : 0) + (endSilent ? 1 : 0);
-
-  let verdict = 'healthy';
-  let badgeLabel = 'Audible (3/3 Active)';
-  let isFullyMuted = false;
-
-  if (allThreeSilent) {
-    // Only marked as MUTED when ALL 3 checkpoints (Start, Mid, End) are confirmed silent
-    verdict = 'silent_all';
-    badgeLabel = '100% Muted (3/3 Silent)';
-    isFullyMuted = true;
-  } else {
-    // If 1 or 2 checkpoints had low volume, it is verified as audible lecture speech
-    verdict = 'healthy';
-    badgeLabel = silentCount > 0 ? `Audible (${3 - silentCount}/3 Active)` : 'Audible (3/3 Active)';
-    isFullyMuted = false;
-  }
-
-  return {
-    verdict,
-    badgeLabel,
-    hasSilence: isFullyMuted,
-    isFullyMuted,
-    silentCount,
-    scannedAt: new Date().toISOString(),
-    checkpoints: {
-      start: { seek: startSeek, ...startResult },
-      mid: { seek: midSeek, ...midResult },
-      end: { seek: endSeek, ...endResult }
-    }
-  };
-}
-
-/**
- * Audio Silence Probe API Endpoint
- */
-app.post('/api/audio-probe', async (req, res) => {
-  const authHeader = req.headers.authorization || '';
-  const token = authHeader.replace(/^Bearer\s+/i, '').trim();
-
-  if (!token) {
-    return res.status(401).json({ success: false, error: 'Authorization token required for audio probing.' });
-  }
-
-  const { fileId, all } = req.body;
-
-  if (!fileId && !all) {
-    return res.status(400).json({ success: false, error: 'fileId or all=true required.' });
-  }
-
-  try {
-    if (all) {
-      const targets = jobState.files.filter(f => f.id && (!f.audioHealth || f.audioHealth.verdict === 'pending'));
-      res.json({ success: true, message: `Queued audio inspection for ${targets.length} lecture(s).` });
-
-      (async () => {
-        for (const file of targets) {
-          try {
-            const result = await probeFileAudioCheckpoints(file.id, token, file.durationSeconds || 3600);
-            file.audioHealth = result;
-            persistJobState();
-            broadcastSSE({ type: 'audio_health_updated', fileId: file.id, audioHealth: result });
-          } catch (e) {
-            console.warn(`Audio probe failed for file ${file.id}:`, e.message);
-          }
-        }
-      })();
-      return;
-    }
-
-    const fileObj = jobState.files.find(f => f.id === fileId);
-    const duration = fileObj?.durationSeconds || 3600;
-    const result = await probeFileAudioCheckpoints(fileId, token, duration);
-
-    if (fileObj) {
-      fileObj.audioHealth = result;
-      persistJobState();
-      broadcastSSE({ type: 'audio_health_updated', fileId, audioHealth: result });
-    }
-
-    // Also update history record if found
-    const history = loadUploadedHistory();
-    const histItem = history.find(h => h.id === fileId || h.videoId === fileId);
-    if (histItem) {
-      histItem.audioHealth = result;
-      persistUploadedHistory(history);
-    }
-
-    res.json({ success: true, fileId, audioHealth: result });
-  } catch (err) {
-    console.error('Audio probe error:', err);
-    res.status(500).json({ success: false, error: err.message || 'Audio probe failed' });
-  }
 });
 
 /**
@@ -2304,13 +2123,6 @@ app.post('/api/stream-manual-upload', async (req, res) => {
       }
     }
 
-    let audioHealth = null;
-    if (req.query.audioHealth) {
-      try {
-        audioHealth = JSON.parse(decodeURIComponent(req.query.audioHealth));
-      } catch (e) {}
-    }
-
     const record = {
       id: videoId,
       videoId: videoId,
@@ -2331,7 +2143,6 @@ app.post('/api/stream-manual-upload', async (req, res) => {
       youtubeUrl,
       thumbnailUrl: finalThumbnail,
       studioUrl,
-      audioHealth,
       error: null
     };
 
