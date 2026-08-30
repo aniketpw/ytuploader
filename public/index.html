@@ -192,21 +192,20 @@
         </div>
       </div>
 
-      <!-- Right Header Actions (Sync YouTube, Google Auth, Verify, SSE, Sound Toggle) -->
-      <div class="flex items-center gap-1.5 sm:gap-2 font-mono-code text-xs flex-wrap justify-end">
+      <!-- Right Header Actions (Sync YouTube, Google Auth, Verify, SSE) -->
+      <div class="flex items-center gap-2 font-mono-code text-xs">
         
         <!-- Top Sync YouTube Button -->
         <button
           type="button"
           onclick="syncYouTubeUploads()"
-          class="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 h-8 border border-[var(--border-main)] bg-[var(--btn-secondary-bg)] hover:bg-[var(--btn-secondary-hover)] text-[var(--text-main)] font-semibold transition-all text-[10px] sm:text-[11px] uppercase tracking-wider cursor-pointer"
+          class="flex items-center gap-1.5 px-3 h-8 border border-[var(--border-main)] bg-[var(--btn-secondary-bg)] hover:bg-[var(--btn-secondary-hover)] text-[var(--text-main)] font-semibold transition-all text-[11px] uppercase tracking-wider cursor-pointer"
           title="Sync live videos from your YouTube channel"
         >
           <svg class="w-3.5 h-3.5 text-rose-500" viewBox="0 0 24 24" fill="currentColor">
             <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
           </svg>
-          <span class="hidden sm:inline">Sync Channel</span>
-          <span class="sm:hidden">Sync</span>
+          <span>Sync Channel</span>
         </button>
 
         <!-- Google Auth Button -->
@@ -214,7 +213,7 @@
           type="button"
           id="navAuthBtn"
           onclick="handleConnectClick()"
-          class="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 h-8 border border-[var(--border-main)] bg-[var(--btn-secondary-bg)] hover:bg-[var(--btn-secondary-hover)] text-[var(--text-main)] font-semibold transition-all cursor-pointer text-[10px] sm:text-[11px] uppercase tracking-wider"
+          class="flex items-center gap-1.5 px-3 h-8 border border-[var(--border-main)] bg-[var(--btn-secondary-bg)] hover:bg-[var(--btn-secondary-hover)] text-[var(--text-main)] font-semibold transition-all cursor-pointer text-[11px] uppercase tracking-wider"
           title="Google Account is not connected. Click to connect."
         >
           <span class="w-2 h-2 rounded-full bg-rose-500 inline-block"></span>
@@ -225,38 +224,25 @@
         <button
           type="button"
           onclick="openManualUploadModal()"
-          class="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 h-8 bg-[var(--btn-primary-bg)] hover:opacity-90 text-[var(--btn-primary-text)] font-bold transition-all text-[10px] sm:text-[11px] uppercase tracking-wider cursor-pointer shadow-xs"
+          class="flex items-center gap-1.5 px-3 h-8 bg-[var(--btn-primary-bg)] hover:opacity-90 text-[var(--btn-primary-text)] font-bold transition-all text-[11px] uppercase tracking-wider cursor-pointer shadow-xs"
           title="Directly upload a video file from your computer / device to YouTube"
         >
-          <span>+ Upload</span>
+          <span>+ Manual Upload</span>
         </button>
 
         <!-- Connected Badge -->
-        <div id="navConnectedBadge" class="hidden items-center gap-1.5 sm:gap-2 px-2 sm:px-3 h-8 border border-emerald-300 dark:border-emerald-700/60 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 font-semibold text-[10px] sm:text-[11px] uppercase tracking-wider">
+        <div id="navConnectedBadge" class="hidden items-center gap-2 px-3 h-8 border border-emerald-300 dark:border-emerald-700/60 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 font-semibold text-[11px] uppercase tracking-wider">
           <span class="w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400 inline-block"></span>
-          <span class="hidden sm:inline">Google Connected</span>
-          <span class="sm:hidden">Connected</span>
+          <span>Google Connected</span>
           <button type="button" onclick="openAuthModal()" class="text-emerald-700 dark:text-emerald-400 hover:text-emerald-950 dark:hover:text-emerald-200 underline ml-1 cursor-pointer font-bold lowercase">settings</button>
         </div>
-
-        <!-- Completion Chime & Notification Sound Toggle -->
-        <button
-          type="button"
-          id="soundToggleBtn"
-          onclick="toggleNotificationSound()"
-          class="flex items-center gap-1 px-2 sm:px-2.5 h-8 border border-[var(--border-main)] bg-[var(--btn-secondary-bg)] hover:bg-[var(--btn-secondary-hover)] text-[var(--text-main)] font-semibold transition-all text-[10px] sm:text-[11px] uppercase tracking-wider cursor-pointer shadow-2xs"
-          title="Toggle completion sound chime & browser push notifications"
-        >
-          <span id="soundIcon">🔔</span>
-          <span class="hidden md:inline" id="soundLabel">Sound ON</span>
-        </button>
 
         <!-- Verify Channel Link -->
         <a
           href="https://www.youtube.com/verify"
           target="_blank"
           rel="noopener noreferrer"
-          class="hidden lg:flex items-center gap-1 px-2.5 h-8 border border-[var(--border-main)] bg-[var(--btn-secondary-bg)] hover:bg-[var(--btn-secondary-hover)] text-[var(--text-muted)] hover:text-[var(--text-main)] font-semibold transition-all text-[10px] sm:text-[11px] uppercase tracking-wider"
+          class="hidden sm:flex items-center gap-1 px-3 h-8 border border-[var(--border-main)] bg-[var(--btn-secondary-bg)] hover:bg-[var(--btn-secondary-hover)] text-[var(--text-muted)] hover:text-[var(--text-main)] font-semibold transition-all text-[11px] uppercase tracking-wider"
           title="Verify YouTube Channel for >15 min uploads"
         >
           <span>Verify (&gt;15 min) ↗</span>
@@ -267,18 +253,18 @@
           type="button"
           id="navQuotaMeterBtn"
           onclick="openQuotaTrackerModal()"
-          class="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-2.5 h-8 border border-[var(--border-main)] bg-[var(--bg-card)] hover:bg-[var(--btn-secondary-hover)] text-[var(--text-main)] font-mono-code text-[10px] sm:text-[11px] font-bold transition-all cursor-pointer shadow-2xs"
+          class="flex items-center gap-2 px-2.5 h-8 border border-[var(--border-main)] bg-[var(--bg-card)] hover:bg-[var(--btn-secondary-hover)] text-[var(--text-main)] font-mono-code text-[11px] font-bold transition-all cursor-pointer shadow-2xs"
           title="Click to view Live API Quota & Health Breakdown"
         >
-          <div class="flex items-center gap-1 sm:gap-1.5">
-            <span id="quotaPulseDot" class="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
-            <span class="text-[var(--text-muted)] uppercase text-[9px] sm:text-[10px] tracking-wider">QUOTA:</span>
+          <div class="flex items-center gap-1.5">
+            <span id="quotaPulseDot" class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+            <span class="text-[var(--text-muted)] uppercase text-[10px] tracking-wider">QUOTA:</span>
             <span id="navQuotaUsedText" class="font-bold text-[var(--text-main)]">0/100</span>
-            <span id="navQuotaPctText" class="text-[9px] sm:text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">(0%)</span>
+            <span id="navQuotaPctText" class="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">(0%)</span>
           </div>
 
           <!-- Mini Visual Progress Bar -->
-          <div class="w-8 sm:w-12 h-1.5 bg-[var(--border-main)] overflow-hidden hidden md:block">
+          <div class="w-12 h-1.5 bg-[var(--border-main)] overflow-hidden hidden md:block">
             <div id="navQuotaMiniBar" class="h-full bg-emerald-500 transition-all duration-500" style="width: 0%"></div>
           </div>
 
@@ -286,7 +272,7 @@
         </button>
 
         <!-- SSE Status -->
-        <div id="connectionBadge" class="flex items-center gap-1 px-2 h-8 border border-[var(--border-main)] bg-[var(--btn-secondary-bg)] text-emerald-600 dark:text-emerald-400 text-[10px] sm:text-[11px] font-semibold">
+        <div id="connectionBadge" class="flex items-center gap-1.5 px-2.5 h-8 border border-[var(--border-main)] bg-[var(--btn-secondary-bg)] text-emerald-600 dark:text-emerald-400 text-[11px] font-semibold">
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
           <span id="sseStatusText" class="font-mono-code">Live</span>
         </div>
