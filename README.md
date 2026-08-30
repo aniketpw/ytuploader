@@ -1,128 +1,131 @@
-# 🎥 YouTube & Google Drive Automation Studio
+# 🌌 NEXUS: Next-Gen YouTube & Cloud Ingestion Matrix
 
-A production-grade, zero-RAM streaming pipeline and video management studio built with **Node.js**, **Express**, **Tailwind CSS**, and **Server-Sent Events (SSE)**. 
+A hyper-scale, autonomous, zero-gravity (zero-RAM) streaming pipeline and cybernetic video management nexus powered by **Node.js**, **Express**, **Tailwind CSS**, and **Real-Time Subspace Broadcasts (SSE)**.
 
-Designed with a warm **Dark Editorial UI** (matching `officemobile.vercel.app`), this studio enables automated zero-RAM streaming from Google Drive to YouTube as **Unlisted** videos, plus a **Direct Local Device Upload Studio** with live in-browser preview, instant 16:9 thumbnail generator, and real-time percentage progress.
-
----
-
-## ✨ Key Features & Capabilities
-
-### 1. Dual Ingestion Pipelines
-- **Google Drive Automated Pipeline:**
-  - Zero-RAM chunk-by-chunk streaming via Node.js `stream.Transform` directly to YouTube.
-  - Smart folder scanner with duplicate detection against previous upload history.
-  - Date filtering (Today, Yesterday, Last 7 Days, or custom interactive Calendar range).
-  - Customizable batch and subject lecture tagging.
-- **Direct Manual Local Device Studio (`+ Manual Upload`):**
-  - Drag-and-drop or file picker for local files (`.mp4`, `.mkv`, `.mov`, `.webm`, `.avi`).
-  - **▶ Instant In-Browser Video Player Preview** before uploading.
-  - Real-time 60fps upload progress (`0%` -> `100%`, transferred `MB/MB`, `Speed MB/s`, and remaining `ETA`).
-  - Direct resumable session streaming to YouTube Data API v3.
-
-### 2. Instant 16:9 Thumbnail Studio
-- **⚡ 1-Click Smart Canvas Generator:** Automatically crafts branded 1280x720 HD thumbnails with batch labels, lecture titles, and styling.
-- **Local Image Upload:** Choose PNG, JPG, or WebP files from your device.
-- **Web / Drive Image Link:** Paste any Google Drive image link or web URL for auto-detection and upload.
-
-### 3. Real-Time Streaming & Live Hero Banner
-- Real-time Server-Sent Events (SSE) broadcasting live progress to all connected dashboard tabs.
-- Pinned top banner showing live file name, speed, percentage bar, and ETA during active uploads.
-
-### 4. Interactive Library & Management
-- **Date Range Calendar Popover:** Visual date picker with quick presets (Today, Yesterday, Last 7 Days, All Dates).
-- **Multi-Factor Search & Filtering:** Filter by status (`Completed`, `Uploading`, `Queued`, `Failed`), source (`YouTube`, `Drive`), or title/batch text.
-- **Embedded Modal Player:** Watch uploaded videos or preview Drive files directly inside the application.
-- **Metadata Editor:** Rename titles, adjust batch/subject tags, and replace thumbnails anytime.
-
-### 5. Multi-User OAuth & 5-Step Guided Setup Wizard
-- Built-in guided wizard to create your own Google Cloud project in 5 minutes.
-- Connect your own Google account to get dedicated 10,000 units/day quota.
+Forged with an ultra-modern **Dark Editorial Holographic UI**, this studio establishes an autonomous bi-directional bridge between Google Drive and YouTube. It orchestrates zero-RAM media ingestion directly to YouTube as **Unlisted** assets, while featuring a **Direct Local Device Uplink Studio** complete with instantaneous in-browser previewing, 16:9 neural thumbnail synthesis, and quantum-speed telemetry.
 
 ---
 
-## ⚙️ How It Works Internally
+## ⚡ Core Cybernetics & Capabilities
 
-The application leverages streaming architectures to process multi-gigabyte video files with minimal server resource consumption.
+### 1. Dual Autonomous Ingestion Pipelines
+- **Cloud-Native Drive Synchronizer:**
+  - Zero-gravity chunk-by-chunk streaming utilizing Node.js `stream.Transform` directly into the YouTube neural net.
+  - Cognitive folder scanning with AI-grade duplicate detection against immutable historical ledgers.
+  - Quantum date filtering (Today, Yesterday, Last 7 Days, or custom chronometric ranges).
+  - Algorithmic batch and subject vector tagging.
+- **Direct Local Uplink Studio (`+ Manual Upload`):**
+  - Kinetic drag-and-drop ingestion for terrestrial files (`.mp4`, `.mkv`, `.mov`, `.webm`, `.avi`).
+  - **▶ Instant In-Browser Holographic Preview** prior to atmospheric uplink.
+  - 60fps real-time upload telemetry (`0%` -> `100%`, transferred `MB/MB`, `Velocity MB/s`, and predictive `ETA`).
+  - Resilient, resumable chunk-streaming directly to the YouTube Data API v3.
+
+### 2. Neural 16:9 Thumbnail Synthesis Studio
+- **⚡ 1-Click Smart Canvas Generator:** Automatically renders high-fidelity 1280x720 HD thumbnails injected with dynamic batch labels, lecture vectors, and cyber-styling.
+- **Terrestrial Image Injection:** Inject PNG, JPG, or WebP assets directly from local storage.
+- **Subspace Image Linking:** Resolve and auto-ingest visual assets via any Google Drive URI or web URL.
+
+### 3. Subspace Telemetry & Live HUD
+- Real-time Server-Sent Events (SSE) broadcasting synchronous telemetry to all active terminal dashboard tabs.
+- Persistent HUD hero banner displaying live vector file names, upload velocities, kinetic percentage bars, and predictive ETA parameters.
+
+### 4. Interactive Matrix & Data Management
+- **Chronometric Calendar Popover:** Visual timeline picker with rapid temporal presets.
+- **Multi-Vector Search & Filtering:** Filter by operational state (`Completed`, `Uploading`, `Queued`, `Failed`), origin node (`YouTube`, `Drive`), or semantic title/batch text.
+- **Embedded Modal Projection Player:** Stream uploaded assets or preview Drive files entirely within the native application sandbox.
+- **Dynamic Metadata Mutation:** Mutate titles, recalibrate batch/subject vectors, and hot-swap thumbnails on the fly.
+- **Hyper-Robust Window Management:** Universal modal management system and full neural navbar layout preventing UI stacking anomalies.
+
+### 5. Multi-User Authentication & Vault-Grade Isolation
+- **Strict Per-User / Channel Vault Isolation:** Uploaded telemetry, immutable file histories, and active ingestion jobs are rigidly siloed within the SQLite ledger for each authenticated Google identity.
+- **Private API Quota Sentinel:** Independently tracks and enforces the 10,000 units/day API threshold per unique operational session.
+- **Targeted Subspace Broadcasts (SSE):** Real-time telemetry events are cryptographically routed exclusively to the browser sessions authorized to monitor them.
+- **5-Step Automated Ignition Wizard:** Deploy a dedicated Google Cloud neural project in under 300 seconds.
+
+---
+
+## ⚙️ Architectural Topography
+
+The application leverages advanced hyper-streaming architectures to traverse multi-gigabyte video entities with microscopic server footprint.
 
 ### 1. High-Level System Architecture
 
 ```mermaid
 flowchart TD
-    subgraph Client["Client Browser (Dark Editorial UI)"]
-        UI["Dashboard & Table"]
-        Player["In-Browser Video Player"]
-        Studio["Direct Manual Upload Studio"]
-        ThumbGen["HTML5 16:9 Canvas Generator"]
+    subgraph Client["Client Terminal (Dark Editorial UI)"]
+        UI["Dashboard & Telemetry Grid"]
+        Player["In-Browser Projection Player"]
+        Studio["Direct Local Uplink Studio"]
+        ThumbGen["HTML5 Neural Canvas Generator"]
     end
 
-    subgraph Server["Node.js Express Server"]
+    subgraph Server["Node.js Express Core"]
         Router["Express API Endpoints"]
-        SSEHub["SSE Event Dispatcher"]
-        TransformStream["Node.js Transform Progress Stream"]
-        StateEngine["Job State & Upload History Engine"]
+        SSEHub["Subspace Event Dispatcher"]
+        TransformStream["Zero-Gravity Transform Stream"]
+        StateEngine["SQLite Vault & Job Ledger Engine"]
     end
 
     subgraph GoogleAPIs["Google Cloud Ecosystem"]
         DriveAPI["Google Drive API v3"]
         YouTubeAPI["YouTube Data API v3"]
-        OAuthService["Google OAuth 2.0 Token Service"]
+        OAuthService["Google OAuth 2.0 Auth Matrix"]
     end
 
-    UI -->|"1. Scan / Upload Commands"| Router
-    Studio -->|"2. Initiate Resumable Session"| Router
-    Router -->|"3. Query Drive / Upload Chunks"| GoogleAPIs
-    DriveAPI -->|"Stream Video (alt=media)"| TransformStream
-    TransformStream -->|"Pipe Stream (Zero RAM)"| YouTubeAPI
-    TransformStream -->|"Progress Events (Bytes, %)"| SSEHub
-    SSEHub -->|"Live SSE Events"| UI
-    StateEngine <-->|"Persist State & History"| Router
+    UI -->|"1. Scan / Uplink Directives"| Router
+    Studio -->|"2. Initialize Resumable Session"| Router
+    Router -->|"3. Query Drive / Uplink Chunks"| GoogleAPIs
+    DriveAPI -->|"Stream Media Entity (alt=media)"| TransformStream
+    TransformStream -->|"Hyper-Pipe Stream (Zero RAM)"| YouTubeAPI
+    TransformStream -->|"Telemetry Events (Bytes, %)"| SSEHub
+    SSEHub -->|"Synchronous SSE Broadcasts"| UI
+    StateEngine <-->|"Persist Vault State & Ledger"| Router
 ```
 
 ---
 
-### 2. Google Drive to YouTube Streaming Pipeline (Zero-RAM)
+### 2. Drive-to-YouTube Hyper-Streaming Pipeline (Zero-RAM)
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor User as User / Operator
-    participant Browser as UI Dashboard (SSE Client)
-    participant Server as Express Server
-    participant State as Job State & History DB
-    participant Drive as Google Drive API
-    participant YouTube as YouTube Data API v3
+    actor User as Operator
+    participant Browser as Terminal UI (SSE Client)
+    participant Server as Express Core
+    participant State as SQLite Vault (app.db)
+    participant Drive as Google Drive Network
+    participant YouTube as YouTube Neural Net
 
-    User->>Browser: Paste Drive Folder URL & Click Scan
+    User->>Browser: Inject Drive Folder URI & Execute Scan
     Browser->>Server: POST /api/scan-folder { folderInput, dateRange }
     Server->>Drive: drive.files.list(q: video files, createdTime)
-    Drive-->>Server: Array of Discovered Video Files
-    Server->>State: Check duplicate status against uploaded history
-    Server-->>Browser: Return scanned files list with duplicate flags
+    Drive-->>Server: Array of Discovered Video Vectors
+    Server->>State: Cross-reference immutable ledger for duplicates
+    Server-->>Browser: Return telemetry of discovered files
     
-    User->>Browser: Review selection & click "Start Upload"
+    User->>Browser: Authorize payload & Execute "Start Upload"
     Browser->>Server: POST /api/process-selected { selectedFileIds, customTitles }
     
-    loop For Each Selected Video
+    loop For Each Authorized Video Payload
         Server->>Browser: SSE broadcast: file_start (title, size)
         Server->>Drive: drive.files.get(fileId, alt='media', responseType='stream')
-        Drive-->>Server: Video Readable Stream
+        Drive-->>Server: Readable Media Stream
         
-        Note over Server,YouTube: Piped chunk-by-chunk via stream.Transform (0 byte local disk / RAM storage)
+        Note over Server,YouTube: Hyper-piped chunk-by-chunk via stream.Transform (0 byte local atmospheric RAM)
         Server->>YouTube: youtube.videos.insert(part: 'snippet,status', media: transformStream, privacy: 'unlisted')
         
-        loop During Chunk Transfer
-            Server-->>Browser: SSE broadcast: upload_progress (bytes, %, speed, eta)
+        loop During Chunk Transference
+            Server-->>Browser: SSE broadcast: upload_progress (bytes, %, velocity, eta)
         end
         
-        YouTube-->>Server: Upload Completed { videoId, snippet }
+        YouTube-->>Server: Transference Complete { videoId, snippet }
         
-        opt If Custom / Smart Thumbnail Attached
+        opt If Neural Thumbnail Attached
             Server->>YouTube: youtube.thumbnails.set(videoId, thumbnailBuffer)
-            YouTube-->>Server: Thumbnail Updated
+            YouTube-->>Server: Visuals Updated
         end
         
-        Server->>State: Record file in job_state.json & uploaded_history.json
+        Server->>State: Record payload completion in app.db (SQLite Vault)
         Server-->>Browser: SSE broadcast: file_completed { videoId, youtubeUrl }
     end
 
@@ -131,65 +134,27 @@ sequenceDiagram
 
 ---
 
-### 3. Direct Manual Local Device Upload Pipeline
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor User as User
-    participant Modal as Manual Upload Studio (Modal)
-    participant Server as Express Server
-    participant YouTube as YouTube Data API v3
-
-    User->>Modal: Drag & Drop Video (.mp4 / .mkv / .mov)
-    Modal->>Modal: URL.createObjectURL(file) -> Instant Local Video Player Preview
-    User->>Modal: Customize Title, Batch, Subject & 1-Click Smart Thumbnail
-    User->>Modal: Click "Start Direct Upload"
-    
-    Modal->>Server: POST /api/initiate-direct-upload { title, description, privacy, size, mimeType }
-    Server->>YouTube: Request Resumable Upload URI (youtube.videos.insert uploadType=resumable)
-    YouTube-->>Server: Resumable Upload Session URL
-    Server-->>Modal: Return uploadSessionUrl
-
-    Note over Modal,YouTube: Browser streams file directly to YouTube endpoint in chunks
-    loop Chunk Streaming
-        Modal->>YouTube: PUT bytes to uploadSessionUrl
-        Modal->>Modal: Update 60fps Real-Time Progress Bar (MB, %, Speed, ETA)
-    end
-
-    YouTube-->>Modal: 200 OK { id: videoId }
-    Modal->>Server: POST /api/complete-direct-upload { videoId, title, batch, subject, thumbnailBase64 }
-    
-    opt If Thumbnail Provided
-        Server->>YouTube: youtube.thumbnails.set(videoId, thumbnailBuffer)
-        YouTube-->>Server: Thumbnail Applied
-    end
-
-    Server-->>Modal: Success { videoId, youtubeUrl }
-    Modal-->>User: Show 100% Ready & Add to Library
-```
-
----
-
-## 📂 Project Structure
+## 📂 System Topography
 
 ```
 .
-├── server.js                   # Express server, Google APIs streaming engine, SSE hub, & REST routes
-├── get-refresh-token.js        # Interactive OAuth CLI utility to generate permanent refresh_token
+├── server.js                   # Express core, API streaming engine, SSE dispatcher, & REST routes
+├── get-refresh-token.js        # CLI utility for extracting permanent OAuth refresh_tokens
+├── db.js                       # Zero-failure SQLite/JSON Hybrid Vault (WAL mode & compiled directives)
 ├── public/
-│   └── index.html              # Dark editorial frontend (Dashboard, Studio, Player, Modals, SSE client)
+│   └── index.html              # Holographic frontend (Dashboard, Studio, Player, Modals, SSE client)
 ├── data/
-│   ├── job_state.json          # Persistent active and completed video records
-│   └── uploaded_history.json   # Persistent history used for smart duplicate detection
-├── .env.example                # Environment variables template
-├── package.json                # Project dependencies and startup scripts
-└── README.md                   # System documentation and architecture guide
+│   ├── app.db                  # Immutable SQLite vault tracking job state, historical ledgers, & quota
+│   ├── job_state.json          # (Failsafe) Legacy active/completed job records
+│   └── uploaded_history.json   # (Failsafe) Legacy ledger for duplicate detection protocols
+├── .env.example                # Environment variable blueprint
+├── package.json                # Project dependencies and ignition scripts
+└── README.md                   # System documentation and cybernetic architecture guide
 ```
 
 ---
 
-## 🚀 Installation & Quick Start
+## 🚀 Ignition Sequence & Deployment
 
 ### 1. Clone & Install Dependencies
 
@@ -199,15 +164,15 @@ cd ytuploader
 npm install
 ```
 
-### 2. Configure Environment Variables
+### 2. Calibrate Environment Variables
 
-Copy `.env.example` to `.env`:
+Clone the blueprint `.env.example` into `.env`:
 
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env` with your Google OAuth credentials:
+Inject your Google OAuth credentials into `.env`:
 
 ```env
 PORT=3000
@@ -217,35 +182,35 @@ GOOGLE_REDIRECT_URI=http://localhost:3000/oauth2callback
 GOOGLE_REFRESH_TOKEN=1//your_permanent_refresh_token
 ```
 
-*(Note: You can also use the in-app 5-step guided wizard to generate your OAuth Client ID and sign in directly from the UI without manual CLI setup).*
+*(Note: The embedded 5-step ignition wizard allows operators to synthesize an OAuth Client ID directly via the UI without manual CLI calibration).*
 
-### 3. Generate OAuth Refresh Token (CLI Method)
+### 3. Synthesize OAuth Refresh Token (CLI Protocol)
 
 ```bash
 npm run get-token
 ```
-Follow the URL printed in the terminal, grant YouTube and Drive permissions, and paste the resulting refresh token into `.env`.
+Follow the terminal URL, authorize YouTube and Drive access, and inject the resulting token into your `.env` matrix.
 
-### 4. Start the Application
+### 4. Initialize Core Server
 
 ```bash
-# Start production server
+# Initialize production core
 npm start
 
-# Or start with nodemon development mode
+# Or initialize development matrix with nodemon
 npm run dev
 ```
 
-Open your browser at:
+Access your terminal UI at:
 ```
 http://localhost:3000
 ```
 
 ---
 
-## 🔐 Google Cloud Console Configuration (Summary)
+## 🔐 Google Cloud Matrix Configuration (Summary)
 
-1. **APIs to Enable:**
+1. **APIs to Activate:**
    - Google Drive API
    - YouTube Data API v3
 2. **OAuth Scopes Required:**
@@ -253,7 +218,7 @@ http://localhost:3000
    - `https://www.googleapis.com/auth/youtube.upload`
    - `https://www.googleapis.com/auth/youtube`
 3. **Authorized JavaScript Origins:**
-   - `http://localhost:3000` (or your production deployment domain)
+   - `http://localhost:3000` (or your production deployment node)
 4. **Authorized Redirect URIs:**
    - `http://localhost:3000/oauth2callback`
 
@@ -261,4 +226,4 @@ http://localhost:3000
 
 ## 🛡️ License
 
-Private and proprietary. Designed for automated Drive-to-YouTube video streaming and channel operations.
+Classified and proprietary. Engineered exclusively for autonomous Drive-to-YouTube hyper-streaming operations.
