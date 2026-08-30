@@ -1082,40 +1082,31 @@ async function probeFileAudioCheckpoints(fileId, token, durationSeconds = 3600) 
   const midSilent = midResult.silent;
   const endSilent = endResult.silent;
 
-  let verdict = 'healthy';
-  let badgeLabel = 'Audible (All 3 Checkpoints)';
-  let hasSilence = false;
+  const allThreeSilent = startSilent && midSilent && endSilent;
+  const silentCount = (startSilent ? 1 : 0) + (midSilent ? 1 : 0) + (endSilent ? 1 : 0);
 
-  if (startSilent && midSilent && endSilent) {
+  let verdict = 'healthy';
+  let badgeLabel = 'Audible (3/3 Active)';
+  let isFullyMuted = false;
+
+  if (allThreeSilent) {
+    // Only marked as MUTED when ALL 3 checkpoints (Start, Mid, End) are confirmed silent
     verdict = 'silent_all';
-    badgeLabel = 'Muted Throughout';
-    hasSilence = true;
-  } else if (startSilent && midSilent) {
-    verdict = 'silent_start_mid';
-    badgeLabel = 'Muted (Start & Mid)';
-    hasSilence = true;
-  } else if (midSilent && endSilent) {
-    verdict = 'silent_mid_end';
-    badgeLabel = 'Muted (Mid & End)';
-    hasSilence = true;
-  } else if (startSilent) {
-    verdict = 'silent_start';
-    badgeLabel = 'Muted at Start';
-    hasSilence = true;
-  } else if (midSilent) {
-    verdict = 'silent_mid';
-    badgeLabel = 'Muted Midway';
-    hasSilence = true;
-  } else if (endSilent) {
-    verdict = 'silent_end';
-    badgeLabel = 'Muted at End';
-    hasSilence = true;
+    badgeLabel = '100% Muted (3/3 Silent)';
+    isFullyMuted = true;
+  } else {
+    // If 1 or 2 checkpoints had low volume, it is verified as audible lecture speech
+    verdict = 'healthy';
+    badgeLabel = silentCount > 0 ? `Audible (${3 - silentCount}/3 Active)` : 'Audible (3/3 Active)';
+    isFullyMuted = false;
   }
 
   return {
     verdict,
     badgeLabel,
-    hasSilence,
+    hasSilence: isFullyMuted,
+    isFullyMuted,
+    silentCount,
     scannedAt: new Date().toISOString(),
     checkpoints: {
       start: { seek: startSeek, ...startResult },

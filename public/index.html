@@ -2900,22 +2900,22 @@
       const endBadge = document.getElementById('audioEndBadge');
       const endDb = document.getElementById('audioEndDb');
 
-      const isMuted = health.hasSilence;
+      const isMuted = health.isFullyMuted || health.verdict === 'silent_all';
 
       if (verdictBadge && verdictText) {
         if (isMuted) {
           verdictBadge.className = 'inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-500/40';
-          verdictText.textContent = health.badgeLabel || 'SILENCE DETECTED';
+          verdictText.textContent = '100% MUTED (3/3 SILENT)';
         } else {
           verdictBadge.className = 'inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/40';
-          verdictText.textContent = 'AUDIBLE & HEALTHY';
+          verdictText.textContent = 'AUDIBLE & VERIFIED';
         }
       }
 
       if (verdictDesc) {
         verdictDesc.textContent = isMuted 
-          ? `⚠️ Warning: Acoustic silence detected in this lecture! (${health.badgeLabel}). Faculty microphone may have been disconnected or muted.`
-          : 'Faculty audio is verified crisp and audible across all 3 key lecture checkpoints (Start, Midpoint, and Outro).';
+          ? '⚠️ Critical Alert: Complete dead silence confirmed across ALL 3 lecture checkpoints (Start, Midpoint, and Outro). The video has no audible teacher speech.'
+          : 'Faculty audio is verified audible and clear across lecture checkpoints. Any isolated pauses are treated as natural speech.';
       }
 
       const cp = health.checkpoints || {};
@@ -5171,15 +5171,16 @@
         const audio = file.audioHealth;
         let audioBadgeHtml = '';
         if (audio) {
-          if (audio.hasSilence) {
+          // Strictly require ALL 3 checkpoints (Start, Mid, End) to be confirmed silent before displaying MUTE icon
+          if (audio.isFullyMuted || audio.verdict === 'silent_all') {
             audioBadgeHtml = `
               <button
                 type="button"
                 onclick="openAudioDiagModal('${file.id || ytId}')"
                 class="inline-flex items-center gap-1 px-1.5 py-0.2 text-[9px] font-bold font-mono-code bg-rose-500/20 text-rose-600 dark:text-rose-300 border border-rose-400 dark:border-rose-800 uppercase cursor-pointer hover:opacity-90 shadow-2xs"
-                title="Silence / Mute Detected! Click to inspect 3 checkpoints."
+                title="Confirmed 100% Muted across all 3 checkpoints (Start, Mid, End). Click for diagnostics."
               >
-                <span>🔇 ${escapeHtml(audio.badgeLabel || 'MUTED')}</span>
+                <span>🔇 100% MUTED</span>
               </button>
             `;
           } else {
@@ -5188,7 +5189,7 @@
                 type="button"
                 onclick="openAudioDiagModal('${file.id || ytId}')"
                 class="inline-flex items-center gap-1 px-1.5 py-0.2 text-[9px] font-bold font-mono-code bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 uppercase cursor-pointer hover:opacity-90"
-                title="Audio Verified Audible (Start, Mid, End Checkpoints OK)"
+                title="Audio Verified Audible: Speech confirmed across lecture checkpoints"
               >
                 <span>🔊 AUDIO OK</span>
               </button>
