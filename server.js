@@ -36,6 +36,11 @@ app.use(helmet({
   contentSecurityPolicy: false,
   crossOriginEmbedderPolicy: false
 }));
+// Health Check Endpoint (For Railway / Cloud Run probes)
+app.get(['/health', '/api/health', '/ping', '/up'], (req, res) => {
+  res.status(200).json({ status: 'ok', uptime: process.uptime(), timestamp: new Date().toISOString() });
+});
+
 app.use(cors({
   origin: true,
   credentials: true

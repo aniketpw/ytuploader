@@ -8,8 +8,8 @@ WORKDIR /app
 # Copy package definitions
 COPY package*.json ./
 
-# Install production dependencies and compile better-sqlite3 natively
-RUN npm install --omit=dev && npm rebuild better-sqlite3 --build-from-source
+# Install production dependencies and compile native addons for Linux
+RUN npm install --omit=dev --no-package-lock
 
 # Copy all application files
 COPY . .
