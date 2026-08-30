@@ -3036,7 +3036,19 @@
       }
     };
 
+    // ─── Universal Modal Manager ──────────────────────────────────────────
+    window.closeAllModals = function() {
+      const ids = ['scanReviewModal', 'videoModal', 'editVideoModal', 'quotaTrackerModal', 'authConfigModal', 'manualUploadModal', 'infoModal', 'navToolsMenu'];
+      ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+      });
+      const chevron = document.getElementById('navToolsChevron');
+      if (chevron) chevron.classList.remove('rotate-180');
+    };
+
     window.openQuotaTrackerModal = function() {
+      closeAllModals();
       const modal = document.getElementById('quotaTrackerModal');
       if (modal) modal.classList.remove('hidden');
       fetchQuotaHealth();
@@ -3207,6 +3219,7 @@
     };
 
     window.openAuthModal = function() {
+      closeAllModals();
       const modal = document.getElementById('authConfigModal');
       const originDisplay = document.getElementById('originUrlDisplay');
       const wizOrigin = document.getElementById('wizOriginUrl');
@@ -4053,6 +4066,7 @@
     let currentManualBlobUrl = null;
 
     window.openManualUploadModal = function() {
+      closeAllModals();
       const modal = document.getElementById('manualUploadModal');
       if (!modal) return;
 
@@ -5856,6 +5870,7 @@
 
     // Info & Architecture Modal Controls (4 Tabs)
     window.openInfoModal = function(initialTab = 'guide') {
+      closeAllModals();
       const modal = document.getElementById('infoModal');
       const originDisplay = document.getElementById('infoOriginUrl');
       const directInput = document.getElementById('infoDirectClientIdInput');
