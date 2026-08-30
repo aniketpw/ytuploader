@@ -1,6 +1,9 @@
 # Use lightweight official Node.js image
 FROM node:20-alpine
 
+# Install ffmpeg for Cloud Audio Sentry probing
+RUN apk add --no-cache ffmpeg
+
 # Set working directory
 WORKDIR /app
 

@@ -1200,6 +1200,111 @@
     </div>
   </div>
 
+  <!-- 8. Cloud Audio Silence & Mute Sentry Diagnostics Modal -->
+  <div id="audioDiagModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs p-4 overflow-y-auto">
+    <div class="bg-[var(--bg-card)] border border-[var(--border-main)] max-w-lg w-full shadow-2xl font-mono-code my-4 text-[var(--text-main)] overflow-hidden">
+      
+      <!-- Header -->
+      <div class="flex items-center justify-between border-b border-[var(--border-main)] px-5 py-3.5 bg-[var(--bg-subcard)]">
+        <div class="space-y-0.5">
+          <div class="flex items-center gap-2">
+            <span class="text-orange-500 font-bold text-xs">🎙️</span>
+            <h3 class="text-xs font-bold uppercase tracking-wider text-[var(--text-main)]">Audio Silence &amp; Mute Diagnostic Sentry</h3>
+          </div>
+          <p id="audioDiagSubTitle" class="text-[10px] text-[var(--text-muted)] truncate max-w-md">Inspecting acoustic RMS levels across Start, Midpoint, and Outro</p>
+        </div>
+        <button type="button" onclick="closeAudioDiagModal()" class="text-[var(--text-muted)] hover:text-[var(--text-main)] text-xl font-bold cursor-pointer">&times;</button>
+      </div>
+
+      <div class="p-5 space-y-4">
+        
+        <!-- Overall Acoustic Health Summary Card -->
+        <div class="p-4 bg-[var(--bg-subcard)] border border-[var(--border-main)] space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-[9px] uppercase tracking-widest text-[var(--text-muted)] font-bold">ACOUSTIC VERDICT</span>
+            <span id="audioDiagVerdictBadge" class="inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/40">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              <span id="audioDiagVerdictText">AUDIBLE</span>
+            </span>
+          </div>
+          <p id="audioDiagVerdictDesc" class="text-[11px] text-[var(--text-muted)] leading-relaxed">
+            Faculty audio is verified audible across all 3 key lecture checkpoints.
+          </p>
+        </div>
+
+        <!-- 3-Checkpoint Telemetry Matrix -->
+        <div class="space-y-2.5">
+          <span class="text-[9px] uppercase tracking-widest text-[var(--text-muted)] font-bold block">3-POINT ACOUSTIC TELEMETRY</span>
+          
+          <!-- Checkpoint 1: Start (Intro) -->
+          <div class="p-3 bg-[var(--bg-subcard)] border border-[var(--border-main)] flex items-center justify-between text-xs">
+            <div class="space-y-0.5">
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-[var(--text-main)] text-[11px]">1. START INTRO</span>
+                <span class="text-[10px] text-[var(--text-subtle)]">(@ 00:30s)</span>
+              </div>
+              <p class="text-[10px] text-[var(--text-muted)]">Mic active check at lecture opening</p>
+            </div>
+            <div class="text-right space-y-0.5">
+              <span id="audioStartBadge" class="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-600 border border-emerald-500/40 inline-block">Audible</span>
+              <div id="audioStartDb" class="text-[10px] font-mono-code text-[var(--text-subtle)]">-22.4 dB RMS</div>
+            </div>
+          </div>
+
+          <!-- Checkpoint 2: Midpoint -->
+          <div class="p-3 bg-[var(--bg-subcard)] border border-[var(--border-main)] flex items-center justify-between text-xs">
+            <div class="space-y-0.5">
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-[var(--text-main)] text-[11px]">2. MID-LECTURE</span>
+                <span id="audioMidTimeLabel" class="text-[10px] text-[var(--text-subtle)]">(@ 50% mark)</span>
+              </div>
+              <p class="text-[10px] text-[var(--text-muted)]">Midway microphone disconnect probe</p>
+            </div>
+            <div class="text-right space-y-0.5">
+              <span id="audioMidBadge" class="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-600 border border-emerald-500/40 inline-block">Audible</span>
+              <div id="audioMidDb" class="text-[10px] font-mono-code text-[var(--text-subtle)]">-21.0 dB RMS</div>
+            </div>
+          </div>
+
+          <!-- Checkpoint 3: End (Outro) -->
+          <div class="p-3 bg-[var(--bg-subcard)] border border-[var(--border-main)] flex items-center justify-between text-xs">
+            <div class="space-y-0.5">
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-[var(--text-main)] text-[11px]">3. END OUTRO</span>
+                <span id="audioEndTimeLabel" class="text-[10px] text-[var(--text-subtle)]">(@ Total - 90s)</span>
+              </div>
+              <p class="text-[10px] text-[var(--text-muted)]">Closing lecture audio continuity check</p>
+            </div>
+            <div class="text-right space-y-0.5">
+              <span id="audioEndBadge" class="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-600 border border-emerald-500/40 inline-block">Audible</span>
+              <div id="audioEndDb" class="text-[10px] font-mono-code text-[var(--text-subtle)]">-23.1 dB RMS</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Re-probe action -->
+        <div class="flex items-center justify-between pt-2 border-t border-[var(--border-main)] text-xs">
+          <button
+            type="button"
+            id="reProbeAudioBtn"
+            onclick="reRunCurrentAudioProbe()"
+            class="px-3 py-1.5 bg-[var(--btn-secondary-bg)] hover:bg-[var(--btn-secondary-hover)] border border-[var(--border-main)] text-[var(--text-main)] text-[10px] font-bold uppercase tracking-wider cursor-pointer"
+          >
+            🔄 Re-probe Checkpoints
+          </button>
+          
+          <button
+            type="button"
+            onclick="closeAudioDiagModal()"
+            class="px-4 py-1.5 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] font-bold text-[10px] uppercase tracking-wider cursor-pointer hover:opacity-90"
+          >
+            Done
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Google Auth & API Keys Modal — Guided Setup Wizard -->
   <div id="authConfigModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs p-4 overflow-y-auto">
     <div class="bg-[var(--bg-card)] border border-[var(--border-main)] max-w-xl w-full shadow-2xl font-mono-code my-4 text-[var(--text-main)]">
@@ -2747,6 +2852,148 @@
         }
       } catch (err) {
         showToast(`Error: ${err.message}`, 'error');
+      }
+    };
+
+    // ========================================================
+    // Cloud Audio Silence & Mute Sentry Engine (3-Point Probe)
+    // ========================================================
+    let currentAudioDiagFileId = null;
+
+    window.openAudioDiagModal = function(fileId) {
+      currentAudioDiagFileId = fileId;
+      const modal = document.getElementById('audioDiagModal');
+      const file = (currentState?.files || []).find(f => f.id === fileId || f.videoId === fileId);
+      
+      const titleEl = document.getElementById('audioDiagSubTitle');
+      if (titleEl) {
+        titleEl.textContent = file ? (file.customTitle || file.name || 'Lecture Audio Inspection') : '3-Point Audio Inspection';
+      }
+
+      if (file && file.audioHealth) {
+        renderAudioDiagUI(file.audioHealth);
+      } else {
+        triggerAudioProbe(fileId);
+      }
+
+      if (modal) modal.classList.remove('hidden');
+    };
+
+    window.closeAudioDiagModal = function() {
+      const modal = document.getElementById('audioDiagModal');
+      if (modal) modal.classList.add('hidden');
+    };
+
+    function renderAudioDiagUI(health) {
+      if (!health) return;
+
+      const verdictBadge = document.getElementById('audioDiagVerdictBadge');
+      const verdictText = document.getElementById('audioDiagVerdictText');
+      const verdictDesc = document.getElementById('audioDiagVerdictDesc');
+
+      const startBadge = document.getElementById('audioStartBadge');
+      const startDb = document.getElementById('audioStartDb');
+
+      const midBadge = document.getElementById('audioMidBadge');
+      const midDb = document.getElementById('audioMidDb');
+
+      const endBadge = document.getElementById('audioEndBadge');
+      const endDb = document.getElementById('audioEndDb');
+
+      const isMuted = health.hasSilence;
+
+      if (verdictBadge && verdictText) {
+        if (isMuted) {
+          verdictBadge.className = 'inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-500/40';
+          verdictText.textContent = health.badgeLabel || 'SILENCE DETECTED';
+        } else {
+          verdictBadge.className = 'inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/40';
+          verdictText.textContent = 'AUDIBLE & HEALTHY';
+        }
+      }
+
+      if (verdictDesc) {
+        verdictDesc.textContent = isMuted 
+          ? `⚠️ Warning: Acoustic silence detected in this lecture! (${health.badgeLabel}). Faculty microphone may have been disconnected or muted.`
+          : 'Faculty audio is verified crisp and audible across all 3 key lecture checkpoints (Start, Midpoint, and Outro).';
+      }
+
+      const cp = health.checkpoints || {};
+
+      // Start Checkpoint
+      if (cp.start) {
+        if (startBadge) {
+          startBadge.className = cp.start.silent 
+            ? 'px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-rose-500/20 text-rose-600 border border-rose-500/40 inline-block'
+            : 'px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-600 border border-emerald-500/40 inline-block';
+          startBadge.textContent = cp.start.silent ? '🔇 Silent' : '🔊 Audible';
+        }
+        if (startDb) startDb.textContent = `${cp.start.meanDb} dB RMS (Max: ${cp.start.maxDb} dB)`;
+      }
+
+      // Midpoint Checkpoint
+      if (cp.mid) {
+        if (midBadge) {
+          midBadge.className = cp.mid.silent 
+            ? 'px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-rose-500/20 text-rose-600 border border-rose-500/40 inline-block'
+            : 'px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-600 border border-emerald-500/40 inline-block';
+          midBadge.textContent = cp.mid.silent ? '🔇 Silent' : '🔊 Audible';
+        }
+        if (midDb) midDb.textContent = `${cp.mid.meanDb} dB RMS (Max: ${cp.mid.maxDb} dB)`;
+      }
+
+      // End Checkpoint
+      if (cp.end) {
+        if (endBadge) {
+          endBadge.className = cp.end.silent 
+            ? 'px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-rose-500/20 text-rose-600 border border-rose-500/40 inline-block'
+            : 'px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-600 border border-emerald-500/40 inline-block';
+          endBadge.textContent = cp.end.silent ? '🔇 Silent' : '🔊 Audible';
+        }
+        if (endDb) endDb.textContent = `${cp.end.meanDb} dB RMS (Max: ${cp.end.maxDb} dB)`;
+      }
+    }
+
+    window.triggerAudioProbe = async function(fileId) {
+      if (!window.gAccessToken) {
+        showToast('Google Account connection required for cloud audio probing.', 'info');
+        openAuthModal();
+        return;
+      }
+
+      showToast('Inspecting 3-point audio waveforms (Start, Mid, End)...', 'info');
+      try {
+        const res = await fetch('/api/audio-probe', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${window.gAccessToken}`
+          },
+          body: JSON.stringify({ fileId })
+        });
+        const data = await res.json();
+        if (data.success && data.audioHealth) {
+          const file = (currentState?.files || []).find(f => f.id === fileId || f.videoId === fileId);
+          if (file) {
+            file.audioHealth = data.audioHealth;
+            renderFilteredTable();
+          }
+          renderAudioDiagUI(data.audioHealth);
+          if (data.audioHealth.hasSilence) {
+            showToast(`🔇 Warning: ${data.audioHealth.badgeLabel} detected in lecture!`, 'warn');
+          } else {
+            showToast('🔊 Audio Verified: 100% audible across all 3 checkpoints.', 'success');
+          }
+        }
+      } catch (err) {
+        console.error('Audio probe request error:', err);
+        showToast('Audio probe failed: ' + err.message, 'error');
+      }
+    };
+
+    window.reRunCurrentAudioProbe = function() {
+      if (currentAudioDiagFileId) {
+        triggerAudioProbe(currentAudioDiagFileId);
       }
     };
 
@@ -4921,12 +5168,52 @@
 
         const durationBadgeHtml = formatVideoDurationBadge(file);
 
+        const audio = file.audioHealth;
+        let audioBadgeHtml = '';
+        if (audio) {
+          if (audio.hasSilence) {
+            audioBadgeHtml = `
+              <button
+                type="button"
+                onclick="openAudioDiagModal('${file.id || ytId}')"
+                class="inline-flex items-center gap-1 px-1.5 py-0.2 text-[9px] font-bold font-mono-code bg-rose-500/20 text-rose-600 dark:text-rose-300 border border-rose-400 dark:border-rose-800 uppercase cursor-pointer hover:opacity-90 shadow-2xs"
+                title="Silence / Mute Detected! Click to inspect 3 checkpoints."
+              >
+                <span>🔇 ${escapeHtml(audio.badgeLabel || 'MUTED')}</span>
+              </button>
+            `;
+          } else {
+            audioBadgeHtml = `
+              <button
+                type="button"
+                onclick="openAudioDiagModal('${file.id || ytId}')"
+                class="inline-flex items-center gap-1 px-1.5 py-0.2 text-[9px] font-bold font-mono-code bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 uppercase cursor-pointer hover:opacity-90"
+                title="Audio Verified Audible (Start, Mid, End Checkpoints OK)"
+              >
+                <span>🔊 AUDIO OK</span>
+              </button>
+            `;
+          }
+        } else {
+          audioBadgeHtml = `
+            <button
+              type="button"
+              onclick="triggerAudioProbe('${file.id || ytId}')"
+              class="text-[9px] font-mono-code text-[var(--text-subtle)] hover:text-orange-500 underline cursor-pointer"
+              title="Run 3-point audio silence scan"
+            >
+              🎙️ Check Audio
+            </button>
+          `;
+        }
+
         const sourceBadgeHtml = `
           <div class="flex flex-col gap-1 items-center justify-center">
             <span class="inline-flex items-center px-1.5 py-0.2 text-[10px] font-bold font-mono-code ${isYt ? 'bg-rose-500/20 text-rose-600 dark:text-rose-300 border border-rose-400 dark:border-rose-800' : 'bg-[var(--bg-card)] text-[var(--text-muted)] border border-[var(--border-main)]'} uppercase">
               ${isYt ? 'YouTube' : 'Drive'}
             </span>
             ${durationBadgeHtml ? `<div class="mt-0.5">${durationBadgeHtml}</div>` : ''}
+            <div class="mt-0.5">${audioBadgeHtml}</div>
           </div>
         `;
 
@@ -5204,6 +5491,14 @@
         }
         renderFilteredTable();
         showToast('✔ YouTube Thumbnail updated live!', 'success');
+      } else if (event.type === 'audio_health_updated') {
+        if (currentState && currentState.files) {
+          const f = currentState.files.find(item => item.id === event.fileId || item.videoId === event.fileId);
+          if (f) {
+            f.audioHealth = event.audioHealth;
+          }
+        }
+        renderFilteredTable();
       } else if (event.type === 'job_cancelled') {
         if (currentState) {
           currentState.isProcessing = false;
