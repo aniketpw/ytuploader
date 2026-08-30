@@ -2801,13 +2801,17 @@
       }
     };
 
-    window.syncYouTubeUploads = async function() {
+    window.syncYouTubeUploads = async function(silent = false) {
       if (!window.gAccessToken) {
-        showToast('Please connect your Google Account first.', 'info');
-        openAuthModal();
+        if (!silent) {
+          showToast('Please connect your Google Account first.', 'info');
+          openAuthModal();
+        }
         return;
       }
-      showToast('Syncing videos directly from your YouTube channel...', 'info');
+      if (!silent) {
+        showToast('Syncing videos directly from your YouTube channel...', 'info');
+      }
       try {
         const res = await fetch('/api/sync-youtube', {
           method: 'POST',
@@ -2818,15 +2822,18 @@
         });
         const data = await res.json();
         if (data.success) {
-          showToast(`✔ Synced ${data.count} uploaded video(s) from channel "${data.channelTitle}"!`, 'success');
+          if (!silent) {
+            showToast(`✔ Synced ${data.count} uploaded video(s) from channel "${data.channelTitle}"!`, 'success');
+          }
           // Use channel-filtered history directly from sync response
           if (data.history && Array.isArray(data.history)) {
             if (!currentState) currentState = {};
-            currentState.files = data.history;
-            currentState.status = 'idle';
+            const activeFiles = (currentState.files || []).filter(f => f.status === 'uploading' || f.status === 'queued');
+            const notInActive = data.history.filter(h => !activeFiles.some(f => f.id === h.id || (f.videoId && f.videoId === h.videoId)));
+            currentState.files = [...activeFiles, ...notInActive];
             currentState.stats = {
-              total: data.history.length,
-              pending: 0,
+              total: currentState.files.length,
+              pending: activeFiles.length,
               completed: data.history.length,
               failed: 0
             };
@@ -2834,12 +2841,14 @@
           } else {
             loadJobStatus();
           }
-        } else {
+        } else if (!silent) {
           showToast('Sync note: ' + (data.error || 'Could not fetch channel uploads'), 'error');
         }
       } catch (err) {
         console.error('YouTube sync error:', err);
-        showToast('Sync failed: ' + err.message, 'error');
+        if (!silent) {
+          showToast('Sync failed: ' + err.message, 'error');
+        }
       }
     };
 
@@ -4809,7 +4818,7 @@
         showToast('Process was stopped.', 'info');
       } else if (event.type === 'process_completed') {
         showToast('Processing completed successfully!', 'success');
-        loadJobStatus();
+        syncYouTubeUploads(true);
       } else if (event.type === 'job_status') {
         if (event.state) {
           currentState = event.state;
@@ -4929,6 +4938,11 @@
             currentState.files = [...currentFiles, ...notInCurrent];
           }
           renderState(currentState);
+
+          // Auto-sync channel uploads silently in background
+          if (!currentState.files || currentState.files.length === 0 || currentState.status === 'idle') {
+            syncYouTubeUploads(true);
+          }
         }
       } catch (err) {
         console.error('Error loading job status:', err);
@@ -5091,6 +5105,9 @@
       checkAuthStatus();
       connectSSE();
       loadJobStatus();
+      if (window.isAuthenticated && window.gAccessToken) {
+        syncYouTubeUploads(true);
+      }
       updateDateFilterDisplayAndFilter();
       updateThemeControlsUI(document.documentElement.classList.contains('dark'));
     });
