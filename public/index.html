@@ -245,6 +245,29 @@
           <span>Verify (&gt;15 min) ↗</span>
         </a>
 
+        <!-- Real-Time API Quota Health Meter Pill -->
+        <button
+          type="button"
+          id="navQuotaMeterBtn"
+          onclick="openQuotaTrackerModal()"
+          class="flex items-center gap-2 px-2.5 h-8 border border-[var(--border-main)] bg-[var(--bg-card)] hover:bg-[var(--btn-secondary-hover)] text-[var(--text-main)] font-mono-code text-[11px] font-bold transition-all cursor-pointer shadow-2xs"
+          title="Click to view Live API Quota & Health Breakdown"
+        >
+          <div class="flex items-center gap-1.5">
+            <span id="quotaPulseDot" class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+            <span class="text-[var(--text-muted)] uppercase text-[10px] tracking-wider">QUOTA:</span>
+            <span id="navQuotaUsedText" class="font-bold text-[var(--text-main)]">0/100</span>
+            <span id="navQuotaPctText" class="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">(0%)</span>
+          </div>
+
+          <!-- Mini Visual Progress Bar -->
+          <div class="w-12 h-1.5 bg-[var(--border-main)] overflow-hidden hidden md:block">
+            <div id="navQuotaMiniBar" class="h-full bg-emerald-500 transition-all duration-500" style="width: 0%"></div>
+          </div>
+
+          <span id="navQuotaCountdownBadge" class="text-[10px] text-[var(--text-subtle)] font-normal hidden lg:inline-block">⏱️ --:--</span>
+        </button>
+
         <!-- SSE Status -->
         <div id="connectionBadge" class="flex items-center gap-1.5 px-2.5 h-8 border border-[var(--border-main)] bg-[var(--btn-secondary-bg)] text-emerald-600 dark:text-emerald-400 text-[11px] font-semibold">
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
@@ -1022,6 +1045,130 @@
           >
             Save &amp; Apply
           </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. Real-Time API Quota Tracker & Health Meter Modal -->
+  <div id="quotaTrackerModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs p-4 overflow-y-auto">
+    <div class="bg-[var(--bg-card)] border border-[var(--border-main)] max-w-xl w-full shadow-2xl font-mono-code my-4 text-[var(--text-main)] overflow-hidden">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between border-b border-[var(--border-main)] px-5 py-3.5 bg-[var(--bg-subcard)]">
+        <div class="space-y-0.5">
+          <div class="flex items-center gap-2">
+            <span class="text-amber-500 font-bold text-xs">⚡</span>
+            <h3 class="text-xs font-bold uppercase tracking-wider text-[var(--text-main)]">API Quota &amp; Project Health Engine</h3>
+          </div>
+          <p class="text-[10px] text-[var(--text-muted)]">Live YouTube Data API v3 usage monitor • Real-time project telemetry</p>
+        </div>
+        <button type="button" onclick="closeQuotaTrackerModal()" class="text-[var(--text-muted)] hover:text-[var(--text-main)] text-xl font-bold cursor-pointer">&times;</button>
+      </div>
+
+      <div class="p-5 space-y-4">
+        
+        <!-- Big Telemetry Card -->
+        <div class="p-4 bg-[var(--bg-subcard)] border border-[var(--border-main)] space-y-3">
+          <div class="flex items-start justify-between">
+            <div class="space-y-0.5">
+              <span class="text-[9px] uppercase tracking-widest text-[var(--text-muted)] font-bold">TODAY'S UPLOADS CONSUMED</span>
+              <div class="flex items-baseline gap-2">
+                <span id="modalQuotaUsedNum" class="text-3xl font-serif-editorial font-bold text-[var(--text-main)]">0</span>
+                <span class="text-xs font-mono-code text-[var(--text-muted)]">/ <span id="modalQuotaLimitNum">100</span> Videos</span>
+              </div>
+            </div>
+            
+            <div class="text-right space-y-1">
+              <span id="modalQuotaStatusBadge" class="inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/40">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                <span id="modalQuotaStatusText">HEALTHY</span>
+              </span>
+              <div class="text-[10px] font-mono-code text-[var(--text-subtle)]">
+                <span id="modalQuotaRemainingNum">100</span> uploads left
+              </div>
+            </div>
+          </div>
+
+          <!-- Main High-Contrast Visual Meter Bar -->
+          <div class="space-y-1">
+            <div class="w-full bg-[var(--border-main)] h-3 overflow-hidden p-0.5 border border-[var(--border-main)]">
+              <div id="modalQuotaProgressBar" class="h-full bg-gradient-to-r from-emerald-500 via-amber-500 to-rose-500 transition-all duration-700" style="width: 0%"></div>
+            </div>
+            <div class="flex justify-between text-[10px] font-mono-code text-[var(--text-muted)]">
+              <span>0% (Empty)</span>
+              <span id="modalQuotaPercentLabel" class="font-bold text-[var(--text-main)]">0% Used</span>
+              <span>100% (Limit)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Real-Time Countdown & Reset Schedule Card -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          
+          <!-- Live Countdown Box -->
+          <div class="p-3.5 bg-[var(--bg-subcard)] border border-[var(--border-main)] space-y-1">
+            <span class="text-[9px] uppercase tracking-widest text-[var(--text-muted)] font-bold flex items-center gap-1">
+              <span>⏳ QUOTA RESETS IN</span>
+            </span>
+            <div id="modalQuotaCountdownTimer" class="text-xl font-bold font-mono-code text-orange-500 tracking-wider">
+              --h : --m : --s
+            </div>
+            <p class="text-[9px] text-[var(--text-subtle)] leading-tight">
+              Next reset: <strong class="text-[var(--text-muted)]">12:30 PM IST</strong> (Daily)
+            </p>
+          </div>
+
+          <!-- Daily Project Specs -->
+          <div class="p-3.5 bg-[var(--bg-subcard)] border border-[var(--border-main)] space-y-1 font-mono-code text-[10px]">
+            <span class="text-[9px] uppercase tracking-widest text-[var(--text-muted)] font-bold block">PROJECT CAPACITY</span>
+            <div class="space-y-0.5 pt-0.5">
+              <div class="flex justify-between">
+                <span class="text-[var(--text-muted)]">Per-Key Limit:</span>
+                <span class="font-bold text-[var(--text-main)]">100 Uploads/Day</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-[var(--text-muted)]">Configured Keys:</span>
+                <span id="modalConfiguredKeysNum" class="font-bold text-orange-500">1 Key</span>
+              </div>
+              <div class="flex justify-between border-t border-[var(--border-main)] pt-1 mt-1">
+                <span class="text-[var(--text-muted)]">Total Capacity:</span>
+                <span id="modalTotalCapacityNum" class="font-bold text-emerald-500">100 Videos/Day</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Multi-Key Capacity Multiplier Tip -->
+        <div class="p-3 bg-amber-500/10 border border-amber-500/30 text-[10px] font-mono-code space-y-1 text-[var(--text-main)]">
+          <div class="font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1">
+            <span>💡 MULTIPLY YOUR DAILY UPLOADS:</span>
+          </div>
+          <p class="text-[10px] text-[var(--text-muted)] leading-relaxed">
+            Har Google Cloud project se <strong>100 uploads/day</strong> milte hain. Agar aap <strong>Settings</strong> me 3 Client IDs add karte hain, to aapka daily quota automatically <strong>300 uploads/day</strong> ho jayega!
+          </p>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex items-center justify-between gap-2 pt-1 font-mono-code text-xs">
+          <a
+            href="https://console.cloud.google.com/apis/api/youtube.googleapis.com/quotas"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="px-3 py-1.5 bg-[var(--btn-secondary-bg)] hover:bg-[var(--btn-secondary-hover)] border border-[var(--border-main)] text-[var(--text-main)] text-[10px] font-bold uppercase tracking-wider cursor-pointer transition-colors"
+          >
+            Google Cloud Quotas ↗
+          </a>
+
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              onclick="closeQuotaTrackerModal(); openAuthModal();"
+              class="px-3.5 py-1.5 bg-[var(--btn-primary-bg)] hover:opacity-90 text-[var(--btn-primary-text)] text-[10px] font-bold uppercase tracking-wider cursor-pointer shadow-xs"
+            >
+              ⚙️ Add More Keys
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -2508,6 +2655,10 @@
       } else if (filterPillFailed) {
         filterPillFailed.classList.add('hidden');
       }
+
+      if (typeof fetchQuotaHealth === 'function') {
+        fetchQuotaHealth();
+      }
     }
 
     window.selectProcessingMode = function(mode) {};
@@ -2552,6 +2703,161 @@
         syncYouTubeUploads();
       }, 500);
     };
+
+    // ==========================================
+    // Real-Time API Quota & Health Meter Engine
+    // ==========================================
+    let quotaCountdownInterval = null;
+    let cachedQuotaSecondsRemaining = 0;
+
+    window.getConfiguredKeysCount = function() {
+      try {
+        const saved = AppStorage.getItem('yt_client_ids');
+        if (!saved) return 1;
+        const count = saved.split('\n').map(s => s.trim()).filter(Boolean).length;
+        return Math.max(1, count);
+      } catch (e) {
+        return 1;
+      }
+    };
+
+    window.openQuotaTrackerModal = function() {
+      const modal = document.getElementById('quotaTrackerModal');
+      if (modal) modal.classList.remove('hidden');
+      fetchQuotaHealth();
+    };
+
+    window.closeQuotaTrackerModal = function() {
+      const modal = document.getElementById('quotaTrackerModal');
+      if (modal) modal.classList.add('hidden');
+    };
+
+    window.fetchQuotaHealth = async function() {
+      try {
+        const keysCount = getConfiguredKeysCount();
+        const headers = {};
+        if (window.gAccessToken) {
+          headers['Authorization'] = `Bearer ${window.gAccessToken}`;
+        }
+        const res = await fetch(`/api/quota-health?keysCount=${keysCount}`, { headers });
+        const data = await res.json();
+        if (data && data.quota) {
+          updateQuotaUI(data.quota);
+        }
+      } catch (e) {
+        console.warn('Quota health fetch error:', e);
+      }
+    };
+
+    function updateQuotaUI(quota) {
+      if (!quota) return;
+
+      const used = quota.used || 0;
+      const limit = quota.limit || 100;
+      const remaining = quota.remaining || 0;
+      const percent = quota.percent || 0;
+      const keysCount = quota.keysCount || 1;
+      const health = quota.healthStatus || 'healthy';
+
+      // Navbar Pill Elements
+      const navUsed = document.getElementById('navQuotaUsedText');
+      const navPct = document.getElementById('navQuotaPctText');
+      const navBar = document.getElementById('navQuotaMiniBar');
+      const pulseDot = document.getElementById('quotaPulseDot');
+
+      if (navUsed) navUsed.textContent = `${used}/${limit}`;
+      if (navPct) navPct.textContent = `(${percent}%)`;
+      if (navBar) {
+        navBar.style.width = `${percent}%`;
+        if (health === 'exhausted') {
+          navBar.className = 'h-full bg-rose-500 transition-all duration-500';
+        } else if (health === 'warning') {
+          navBar.className = 'h-full bg-amber-500 transition-all duration-500';
+        } else {
+          navBar.className = 'h-full bg-emerald-500 transition-all duration-500';
+        }
+      }
+
+      if (pulseDot) {
+        if (health === 'exhausted') {
+          pulseDot.className = 'w-2 h-2 rounded-full bg-rose-500 inline-block animate-pulse';
+        } else if (health === 'warning') {
+          pulseDot.className = 'w-2 h-2 rounded-full bg-amber-500 inline-block animate-pulse';
+        } else {
+          pulseDot.className = 'w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse';
+        }
+      }
+
+      // Modal Elements
+      const modalUsed = document.getElementById('modalQuotaUsedNum');
+      const modalLimit = document.getElementById('modalQuotaLimitNum');
+      const modalRemaining = document.getElementById('modalQuotaRemainingNum');
+      const modalBar = document.getElementById('modalQuotaProgressBar');
+      const modalPctLabel = document.getElementById('modalQuotaPercentLabel');
+      const modalBadge = document.getElementById('modalQuotaStatusBadge');
+      const modalStatusText = document.getElementById('modalQuotaStatusText');
+      const modalKeys = document.getElementById('modalConfiguredKeysNum');
+      const modalCap = document.getElementById('modalTotalCapacityNum');
+
+      if (modalUsed) modalUsed.textContent = used;
+      if (modalLimit) modalLimit.textContent = limit;
+      if (modalRemaining) modalRemaining.textContent = remaining;
+      if (modalBar) modalBar.style.width = `${percent}%`;
+      if (modalPctLabel) modalPctLabel.textContent = `${percent}% Used (${remaining} Left)`;
+      if (modalKeys) modalKeys.textContent = `${keysCount} ${keysCount > 1 ? 'Keys' : 'Key'}`;
+      if (modalCap) modalCap.textContent = `${limit} Videos/Day`;
+
+      if (modalBadge && modalStatusText) {
+        if (health === 'exhausted') {
+          modalBadge.className = 'inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-500/40';
+          modalStatusText.textContent = 'LIMIT REACHED';
+        } else if (health === 'warning') {
+          modalBadge.className = 'inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/40';
+          modalStatusText.textContent = 'HEAVY USAGE';
+        } else {
+          modalBadge.className = 'inline-flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/40';
+          modalStatusText.textContent = 'HEALTHY';
+        }
+      }
+
+      // Start Countdown Timer
+      cachedQuotaSecondsRemaining = quota.resetsInSeconds || 0;
+      startQuotaCountdown();
+    }
+
+    function startQuotaCountdown() {
+      if (quotaCountdownInterval) clearInterval(quotaCountdownInterval);
+      
+      const renderCountdown = () => {
+        if (cachedQuotaSecondsRemaining <= 0) {
+          cachedQuotaSecondsRemaining = 0;
+        }
+
+        const hours = Math.floor(cachedQuotaSecondsRemaining / 3600);
+        const mins = Math.floor((cachedQuotaSecondsRemaining % 3600) / 60);
+        const secs = cachedQuotaSecondsRemaining % 60;
+
+        const pad = (n) => String(n).padStart(2, '0');
+        const formattedTimer = `${pad(hours)}h : ${pad(mins)}m : ${pad(secs)}s`;
+        const shortTimer = `⏱️ ${hours}h ${mins}m`;
+
+        const timerEl = document.getElementById('modalQuotaCountdownTimer');
+        const badgeEl = document.getElementById('navQuotaCountdownBadge');
+
+        if (timerEl) timerEl.textContent = formattedTimer;
+        if (badgeEl) badgeEl.textContent = shortTimer;
+
+        if (cachedQuotaSecondsRemaining > 0) {
+          cachedQuotaSecondsRemaining--;
+        } else {
+          clearInterval(quotaCountdownInterval);
+          setTimeout(fetchQuotaHealth, 3000);
+        }
+      };
+
+      renderCountdown();
+      quotaCountdownInterval = setInterval(renderCountdown, 1000);
+    }
 
     window.openAuthModal = function() {
       const modal = document.getElementById('authConfigModal');
@@ -5107,6 +5413,9 @@
       loadJobStatus();
       if (window.isAuthenticated && window.gAccessToken) {
         syncYouTubeUploads(true);
+      }
+      if (typeof fetchQuotaHealth === 'function') {
+        fetchQuotaHealth();
       }
       updateDateFilterDisplayAndFilter();
       updateThemeControlsUI(document.documentElement.classList.contains('dark'));

@@ -710,6 +710,100 @@ app.get('/api/history', async (req, res) => {
 });
 
 /**
+ * Real-Time API Quota & Health Engine Endpoint
+ * Calculates daily usage, remaining capacity, and exact countdown to 12:30 PM IST reset
+ */
+app.get('/api/quota-health', async (req, res) => {
+  try {
+    const channelId = await resolveChannelId(req);
+    const allHistory = loadUploadedHistory();
+    const userHistory = channelId ? filterHistoryByChannel(allHistory, channelId) : allHistory;
+
+    // Calculate current IST time (UTC + 5:30)
+    const now = new Date();
+    const istOffsetMs = (5 * 60 + 30) * 60 * 1000;
+    const nowIst = new Date(now.getTime() + istOffsetMs);
+
+    // Current reset boundary (12:30 PM IST daily)
+    const todayResetIst = new Date(nowIst);
+    todayResetIst.setUTCHours(12, 30, 0, 0);
+
+    let cycleStartUtc;
+    let nextResetUtc;
+
+    if (nowIst.getTime() >= todayResetIst.getTime()) {
+      // Past 12:30 PM IST today -> cycle started today 12:30 PM IST, resets tomorrow 12:30 PM IST
+      cycleStartUtc = new Date(todayResetIst.getTime() - istOffsetMs);
+      const tomorrowResetIst = new Date(todayResetIst.getTime() + 24 * 3600 * 1000);
+      nextResetUtc = new Date(tomorrowResetIst.getTime() - istOffsetMs);
+    } else {
+      // Before 12:30 PM IST today -> cycle started yesterday 12:30 PM IST, resets today 12:30 PM IST
+      const yesterdayResetIst = new Date(todayResetIst.getTime() - 24 * 3600 * 1000);
+      cycleStartUtc = new Date(yesterdayResetIst.getTime() - istOffsetMs);
+      nextResetUtc = new Date(todayResetIst.getTime() - istOffsetMs);
+    }
+
+    const cycleStartIso = cycleStartUtc.toISOString();
+    const resetsInSeconds = Math.max(0, Math.floor((nextResetUtc.getTime() - now.getTime()) / 1000));
+
+    // Count videos uploaded in current cycle
+    const uploadsInCycle = userHistory.filter(f => {
+      const created = f.createdTime || f.uploadedAt || f.timestamp;
+      if (!created) return false;
+      return created >= cycleStartIso;
+    }).length;
+
+    const keysCount = Math.max(1, parseInt(req.query.keysCount || '1', 10));
+    const limitPerKey = 100;
+    const totalDailyLimit = keysCount * limitPerKey;
+    const usedCount = uploadsInCycle;
+    const remainingCount = Math.max(0, totalDailyLimit - usedCount);
+    const percentUsed = Math.min(100, Math.round((usedCount / totalDailyLimit) * 100));
+
+    const isQuotaPaused = jobState.status === 'paused_quota';
+    let healthStatus = 'healthy';
+    if (isQuotaPaused || percentUsed >= 95) {
+      healthStatus = 'exhausted';
+    } else if (percentUsed >= 70) {
+      healthStatus = 'warning';
+    }
+
+    res.json({
+      success: true,
+      quota: {
+        used: usedCount,
+        limit: totalDailyLimit,
+        remaining: remainingCount,
+        percent: percentUsed,
+        keysCount,
+        limitPerKey,
+        healthStatus,
+        isQuotaPaused,
+        resetsInSeconds,
+        resetsAtUtc: nextResetUtc.toISOString(),
+        cycleStartUtc: cycleStartUtc.toISOString()
+      }
+    });
+  } catch (err) {
+    console.error('Quota health error:', err);
+    res.json({
+      success: true,
+      quota: {
+        used: 0,
+        limit: 100,
+        remaining: 100,
+        percent: 0,
+        keysCount: 1,
+        limitPerKey: 100,
+        healthStatus: 'healthy',
+        isQuotaPaused: false,
+        resetsInSeconds: 3600
+      }
+    });
+  }
+});
+
+/**
  * YouTube Channel Uploads Direct Sync Endpoint
  * Queries user's actual YouTube channel upload playlist to fetch all live uploaded videos
  */
