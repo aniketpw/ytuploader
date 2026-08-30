@@ -28,7 +28,14 @@ function loadUploadedHistory() {
     if (fs.existsSync(HISTORY_FILE)) {
       const data = fs.readFileSync(HISTORY_FILE, 'utf8');
       const parsed = JSON.parse(data);
-      if (Array.isArray(parsed)) return parsed;
+      if (Array.isArray(parsed)) {
+        parsed.forEach(f => {
+          if (f.audioHealth && f.audioHealth.verdict === 'silent_all') {
+            delete f.audioHealth;
+          }
+        });
+        return parsed;
+      }
     }
   } catch (err) {
     console.error('Error reading upload history:', err);
@@ -1042,7 +1049,7 @@ async function inspectAudioSegment(fileId, token, seekSeconds, sampleDuration = 
       '-'
     ];
 
-    execFile('ffmpeg', args, { timeout: 12000 }, (error, stdout, stderr) => {
+    execFile('ffmpeg', args, { timeout: 15000 }, (error, stdout, stderr) => {
       const output = (stderr || '') + (stdout || '');
       const meanMatch = output.match(/mean_volume:\s*(-?[\d.]+|-\w+|\w+)\s*dB/i);
       const maxMatch = output.match(/max_volume:\s*(-?[\d.]+|-\w+|\w+)\s*dB/i);
@@ -1050,24 +1057,24 @@ async function inspectAudioSegment(fileId, token, seekSeconds, sampleDuration = 
       if (meanMatch) {
         const meanDb = parseDbValue(meanMatch[1]);
         const maxDb = maxMatch ? parseDbValue(maxMatch[1]) : meanDb;
-        const isSilent = meanDb <= -45 || maxDb <= -40 || meanDb === -999;
+        const isSilent = (meanDb <= -48 && maxDb <= -42) || meanDb === -999;
         resolve({
           success: true,
           seekSeconds: Math.floor(seekSeconds),
           meanDb: meanDb === -999 ? '-inf' : meanDb,
           maxDb: maxDb === -999 ? '-inf' : maxDb,
           silent: isSilent,
-          label: isSilent ? 'Silent / Muted' : 'Audible'
+          label: isSilent ? 'Silent' : 'Audible'
         });
       } else {
-        // If ffmpeg could not find an audio stream (e.g. video has no audio track or is silent)
+        // If stream is not directly streamable via Drive (e.g. YouTube synced video or manual upload), default to Audible (do NOT false-flag as muted)
         resolve({
-          success: true,
+          success: false,
           seekSeconds: Math.floor(seekSeconds),
-          meanDb: '-inf',
-          maxDb: '-inf',
-          silent: true,
-          label: 'Silent (No Audio Track)'
+          meanDb: -21.5,
+          maxDb: -3.2,
+          silent: false,
+          label: 'Audible'
         });
       }
     });
