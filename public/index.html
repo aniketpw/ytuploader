@@ -195,15 +195,14 @@
       <!-- Right Header Actions (Clean, uncluttered, professional) -->
       <div class="flex items-center gap-2 font-mono-code text-xs">
         
-        <!-- Primary Action: Manual Upload Direct Button -->
+        <!-- Primary Action: Manual Direct Upload Button -->
         <button
           type="button"
           onclick="openManualUploadModal()"
           class="flex items-center gap-1.5 px-3 h-8 bg-[var(--btn-primary-bg)] hover:opacity-90 text-[var(--btn-primary-text)] font-bold transition-all text-[11px] uppercase tracking-wider cursor-pointer shadow-xs"
-          title="Directly upload a video file from your computer to YouTube"
+          title="Directly upload video file from your computer to YouTube"
         >
-          <span class="text-sm font-bold leading-none">+</span>
-          <span>Upload</span>
+          <span>📤 Manual Upload</span>
         </button>
 
         <!-- Google Auth Button (When Disconnected) -->
@@ -333,19 +332,6 @@
                 <span>Settings &amp; Keys</span>
               </div>
               <span class="text-[9px] text-[var(--text-muted)]">Config</span>
-            </button>
-
-            <!-- Cloud Deployment Guide Option -->
-            <button
-              type="button"
-              onclick="openInfoModal('cloud'); closeNavToolsMenu();"
-              class="w-full text-left px-3 py-2 flex items-center justify-between hover:bg-[var(--btn-secondary-hover)] text-[var(--text-main)] transition-colors cursor-pointer border-t border-[var(--border-main)]/30"
-            >
-              <div class="flex items-center gap-2">
-                <span>☁️</span>
-                <span>Cloud Guide</span>
-              </div>
-              <span class="text-[9px] text-[var(--text-muted)]">Docker</span>
             </button>
           </div>
         </div>
@@ -1314,17 +1300,6 @@
               <p class="text-[10px] text-amber-700 dark:text-amber-300 mt-0.5">Get your own 10,000 daily quota — step-by-step guided setup</p>
             </div>
             <span class="text-lg text-amber-600 dark:text-amber-300">→</span>
-          </div>
-        </div>
-
-        <!-- Cloud Deployment & Docker Guide Card (Dual Access) -->
-        <div class="p-3.5 bg-sky-500/10 border-2 border-sky-500/50 hover:bg-sky-500/20 cursor-pointer transition-colors" onclick="closeAuthModal(); openInfoModal('cloud');">
-          <div class="flex items-center justify-between">
-            <div>
-              <div class="font-bold text-[var(--text-main)] text-xs uppercase tracking-wide">☁️ Cloud &amp; Docker Deployment Guide</div>
-              <p class="text-[10px] text-sky-700 dark:text-sky-300 mt-0.5">Deploy to Google Cloud Run, Railway, Render or VPS with Docker</p>
-            </div>
-            <span class="text-lg text-sky-600 dark:text-sky-300">→</span>
           </div>
         </div>
 
