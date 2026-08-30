@@ -4339,37 +4339,15 @@
       }
       if (progressContainer) progressContainer.classList.remove('hidden');
 
-      showToast('Initiating direct upload session with YouTube...', 'info');
+      showToast('Streaming video to YouTube with zero quota waste...', 'info');
 
       try {
-        const initRes = await fetch('/api/initiate-direct-upload', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${window.gAccessToken}`
-          },
-          body: JSON.stringify({
-            title,
-            batch,
-            subject,
-            playlistName,
-            privacyStatus,
-            descriptionFooter,
-            customTags
-          })
-        });
-
-        const initData = await initRes.json();
-        if (!initData.success || !initData.uploadUrl) {
-          throw new Error(initData.error || 'Failed to initiate YouTube upload session');
-        }
-
-        const uploadUrl = initData.uploadUrl;
-        showToast('Streaming file directly to YouTube CDN...', 'info');
+        const streamUrl = `/api/stream-manual-upload?title=${encodeURIComponent(title)}&batch=${encodeURIComponent(batch)}&subject=${encodeURIComponent(subject)}&playlistName=${encodeURIComponent(playlistName || '')}&privacyStatus=${encodeURIComponent(privacyStatus)}`;
 
         const xhr = new XMLHttpRequest();
-        xhr.open('PUT', uploadUrl, true);
-        xhr.setRequestHeader('Content-Type', manualSelectedFile.type || 'video/mp4');
+        xhr.open('POST', streamUrl, true);
+        xhr.setRequestHeader('Authorization', `Bearer ${window.gAccessToken}`);
+        xhr.setRequestHeader('Content-Type', 'application/octet-stream');
 
         const startTime = Date.now();
 
@@ -4385,49 +4363,60 @@
             if (progressPercent) progressPercent.textContent = `${percent}%`;
             if (progressBytes) progressBytes.textContent = `${formatBytes(e.loaded)} / ${formatBytes(e.total)}`;
             if (progressSpeed) progressSpeed.textContent = `⚡ ${speedMBps} MB/s`;
-            if (progressEta) progressEta.textContent = eta > 0 ? `${eta}s remaining` : 'Finishing...';
+            if (progressEta) progressEta.textContent = eta > 0 ? `${eta}s remaining` : 'Finalizing on YouTube...';
           }
         };
 
         xhr.onload = async () => {
-          if (xhr.status === 200 || xhr.status === 201) {
-            let videoId = null;
+          if (xhr.status >= 200 && xhr.status < 300) {
+            let resData = null;
             try {
-              const ytRes = JSON.parse(xhr.responseText);
-              videoId = ytRes.id;
-            } catch (pe) {
-              console.warn('Response parsing note:', pe);
-            }
+              resData = JSON.parse(xhr.responseText);
+            } catch (pe) {}
 
+            const videoId = resData?.videoId;
             if (videoId) {
-              showToast('✔ Upload finished! Applying thumbnail & saving...', 'success');
-
-              await fetch('/api/complete-direct-upload', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${window.gAccessToken}`
-                },
-                body: JSON.stringify({
-                  videoId,
-                  title,
-                  batch,
-                  subject,
-                  playlistName,
-                  fileSize: manualSelectedFile.size,
-                  thumbnailBase64: manualCustomThumbBase64 || null,
-                  thumbnailUrl: customThumbUrl || null
-                })
-              });
+              if (manualCustomThumbBase64 || customThumbUrl) {
+                showToast('Applying branded thumbnail...', 'info');
+                try {
+                  await fetch('/api/complete-direct-upload', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${window.gAccessToken}`
+                    },
+                    body: JSON.stringify({
+                      videoId,
+                      title,
+                      batch,
+                      subject,
+                      playlistName,
+                      fileSize: manualSelectedFile.size,
+                      thumbnailBase64: manualCustomThumbBase64 || null,
+                      thumbnailUrl: customThumbUrl || null
+                    })
+                  });
+                } catch (tErr) {}
+              }
 
               showToast(`🎉 Video "${title}" successfully uploaded to YouTube!`, 'success');
               closeManualUploadModal();
               loadJobStatus();
-
               openVideoModal(videoId);
+            } else {
+              showToast('✔ Upload completed successfully!', 'success');
+              closeManualUploadModal();
+              loadJobStatus();
             }
           } else {
-            showToast(`Upload failed with status ${xhr.status}: ${xhr.responseText}`, 'error');
+            let errMsg = 'Upload failed';
+            try {
+              const errObj = JSON.parse(xhr.responseText);
+              errMsg = errObj.error || errMsg;
+            } catch (e) {
+              errMsg = xhr.responseText || errMsg;
+            }
+            showToast(`Upload failed: ${errMsg}`, 'error');
             if (uploadBtn) {
               uploadBtn.disabled = false;
               uploadBtn.innerHTML = '<span>RETRY UPLOAD ➔</span>';
@@ -4436,7 +4425,7 @@
         };
 
         xhr.onerror = () => {
-          showToast('Network error during direct upload.', 'error');
+          showToast('Connection interrupted. Please try again.', 'error');
           if (uploadBtn) {
             uploadBtn.disabled = false;
             uploadBtn.innerHTML = '<span>RETRY UPLOAD ➔</span>';

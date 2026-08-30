@@ -2217,6 +2217,116 @@ app.get('/api/drive-image-proxy', async (req, res) => {
 });
 
 /**
+ * Direct High-Speed Streaming Proxy Upload to YouTube
+ * Accepts raw video binary payload from browser and pipes directly to YouTube API
+ * Eliminates all CORS issues, zero API quota wasted on network errors
+ */
+app.post('/api/stream-manual-upload', async (req, res) => {
+  const auth = getOAuth2Client(req);
+  if (!auth) {
+    return res.status(401).json({ success: false, error: 'Google Account not connected.' });
+  }
+
+  try {
+    const title = (req.query.title || 'Direct Lecture Video').trim();
+    const batch = req.query.batch ? req.query.batch.trim() : 'Manual Upload';
+    const subject = req.query.subject ? req.query.subject.trim() : 'Lecture';
+    const playlistName = req.query.playlistName ? req.query.playlistName.trim() : null;
+    const privacyStatus = req.query.privacyStatus || 'unlisted';
+    const finalPrivacy = ['public', 'private', 'unlisted'].includes(privacyStatus) ? privacyStatus : 'unlisted';
+
+    let fullDesc = `Lecture Video: ${title}\nBatch: ${batch}\nSubject: ${subject}`;
+    if (playlistName) fullDesc += `\nPlaylist: ${playlistName}`;
+    fullDesc += `\n\nUploaded on: ${new Date().toISOString()}`;
+
+    const tags = ['DirectUpload', 'Lecture', subject, batch].filter(Boolean);
+
+    const youtube = google.youtube({ version: 'v3', auth });
+
+    const ytResponse = await youtube.videos.insert({
+      part: ['snippet', 'status'],
+      requestBody: {
+        snippet: {
+          title,
+          description: fullDesc,
+          tags,
+          categoryId: '27' // Education
+        },
+        status: {
+          privacyStatus: finalPrivacy,
+          selfDeclaredMadeForKids: false
+        }
+      },
+      media: {
+        body: req
+      }
+    });
+
+    const videoId = ytResponse.data.id;
+    const youtubeUrl = `https://youtu.be/${videoId}`;
+    const studioUrl = `https://studio.youtube.com/video/${videoId}/edit`;
+    const finalThumbnail = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+
+    // Add to playlist if requested
+    if (playlistName) {
+      try {
+        const pId = await getOrCreatePlaylist(youtube, playlistName);
+        if (pId) await addVideoToPlaylist(youtube, pId, videoId);
+      } catch (pErr) {
+        console.warn('Manual playlist add error:', pErr.message);
+      }
+    }
+
+    const record = {
+      id: videoId,
+      videoId: videoId,
+      name: title,
+      originalName: title,
+      customTitle: title,
+      batch,
+      subject,
+      folderPath: 'Manual Device Upload',
+      size: parseInt(req.headers['content-length'] || '0', 10),
+      createdTime: new Date().toISOString(),
+      status: 'completed',
+      percentage: 100,
+      uploadedBytes: parseInt(req.headers['content-length'] || '0', 10),
+      totalBytes: parseInt(req.headers['content-length'] || '0', 10),
+      speedMBps: 0,
+      etaSeconds: 0,
+      youtubeUrl,
+      thumbnailUrl: finalThumbnail,
+      studioUrl,
+      error: null
+    };
+
+    saveUploadedVideoToHistory(record);
+    const existingIdx = jobState.files.findIndex(f => f.id === videoId || f.videoId === videoId);
+    if (existingIdx >= 0) {
+      jobState.files[existingIdx] = record;
+    } else {
+      jobState.files.unshift(record);
+    }
+    persistJobState();
+    broadcastSSE({ type: 'file_completed', file: record });
+
+    return res.json({
+      success: true,
+      videoId,
+      youtubeUrl,
+      title,
+      record
+    });
+  } catch (err) {
+    console.error('Stream manual upload error:', err);
+    return res.status(500).json({
+      success: false,
+      error: err.message || 'Direct manual stream to YouTube failed'
+    });
+  }
+});
+
+/**
  * Initiate Direct Manual Video Upload from Local File
  */
 app.post('/api/initiate-direct-upload', async (req, res) => {
