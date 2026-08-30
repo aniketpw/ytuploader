@@ -1019,6 +1019,14 @@ app.post('/api/retry-pending', async (req, res) => {
  */
 const { execFile } = require('child_process');
 
+function parseDbValue(valStr) {
+  if (!valStr) return -999;
+  const clean = String(valStr).trim().toLowerCase();
+  if (clean.includes('-inf') || clean.includes('inf')) return -999;
+  const parsed = parseFloat(clean);
+  return isNaN(parsed) ? -999 : parsed;
+}
+
 async function inspectAudioSegment(fileId, token, seekSeconds, sampleDuration = 5) {
   return new Promise((resolve) => {
     const url = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&supportsAllDrives=true`;
@@ -1036,30 +1044,30 @@ async function inspectAudioSegment(fileId, token, seekSeconds, sampleDuration = 
 
     execFile('ffmpeg', args, { timeout: 12000 }, (error, stdout, stderr) => {
       const output = (stderr || '') + (stdout || '');
-      const meanMatch = output.match(/mean_volume:\s*(-?[\d.]+)\s*dB/i);
-      const maxMatch = output.match(/max_volume:\s*(-?[\d.]+)\s*dB/i);
+      const meanMatch = output.match(/mean_volume:\s*(-?[\d.]+|-\w+|\w+)\s*dB/i);
+      const maxMatch = output.match(/max_volume:\s*(-?[\d.]+|-\w+|\w+)\s*dB/i);
 
       if (meanMatch) {
-        const meanDb = parseFloat(meanMatch[1]);
-        const maxDb = maxMatch ? parseFloat(maxMatch[1]) : meanDb;
-        const isSilent = meanDb <= -48 || maxDb <= -42;
+        const meanDb = parseDbValue(meanMatch[1]);
+        const maxDb = maxMatch ? parseDbValue(maxMatch[1]) : meanDb;
+        const isSilent = meanDb <= -45 || maxDb <= -40 || meanDb === -999;
         resolve({
           success: true,
           seekSeconds: Math.floor(seekSeconds),
-          meanDb,
-          maxDb,
+          meanDb: meanDb === -999 ? '-inf' : meanDb,
+          maxDb: maxDb === -999 ? '-inf' : maxDb,
           silent: isSilent,
           label: isSilent ? 'Silent / Muted' : 'Audible'
         });
       } else {
-        // Fallback simulation based on file integrity
+        // If ffmpeg could not find an audio stream (e.g. video has no audio track or is silent)
         resolve({
           success: true,
           seekSeconds: Math.floor(seekSeconds),
-          meanDb: -22.4,
-          maxDb: -3.2,
-          silent: false,
-          label: 'Audible'
+          meanDb: '-inf',
+          maxDb: '-inf',
+          silent: true,
+          label: 'Silent (No Audio Track)'
         });
       }
     });
@@ -2289,6 +2297,13 @@ app.post('/api/stream-manual-upload', async (req, res) => {
       }
     }
 
+    let audioHealth = null;
+    if (req.query.audioHealth) {
+      try {
+        audioHealth = JSON.parse(decodeURIComponent(req.query.audioHealth));
+      } catch (e) {}
+    }
+
     const record = {
       id: videoId,
       videoId: videoId,
@@ -2309,6 +2324,7 @@ app.post('/api/stream-manual-upload', async (req, res) => {
       youtubeUrl,
       thumbnailUrl: finalThumbnail,
       studioUrl,
+      audioHealth,
       error: null
     };
 
