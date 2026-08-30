@@ -2300,7 +2300,7 @@ app.post('/api/stream-manual-upload', async (req, res) => {
       error: null
     };
 
-    saveUploadedVideoToHistory(record);
+    saveCompletedFileToHistory(record);
     const existingIdx = jobState.files.findIndex(f => f.id === videoId || f.videoId === videoId);
     if (existingIdx >= 0) {
       jobState.files[existingIdx] = record;
@@ -2308,12 +2308,23 @@ app.post('/api/stream-manual-upload', async (req, res) => {
       jobState.files.unshift(record);
     }
     persistJobState();
-    broadcastSSE({ type: 'file_completed', file: record });
+    broadcastSSE({
+      type: 'file_completed',
+      fileId: videoId,
+      fileName: title,
+      videoId,
+      youtubeUrl,
+      studioUrl,
+      thumbnailUrl: finalThumbnail,
+      file: record
+    });
 
     return res.json({
       success: true,
       videoId,
       youtubeUrl,
+      studioUrl,
+      thumbnailUrl: finalThumbnail,
       title,
       record
     });
