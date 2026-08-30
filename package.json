@@ -21,13 +21,15 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "better-sqlite3": "^13.0.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "express-rate-limit": "^8.7.0",
     "googleapis": "^144.0.0",
     "helmet": "^8.3.0"
+  },
+  "optionalDependencies": {
+    "better-sqlite3": "^11.7.0"
   },
   "devDependencies": {
     "electron": "^44.0.0"

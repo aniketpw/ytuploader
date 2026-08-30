@@ -47,7 +47,7 @@ app.use(cors({
 }));
 app.use('/api/', rateLimit({
   windowMs: 60 * 1000,
-  max: 60,
+  max: 5000, // Scaled for 50-60+ concurrent active users
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, error: 'Too many requests, please try again later.' }

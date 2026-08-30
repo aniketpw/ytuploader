@@ -1,15 +1,14 @@
-FROM node:20-bookworm-slim
+# Use lightweight official Node.js image
+FROM node:20-alpine
 
-# Install native addon compilation tools for better-sqlite3
-RUN apt-get update && apt-get install -y python3 make g++ gcc libc6-dev && rm -rf /var/lib/apt/lists/*
-
+# Set working directory
 WORKDIR /app
 
 # Copy package definitions
 COPY package*.json ./
 
-# Install production dependencies and compile native addons for Linux
-RUN npm install --omit=dev --no-package-lock
+# Install production dependencies
+RUN npm install --omit=dev
 
 # Copy all application files
 COPY . .
@@ -17,7 +16,7 @@ COPY . .
 # Ensure data directory exists
 RUN mkdir -p data
 
-# Dynamic cloud port
+# Expose dynamic cloud port
 ENV PORT=3000
 EXPOSE 3000
 
