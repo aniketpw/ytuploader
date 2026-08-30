@@ -54,6 +54,7 @@ try {
       subject       TEXT DEFAULT 'Lecture',
       folderPath    TEXT DEFAULT '',
       channelId     TEXT,
+      ownerUserId   TEXT,
       size          INTEGER DEFAULT 0,
       createdTime   TEXT,
       status        TEXT DEFAULT 'completed',
@@ -67,12 +68,6 @@ try {
       studioUrl     TEXT DEFAULT '',
       error         TEXT
     );
-
-    CREATE INDEX IF NOT EXISTS idx_history_videoId     ON uploaded_history(videoId);
-    CREATE INDEX IF NOT EXISTS idx_history_channelId   ON uploaded_history(channelId);
-    CREATE INDEX IF NOT EXISTS idx_history_createdTime ON uploaded_history(createdTime);
-    CREATE INDEX IF NOT EXISTS idx_history_name        ON uploaded_history(name COLLATE NOCASE);
-    CREATE INDEX IF NOT EXISTS idx_history_customTitle ON uploaded_history(customTitle COLLATE NOCASE);
 
     CREATE TABLE IF NOT EXISTS job_state (
       id   INTEGER PRIMARY KEY CHECK (id = 1),
@@ -96,23 +91,43 @@ try {
     );
   `);
 
+  try { db.exec('ALTER TABLE uploaded_history ADD COLUMN ownerUserId TEXT;'); } catch (e) {}
+  try { db.exec('CREATE INDEX IF NOT EXISTS idx_history_ownerUserId ON uploaded_history(ownerUserId);'); } catch (e) {}
+  try { db.exec('CREATE INDEX IF NOT EXISTS idx_history_videoId ON uploaded_history(videoId);'); } catch (e) {}
+  try { db.exec('CREATE INDEX IF NOT EXISTS idx_history_channelId ON uploaded_history(channelId);'); } catch (e) {}
+  try { db.exec('CREATE INDEX IF NOT EXISTS idx_history_createdTime ON uploaded_history(createdTime);'); } catch (e) {}
+  try { db.exec('CREATE INDEX IF NOT EXISTS idx_history_name ON uploaded_history(name COLLATE NOCASE);'); } catch (e) {}
+  try { db.exec('CREATE INDEX IF NOT EXISTS idx_history_customTitle ON uploaded_history(customTitle COLLATE NOCASE);'); } catch (e) {}
+
   stmts = {
     insertHistory: db.prepare(`
       INSERT OR REPLACE INTO uploaded_history
         (id, videoId, name, originalName, customTitle, batch, subject, folderPath,
-         channelId, size, createdTime, status, percentage, uploadedBytes, totalBytes,
+         channelId, ownerUserId, size, createdTime, status, percentage, uploadedBytes, totalBytes,
          speedMBps, etaSeconds, youtubeUrl, thumbnailUrl, studioUrl, error)
       VALUES
         (@id, @videoId, @name, @originalName, @customTitle, @batch, @subject, @folderPath,
-         @channelId, @size, @createdTime, @status, @percentage, @uploadedBytes, @totalBytes,
+         @channelId, @ownerUserId, @size, @createdTime, @status, @percentage, @uploadedBytes, @totalBytes,
          @speedMBps, @etaSeconds, @youtubeUrl, @thumbnailUrl, @studioUrl, @error)
     `),
     selectAllHistory: db.prepare(`SELECT * FROM uploaded_history ORDER BY rowid DESC`),
     selectHistoryByChannel: db.prepare(`SELECT * FROM uploaded_history WHERE channelId = ? ORDER BY rowid DESC`),
+    selectHistoryByUser: db.prepare(`SELECT * FROM uploaded_history WHERE ownerUserId = ? ORDER BY rowid DESC`),
+    selectHistoryByChannelOrUser: db.prepare(`
+      SELECT * FROM uploaded_history 
+      WHERE (channelId IS NOT NULL AND channelId = ?) OR (ownerUserId IS NOT NULL AND ownerUserId = ?)
+      ORDER BY rowid DESC
+    `),
     selectHistoryById: db.prepare(`SELECT * FROM uploaded_history WHERE id = ?`),
     selectHistoryByVideoId: db.prepare(`SELECT * FROM uploaded_history WHERE videoId = ?`),
     deleteAllHistory: db.prepare(`DELETE FROM uploaded_history`),
     deleteHistoryById: db.prepare(`DELETE FROM uploaded_history WHERE id = ?`),
+    deleteHistoryByChannel: db.prepare(`DELETE FROM uploaded_history WHERE channelId = ?`),
+    deleteHistoryByUser: db.prepare(`DELETE FROM uploaded_history WHERE ownerUserId = ?`),
+    deleteHistoryByChannelOrUser: db.prepare(`
+      DELETE FROM uploaded_history 
+      WHERE (channelId IS NOT NULL AND channelId = ?) OR (ownerUserId IS NOT NULL AND ownerUserId = ?)
+    `),
     checkDuplicate: db.prepare(`
       SELECT id, videoId, youtubeUrl, customTitle, name FROM uploaded_history
       WHERE id = ? OR customTitle = ? COLLATE NOCASE OR name = ? COLLATE NOCASE
@@ -121,6 +136,10 @@ try {
     countHistoryInCycle: db.prepare(`
       SELECT COUNT(*) as cnt FROM uploaded_history
       WHERE createdTime >= ? AND channelId = ?
+    `),
+    countUserHistoryInCycle: db.prepare(`
+      SELECT COUNT(*) as cnt FROM uploaded_history
+      WHERE createdTime >= ? AND ownerUserId = ?
     `),
     countAllHistoryInCycle: db.prepare(`
       SELECT COUNT(*) as cnt FROM uploaded_history
@@ -172,6 +191,7 @@ function normalizeHistoryRecord(rec) {
     subject: rec.subject || 'Lecture',
     folderPath: rec.folderPath || '',
     channelId: rec.channelId || null,
+    ownerUserId: rec.ownerUserId || null,
     size: parseInt(rec.size || rec.totalBytes || '0', 10),
     createdTime: rec.createdTime || new Date().toISOString(),
     status: rec.status || 'completed',
@@ -247,6 +267,25 @@ function deleteHistoryById(id) {
   writeJsonFile(HISTORY_FILE, hist);
 }
 
+function clearUserHistory(channelId, userId) {
+  if (isSqlite) {
+    try {
+      if (channelId && userId) {
+        stmts.deleteHistoryByChannelOrUser.run(channelId, userId);
+      } else if (channelId) {
+        stmts.deleteHistoryByChannel.run(channelId);
+      } else if (userId) {
+        stmts.deleteHistoryByUser.run(userId);
+      }
+      return;
+    } catch (err) {}
+  }
+  const hist = readJsonFile(HISTORY_FILE, []).filter(h =>
+    !(channelId && h.channelId === channelId) && !(userId && h.ownerUserId === userId)
+  );
+  writeJsonFile(HISTORY_FILE, hist);
+}
+
 function isDuplicate(driveFileId, customTitle, fileName) {
   if (isSqlite) {
     try {
@@ -287,24 +326,46 @@ function getHistoryByChannel(channelId) {
   return readJsonFile(HISTORY_FILE, []).filter(h => h.channelId === channelId);
 }
 
-function getUploadsInCycle(sinceIso, channelId) {
+function getHistoryByUserOrChannel(channelId, userId) {
+  if (isSqlite) {
+    try {
+      if (channelId && userId) {
+        return stmts.selectHistoryByChannelOrUser.all(channelId, userId);
+      } else if (channelId) {
+        return stmts.selectHistoryByChannel.all(channelId);
+      } else if (userId) {
+        return stmts.selectHistoryByUser.all(userId);
+      }
+      return [];
+    } catch (err) {}
+  }
+  const hist = readJsonFile(HISTORY_FILE, []);
+  return hist.filter(h =>
+    (channelId && h.channelId === channelId) || (userId && h.ownerUserId === userId)
+  );
+}
+
+function getUploadsInCycle(sinceIso, channelId, userId) {
+  if (!channelId && !userId) return 0;
   if (isSqlite) {
     try {
       if (channelId) {
         const row = stmts.countHistoryInCycle.get(sinceIso, channelId);
         return row ? row.cnt : 0;
-      } else {
-        const row = stmts.countAllHistoryInCycle.get(sinceIso);
+      } else if (userId) {
+        const row = stmts.countUserHistoryInCycle.get(sinceIso, userId);
         return row ? row.cnt : 0;
       }
+      return 0;
     } catch (err) {}
   }
   const hist = readJsonFile(HISTORY_FILE, []);
   return hist.filter(f => {
     const created = f.createdTime || f.uploadedAt || f.timestamp;
     if (!created || created < sinceIso) return false;
-    if (channelId && f.channelId !== channelId) return false;
-    return true;
+    if (channelId && f.channelId === channelId) return true;
+    if (userId && f.ownerUserId === userId) return true;
+    return false;
   }).length;
 }
 
@@ -515,10 +576,12 @@ module.exports = {
   persistUploadedHistory,
   saveCompletedFileToHistory,
   deleteHistoryById,
+  clearUserHistory,
   isDuplicate,
   findHistoryByDriveId,
   findHistoryByVideoId,
   getHistoryByChannel,
+  getHistoryByUserOrChannel,
   getUploadsInCycle,
   loadJobStateFromDB,
   persistJobStateToDB,

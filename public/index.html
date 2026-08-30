@@ -2095,6 +2095,37 @@
     };
     AppStorage.init();
 
+    function getPersistentUserId() {
+      let uid = AppStorage.getItem('yt_client_uid');
+      if (!uid) {
+        uid = 'usr_' + Math.random().toString(36).substring(2, 11) + '_' + Date.now();
+        AppStorage.setItem('yt_client_uid', uid);
+      }
+      return uid;
+    }
+
+    // Automatically attach x-user-id and Authorization headers to all API fetch calls
+    const _originalFetch = window.fetch;
+    window.fetch = function(url, options = {}) {
+      const opts = options || {};
+      opts.headers = opts.headers || {};
+      const uid = getPersistentUserId();
+      const tok = window.gAccessToken || AppStorage.getItem('yt_direct_access_token') || '';
+
+      if (typeof opts.headers.set === 'function') {
+        if (!opts.headers.has('x-user-id')) opts.headers.set('x-user-id', uid);
+        if (!opts.headers.has('Authorization') && tok) {
+          opts.headers.set('Authorization', `Bearer ${tok}`);
+        }
+      } else {
+        if (!opts.headers['x-user-id']) opts.headers['x-user-id'] = uid;
+        if (!opts.headers['Authorization'] && tok) {
+          opts.headers['Authorization'] = `Bearer ${tok}`;
+        }
+      }
+      return _originalFetch.call(this, url, opts);
+    };
+
     let clientId = 'client_' + (Date.now ? Date.now() : new Date().getTime()) + '_' + Math.random().toString(36).substr(2, 6);
     let eventSource = null;
     let currentState = null;
@@ -5275,7 +5306,9 @@
         connectionBadge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span><span>SSE...</span>`;
       }
 
-      eventSource = new EventSource(`/api/events?clientId=${clientId}`);
+      const uid = getPersistentUserId();
+      const tok = window.gAccessToken || AppStorage.getItem('yt_direct_access_token') || '';
+      eventSource = new EventSource(`/api/events?clientId=${clientId}&userId=${encodeURIComponent(uid)}&token=${encodeURIComponent(tok)}`);
 
       eventSource.onopen = () => {
         if (connectionBadge) {
