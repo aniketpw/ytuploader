@@ -585,6 +585,29 @@
           >
             Playlist ↗
           </a>
+
+          <!-- Batch Pending / Failed Action Suite -->
+          <div id="batchQueueActionGroup" class="hidden items-center gap-1.5 ml-1 pl-2 border-l border-[var(--border-main)]">
+            <button
+              type="button"
+              id="retryQueueBtn"
+              onclick="retryAllPendingQueue()"
+              class="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-black font-bold text-[10px] uppercase tracking-wider transition-colors cursor-pointer shadow-2xs flex items-center gap-1"
+              title="Retry and resume all pending and failed video uploads"
+            >
+              <span>🔄 Retry Queue</span>
+            </button>
+
+            <button
+              type="button"
+              id="clearQueueBtn"
+              onclick="clearPendingQueueOnly()"
+              class="px-2.5 py-1 bg-[var(--bg-subcard)] hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-400 dark:border-rose-900/60 font-bold text-[10px] uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-1"
+              title="Purge pending and failed items from active queue"
+            >
+              <span>🧹 Purge Queue</span>
+            </button>
+          </div>
         </div>
 
         <div class="flex items-center gap-2">
@@ -1145,7 +1168,7 @@
             <span>💡 MULTIPLY YOUR DAILY UPLOADS:</span>
           </div>
           <p class="text-[10px] text-[var(--text-muted)] leading-relaxed">
-            Har Google Cloud project se <strong>100 uploads/day</strong> milte hain. Agar aap <strong>Settings</strong> me 3 Client IDs add karte hain, to aapka daily quota automatically <strong>300 uploads/day</strong> ho jayega!
+            Each Google Cloud project grants <strong>100 uploads/day</strong>. Adding 3 Client IDs in <strong>Settings</strong> instantly scales your daily throughput to <strong>300 uploads/day</strong> with automatic zero-downtime rotation!
           </p>
         </div>
 
@@ -2656,10 +2679,72 @@
         filterPillFailed.classList.add('hidden');
       }
 
+      const batchActionGroup = document.getElementById('batchQueueActionGroup');
+      if (batchActionGroup) {
+        if (pending > 0 || failed > 0) {
+          batchActionGroup.classList.remove('hidden');
+          batchActionGroup.classList.add('inline-flex');
+        } else {
+          batchActionGroup.classList.add('hidden');
+          batchActionGroup.classList.remove('inline-flex');
+        }
+      }
+
       if (typeof fetchQuotaHealth === 'function') {
         fetchQuotaHealth();
       }
     }
+
+    window.retryAllPendingQueue = async function() {
+      if (!window.isAuthenticated || !window.gAccessToken) {
+        showToast('Please connect your Google Account first.', 'error');
+        handleConnectClick();
+        return;
+      }
+
+      showToast('Resuming queued and failed uploads...', 'info');
+      try {
+        const res = await fetch('/api/retry-pending', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${window.gAccessToken}`
+          }
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(`✔ ${data.message}`, 'success');
+          loadJobStatus();
+        } else {
+          showToast(`Error: ${data.error || 'Failed to restart queue'}`, 'error');
+        }
+      } catch (err) {
+        showToast(`Error: ${err.message}`, 'error');
+      }
+    };
+
+    window.clearPendingQueueOnly = async function() {
+      const confirmed = confirm('Purge all pending and failed video uploads from queue? (Completed uploads will remain safe)');
+      if (!confirmed) return;
+
+      try {
+        const res = await fetch('/api/clear-pending', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(`✔ ${data.message}`, 'info');
+          loadJobStatus();
+        } else {
+          showToast(`Error: ${data.error || 'Failed to clear queue'}`, 'error');
+        }
+      } catch (err) {
+        showToast(`Error: ${err.message}`, 'error');
+      }
+    };
 
     window.selectProcessingMode = function(mode) {};
     window.updateProcessingModeCards = function() {};

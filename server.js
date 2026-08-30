@@ -926,6 +926,71 @@ app.post('/api/clear-history', (req, res) => {
   res.json({ success: true, message: 'Upload history cleared.' });
 });
 
+/**
+ * Purge only Pending / Queued / Failed items from memory without touching completed uploads
+ */
+app.post('/api/clear-pending', (req, res) => {
+  const initialPending = jobState.files.filter(f => f.status === 'queued' || f.status === 'failed' || f.status === 'uploading').length;
+  jobState.files = jobState.files.filter(f => f.status === 'completed');
+  if (jobState.status === 'processing' || jobState.status === 'paused_quota') {
+    jobState.status = 'idle';
+  }
+  jobState.stats = {
+    total: jobState.files.length,
+    pending: 0,
+    completed: jobState.files.length,
+    failed: 0
+  };
+  persistJobState();
+  broadcastSSE({ type: 'state_sync', state: jobState });
+  res.json({ success: true, clearedCount: initialPending, message: `Purged ${initialPending} pending/failed video(s) from queue.` });
+});
+
+/**
+ * Retry all Failed and Queued items in active pipeline
+ */
+app.post('/api/retry-pending', async (req, res) => {
+  const auth = getOAuth2Client(req);
+  if (!auth) {
+    return res.status(401).json({ success: false, error: 'Google Account authorization token missing. Please connect account first.' });
+  }
+
+  const pendingItems = jobState.files.filter(f => f.status === 'queued' || f.status === 'failed');
+  if (pendingItems.length === 0) {
+    return res.json({ success: true, message: 'No pending or failed videos in queue.', retriedCount: 0 });
+  }
+
+  pendingItems.forEach(f => {
+    f.status = 'queued';
+    f.percentage = 0;
+    f.uploadedBytes = 0;
+    f.error = null;
+  });
+
+  jobState.status = 'processing';
+  jobState.stats = {
+    total: jobState.files.length,
+    pending: pendingItems.length,
+    completed: jobState.files.filter(f => f.status === 'completed').length,
+    failed: 0
+  };
+  persistJobState();
+  broadcastSSE({ type: 'state_sync', state: jobState });
+
+  res.json({ success: true, retriedCount: pendingItems.length, message: `Resuming upload for ${pendingItems.length} video(s)...` });
+
+  (async () => {
+    activeAbortController = new AbortController();
+    try {
+      const drive = google.drive({ version: 'v3', auth });
+      const youtube = google.youtube({ version: 'v3', auth });
+      await runUploadQueue(drive, youtube, auth, activeAbortController.signal);
+    } catch (err) {
+      console.error('Error during retry-pending queue:', err);
+    }
+  })();
+});
+
 
 
 /**
