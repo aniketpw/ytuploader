@@ -391,15 +391,15 @@
           <button type="button" onclick="openAuthModal()" class="text-emerald-700 dark:text-emerald-400 hover:text-emerald-950 dark:hover:text-emerald-200 underline ml-1 cursor-pointer font-bold lowercase">settings</button>
         </div>
 
-        <!-- Verify Channel Link -->
+        <!-- Verify Channel Link (Compact) -->
         <a
           href="https://www.youtube.com/verify"
           target="_blank"
           rel="noopener noreferrer"
-          class="hidden sm:flex items-center gap-1 px-3 h-8 border border-[var(--border-main)] bg-[var(--btn-secondary-bg)] hover:bg-[var(--btn-secondary-hover)] text-[var(--text-muted)] hover:text-[var(--text-main)] font-semibold transition-all text-[11px] uppercase tracking-wider"
-          title="Verify YouTube Channel for >15 min uploads"
+          class="hidden sm:flex items-center gap-1 px-2.5 h-8 border border-[var(--border-main)] bg-[var(--btn-secondary-bg)] hover:bg-[var(--btn-secondary-hover)] text-[var(--text-muted)] hover:text-[var(--text-main)] font-semibold transition-all text-[10px] uppercase tracking-wider whitespace-nowrap"
+          title="Verify your YouTube Channel to enable uploads longer than 15 minutes (youtube.com/verify)"
         >
-          <span>Verify (&gt;15 min) ↗</span>
+          <span>✓ Verify 15m+ ↗</span>
         </a>
 
         <!-- Real-Time API Quota Health Meter Pill (Compact) -->
@@ -2037,6 +2037,38 @@
                   <div class="font-bold text-[var(--text-main)]">Direct Cloud-to-Cloud Uploading</div>
                   <p class="text-[var(--text-muted)]">Videos stream in real-time with 0 MB local bandwidth consumption. By default, every video is published as <b>Unlisted</b> for total security.</p>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Crucial Drive Sharing & Channel Destination Rules -->
+          <div class="border border-sky-500/40 bg-sky-500/10 p-4 space-y-3 font-mono-code">
+            <h4 class="font-bold text-xs uppercase text-sky-600 dark:text-sky-400 flex items-center gap-2">
+              <span>🔐</span>
+              <span>Google Drive Permissions &amp; Channel Destination Guide</span>
+            </h4>
+            
+            <div class="space-y-2.5 text-[11px] text-[var(--text-main)]">
+              <!-- Rule 1: Drive Sharing -->
+              <div class="p-3 bg-[var(--bg-card)] border border-[var(--border-main)] space-y-1">
+                <div class="font-bold text-orange-500 flex items-center gap-1.5 text-xs">
+                  <span>1.</span>
+                  <span>Google Drive Access &amp; Sharing Requirement</span>
+                </div>
+                <p class="text-[10px] text-[var(--text-muted)] leading-relaxed">
+                  The Google account connected to this portal <strong>must have access</strong> to the Drive folder or video files. If the Google Drive folder belongs to a different account, you must either share the folder with your connected email address, OR set folder access to <strong>"Anyone with the link can view"</strong>. If a folder is restricted/private and not shared with your connected account, Google Drive API will block access.
+                </p>
+              </div>
+
+              <!-- Rule 2: Channel Destination -->
+              <div class="p-3 bg-[var(--bg-card)] border border-[var(--border-main)] space-y-1">
+                <div class="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 text-xs">
+                  <span>2.</span>
+                  <span>Which YouTube Channel receives the uploaded videos?</span>
+                </div>
+                <p class="text-[10px] text-[var(--text-muted)] leading-relaxed">
+                  All videos are uploaded directly to the <strong>YouTube Channel belonging to the connected Google Account</strong>. If your Drive videos are on <em>Account A</em>, but you want them uploaded to <em>Account B's YouTube Channel</em>: simply share the Drive folder with <em>Account B</em> (or enable link sharing), and log in to this app using <strong>Account B</strong>. The cloud pipeline will read from Account A's Drive and stream directly into Account B's YouTube channel!
+                </p>
               </div>
             </div>
           </div>
