@@ -531,23 +531,23 @@
             </button>
 
             <!-- Scan Date Custom Calendar Popover -->
-            <div id="scanCalendarPopover" class="hidden absolute left-0 top-11 z-50 bg-[var(--bg-card)] border border-[var(--border-main)] shadow-2xl p-4 w-[290px] select-none text-[var(--text-main)]">
-              <div class="flex items-center justify-between pb-2 mb-2 border-b border-[var(--border-main)] font-mono-code">
-                <button type="button" onclick="navigateScanMonth(-1)" class="w-6 h-6 hover:bg-[var(--btn-secondary-hover)] flex items-center justify-center font-bold text-xs cursor-pointer">‹</button>
-                <span id="scanCalendarMonthLabel" class="text-xs font-bold text-[var(--text-main)]">August 2026</span>
-                <button type="button" onclick="navigateScanMonth(1)" class="w-6 h-6 hover:bg-[var(--btn-secondary-hover)] flex items-center justify-center font-bold text-xs cursor-pointer">›</button>
+            <div id="scanCalendarPopover" class="hidden absolute left-0 top-11 z-50 bg-[var(--bg-card)] border border-[var(--border-main)] shadow-2xl p-3 w-[250px] select-none text-[var(--text-main)]">
+              <div class="flex items-center justify-between pb-1.5 mb-1.5 border-b border-[var(--border-main)] font-mono-code">
+                <button type="button" onclick="navigateScanMonth(-1)" class="w-5 h-5 hover:bg-[var(--btn-secondary-hover)] flex items-center justify-center font-bold text-[11px] cursor-pointer">‹</button>
+                <span id="scanCalendarMonthLabel" class="text-[11px] font-bold text-[var(--text-main)]">August 2026</span>
+                <button type="button" onclick="navigateScanMonth(1)" class="w-5 h-5 hover:bg-[var(--btn-secondary-hover)] flex items-center justify-center font-bold text-[11px] cursor-pointer">›</button>
               </div>
-              <div class="grid grid-cols-7 text-center text-[10px] font-mono-code font-bold text-[var(--text-muted)] mb-1">
+              <div class="grid grid-cols-7 text-center text-[9px] font-mono-code font-bold text-[var(--text-muted)] mb-0.5">
                 <span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span class="text-orange-500">Sa</span><span class="text-orange-500">Su</span>
               </div>
-              <div id="scanCalendarDaysGrid" class="grid grid-cols-7 gap-1 text-center font-mono-code text-xs"></div>
-              <div class="pt-2.5 mt-2.5 border-t border-[var(--border-main)] flex items-center justify-between font-mono-code text-[11px]">
+              <div id="scanCalendarDaysGrid" class="grid grid-cols-7 gap-0.5 text-center font-mono-code text-[11px]"></div>
+              <div class="pt-2 mt-2 border-t border-[var(--border-main)] flex items-center justify-between font-mono-code text-[10px]">
                 <div class="flex items-center gap-1">
-                  <button type="button" onclick="setScanDatePreset('today'); closeScanCalendar();" class="px-2 py-1 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] border border-[var(--btn-primary-bg)] text-[10px] font-bold uppercase cursor-pointer shadow-xs">Today</button>
-                  <button type="button" onclick="setScanDatePreset('yesterday'); closeScanCalendar();" class="px-2 py-1 bg-[var(--bg-subcard)] hover:bg-[var(--btn-primary-bg)] hover:text-[var(--btn-primary-text)] border border-[var(--border-main)] text-[10px] font-bold uppercase cursor-pointer">Yest</button>
-                  <button type="button" onclick="setScanDatePreset('all'); closeScanCalendar();" class="px-2 py-1 bg-[var(--bg-subcard)] hover:bg-[var(--btn-primary-bg)] hover:text-[var(--btn-primary-text)] border border-[var(--border-main)] text-[10px] font-bold uppercase cursor-pointer">7D</button>
+                  <button type="button" onclick="setScanDatePreset('today'); closeScanCalendar();" class="px-1.5 py-0.5 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] border border-[var(--btn-primary-bg)] text-[9px] font-bold uppercase cursor-pointer shadow-xs">Today</button>
+                  <button type="button" onclick="setScanDatePreset('yesterday'); closeScanCalendar();" class="px-1.5 py-0.5 bg-[var(--bg-subcard)] hover:bg-[var(--btn-primary-bg)] hover:text-[var(--btn-primary-text)] border border-[var(--border-main)] text-[9px] font-bold uppercase cursor-pointer">Yest</button>
+                  <button type="button" onclick="setScanDatePreset('all'); closeScanCalendar();" class="px-1.5 py-0.5 bg-[var(--bg-subcard)] hover:bg-[var(--btn-primary-bg)] hover:text-[var(--btn-primary-text)] border border-[var(--border-main)] text-[9px] font-bold uppercase cursor-pointer">7D</button>
                 </div>
-                <button type="button" onclick="setScanDatePreset('clear'); closeScanCalendar();" class="text-[var(--text-muted)] hover:text-[var(--text-main)] font-semibold cursor-pointer text-[11px]">All Dates</button>
+                <button type="button" onclick="setScanDatePreset('clear'); closeScanCalendar();" class="text-[var(--text-muted)] hover:text-[var(--text-main)] font-semibold cursor-pointer text-[10px]">All Dates</button>
               </div>
             </div>
           </div>
@@ -2660,9 +2660,15 @@
 
     window.openScanCalendar = function(target, e) {
       if (e) e.stopPropagation();
-      scanCalTarget = target;
       const pop = document.getElementById('scanCalendarPopover');
       if (!pop) return;
+      // If already open for same target, just toggle off
+      if (scanCalOpen && scanCalTarget === target) {
+        closeScanCalendar();
+        return;
+      }
+      // If open for different target, close and reopen for new target
+      scanCalTarget = target;
       // Determine initial month to show
       const existingVal = target === 'start'
         ? (startDateInput ? startDateInput.value : '')
@@ -2757,7 +2763,7 @@
       const isEnd = eVal === ymd;
       const inRange = sVal && eVal && ymd > sVal && ymd < eVal;
 
-      let cls = 'h-7 flex items-center justify-center text-xs font-semibold cursor-pointer transition-all ';
+      let cls = 'h-6 flex items-center justify-center text-[11px] font-semibold cursor-pointer transition-all ';
       if (isStart || isEnd) {
         cls += 'bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] font-bold';
       } else if (inRange) {
