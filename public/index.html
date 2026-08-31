@@ -505,18 +505,51 @@
               <button type="button" onclick="setScanDatePreset('clear')" class="text-rose-500 hover:underline cursor-pointer">Clear</button>
             </div>
           </div>
-          <div class="flex items-center gap-1.5 font-mono-code">
-            <input
-              type="date"
-              id="startDateInput"
-              class="w-1/2 h-9 px-2 om-box-input text-xs text-[var(--text-main)]"
-            />
+          <!-- Hidden real inputs for backward compat (all existing JS reads .value from these) -->
+          <input type="hidden" id="startDateInput" />
+          <input type="hidden" id="endDateInput" />
+          <!-- Custom Display Buttons -->
+          <div class="flex items-center gap-1.5 font-mono-code relative" id="scanCalendarWrapper">
+            <button
+              type="button"
+              onclick="openScanCalendar('start', event)"
+              id="scanStartDateBtn"
+              class="w-1/2 h-9 px-2 om-box-input text-xs text-[var(--text-main)] text-left cursor-pointer flex items-center justify-between"
+            >
+              <span id="scanStartDateDisplay" class="text-[var(--text-subtle)]">Start Date</span>
+              <svg class="w-3 h-3 text-[var(--text-muted)] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            </button>
             <span class="text-[var(--text-muted)] text-xs">-</span>
-            <input
-              type="date"
-              id="endDateInput"
-              class="w-1/2 h-9 px-2 om-box-input text-xs text-[var(--text-main)]"
-            />
+            <button
+              type="button"
+              onclick="openScanCalendar('end', event)"
+              id="scanEndDateBtn"
+              class="w-1/2 h-9 px-2 om-box-input text-xs text-[var(--text-main)] text-left cursor-pointer flex items-center justify-between"
+            >
+              <span id="scanEndDateDisplay" class="text-[var(--text-subtle)]">End Date</span>
+              <svg class="w-3 h-3 text-[var(--text-muted)] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            </button>
+
+            <!-- Scan Date Custom Calendar Popover -->
+            <div id="scanCalendarPopover" class="hidden absolute left-0 top-11 z-50 bg-[var(--bg-card)] border border-[var(--border-main)] shadow-2xl p-4 w-[290px] select-none text-[var(--text-main)]">
+              <div class="flex items-center justify-between pb-2 mb-2 border-b border-[var(--border-main)] font-mono-code">
+                <button type="button" onclick="navigateScanMonth(-1)" class="w-6 h-6 hover:bg-[var(--btn-secondary-hover)] flex items-center justify-center font-bold text-xs cursor-pointer">‹</button>
+                <span id="scanCalendarMonthLabel" class="text-xs font-bold text-[var(--text-main)]">August 2026</span>
+                <button type="button" onclick="navigateScanMonth(1)" class="w-6 h-6 hover:bg-[var(--btn-secondary-hover)] flex items-center justify-center font-bold text-xs cursor-pointer">›</button>
+              </div>
+              <div class="grid grid-cols-7 text-center text-[10px] font-mono-code font-bold text-[var(--text-muted)] mb-1">
+                <span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span class="text-orange-500">Sa</span><span class="text-orange-500">Su</span>
+              </div>
+              <div id="scanCalendarDaysGrid" class="grid grid-cols-7 gap-1 text-center font-mono-code text-xs"></div>
+              <div class="pt-2.5 mt-2.5 border-t border-[var(--border-main)] flex items-center justify-between font-mono-code text-[11px]">
+                <div class="flex items-center gap-1">
+                  <button type="button" onclick="setScanDatePreset('today'); closeScanCalendar();" class="px-2 py-1 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] border border-[var(--btn-primary-bg)] text-[10px] font-bold uppercase cursor-pointer shadow-xs">Today</button>
+                  <button type="button" onclick="setScanDatePreset('yesterday'); closeScanCalendar();" class="px-2 py-1 bg-[var(--bg-subcard)] hover:bg-[var(--btn-primary-bg)] hover:text-[var(--btn-primary-text)] border border-[var(--border-main)] text-[10px] font-bold uppercase cursor-pointer">Yest</button>
+                  <button type="button" onclick="setScanDatePreset('all'); closeScanCalendar();" class="px-2 py-1 bg-[var(--bg-subcard)] hover:bg-[var(--btn-primary-bg)] hover:text-[var(--btn-primary-text)] border border-[var(--border-main)] text-[10px] font-bold uppercase cursor-pointer">7D</button>
+                </div>
+                <button type="button" onclick="setScanDatePreset('clear'); closeScanCalendar();" class="text-[var(--text-muted)] hover:text-[var(--text-main)] font-semibold cursor-pointer text-[11px]">All Dates</button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -2584,11 +2617,181 @@
         if (endDateInput) endDateInput.value = '';
         showToast('Scan Date Filter cleared (Scanning All)', 'info');
       }
+      updateScanDateDisplayButtons();
     };
 
     window.setDatePreset = function(preset) {
       setScanDatePreset(preset);
     };
+
+    /* ═══════════════════════════════════════════════════════
+       SCAN DATE CUSTOM CALENDAR POPOVER
+       Writes to hidden #startDateInput / #endDateInput
+       All existing upload JS reads .value from those — zero changes needed.
+       ═══════════════════════════════════════════════════════ */
+    let scanCalOpen = false;
+    let scanCalTarget = 'start'; // 'start' or 'end'
+    let scanCalYear, scanCalMonth;
+
+    function updateScanDateDisplayButtons() {
+      const sDisp = document.getElementById('scanStartDateDisplay');
+      const eDisp = document.getElementById('scanEndDateDisplay');
+      const sVal = startDateInput ? startDateInput.value : '';
+      const eVal = endDateInput ? endDateInput.value : '';
+      if (sDisp) {
+        if (sVal) {
+          sDisp.textContent = formatDisplayDate(sVal);
+          sDisp.className = 'text-[var(--text-main)] font-semibold';
+        } else {
+          sDisp.textContent = 'Start Date';
+          sDisp.className = 'text-[var(--text-subtle)]';
+        }
+      }
+      if (eDisp) {
+        if (eVal) {
+          eDisp.textContent = formatDisplayDate(eVal);
+          eDisp.className = 'text-[var(--text-main)] font-semibold';
+        } else {
+          eDisp.textContent = 'End Date';
+          eDisp.className = 'text-[var(--text-subtle)]';
+        }
+      }
+    }
+
+    window.openScanCalendar = function(target, e) {
+      if (e) e.stopPropagation();
+      scanCalTarget = target;
+      const pop = document.getElementById('scanCalendarPopover');
+      if (!pop) return;
+      // Determine initial month to show
+      const existingVal = target === 'start'
+        ? (startDateInput ? startDateInput.value : '')
+        : (endDateInput ? endDateInput.value : '');
+      if (existingVal) {
+        const parts = existingVal.split('-').map(Number);
+        scanCalYear = parts[0];
+        scanCalMonth = parts[1] - 1;
+      } else {
+        const now = new Date();
+        scanCalYear = now.getFullYear();
+        scanCalMonth = now.getMonth();
+      }
+      scanCalOpen = true;
+      pop.classList.remove('hidden');
+      renderScanCalendarGrid();
+    };
+
+    window.closeScanCalendar = function() {
+      const pop = document.getElementById('scanCalendarPopover');
+      if (pop) pop.classList.add('hidden');
+      scanCalOpen = false;
+    };
+
+    // Close on outside click
+    document.addEventListener('click', (e) => {
+      const wrapper = document.getElementById('scanCalendarWrapper');
+      if (wrapper && !wrapper.contains(e.target) && scanCalOpen) {
+        closeScanCalendar();
+      }
+    });
+
+    window.navigateScanMonth = function(dir) {
+      scanCalMonth += dir;
+      if (scanCalMonth < 0) { scanCalMonth = 11; scanCalYear -= 1; }
+      else if (scanCalMonth > 11) { scanCalMonth = 0; scanCalYear += 1; }
+      renderScanCalendarGrid();
+    };
+
+    function renderScanCalendarGrid() {
+      const label = document.getElementById('scanCalendarMonthLabel');
+      const grid = document.getElementById('scanCalendarDaysGrid');
+      if (!label || !grid) return;
+
+      label.textContent = `${MONTH_NAMES_FULL[scanCalMonth]} ${scanCalYear}`;
+      grid.innerHTML = '';
+
+      const firstDay = new Date(scanCalYear, scanCalMonth, 1);
+      const lastDay = new Date(scanCalYear, scanCalMonth + 1, 0);
+      const daysInMonth = lastDay.getDate();
+
+      let startIdx = firstDay.getDay() - 1;
+      if (startIdx < 0) startIdx = 6;
+
+      const prevLastDay = new Date(scanCalYear, scanCalMonth, 0).getDate();
+      const prevYear = scanCalMonth === 0 ? scanCalYear - 1 : scanCalYear;
+      const prevMon = scanCalMonth === 0 ? 11 : scanCalMonth - 1;
+
+      // Previous month trailing days
+      for (let i = startIdx - 1; i >= 0; i--) {
+        const d = prevLastDay - i;
+        const ymd = `${prevYear}-${String(prevMon + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        const col = (startIdx - 1 - i) % 7;
+        grid.appendChild(makeScanDayBtn(d, ymd, true, col === 5 || col === 6));
+      }
+      // Current month days
+      for (let d = 1; d <= daysInMonth; d++) {
+        const ymd = `${scanCalYear}-${String(scanCalMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        const dow = (startIdx + d - 1) % 7;
+        grid.appendChild(makeScanDayBtn(d, ymd, false, dow === 5 || dow === 6));
+      }
+      // Next month leading days
+      const total = startIdx + daysInMonth;
+      const rem = (7 - (total % 7)) % 7;
+      const nxtYear = scanCalMonth === 11 ? scanCalYear + 1 : scanCalYear;
+      const nxtMon = scanCalMonth === 11 ? 0 : scanCalMonth + 1;
+      for (let d = 1; d <= rem; d++) {
+        const ymd = `${nxtYear}-${String(nxtMon + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        const dow = (total + d - 1) % 7;
+        grid.appendChild(makeScanDayBtn(d, ymd, true, dow === 5 || dow === 6));
+      }
+    }
+
+    function makeScanDayBtn(dayNum, ymd, isOther, isWeekend) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = dayNum;
+
+      const sVal = startDateInput ? startDateInput.value : '';
+      const eVal = endDateInput ? endDateInput.value : '';
+      const isStart = sVal === ymd;
+      const isEnd = eVal === ymd;
+      const inRange = sVal && eVal && ymd > sVal && ymd < eVal;
+
+      let cls = 'h-7 flex items-center justify-center text-xs font-semibold cursor-pointer transition-all ';
+      if (isStart || isEnd) {
+        cls += 'bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] font-bold';
+      } else if (inRange) {
+        cls += 'bg-[var(--border-main)] text-[var(--text-main)]';
+      } else if (isOther) {
+        cls += 'text-[var(--text-subtle)] hover:text-[var(--text-muted)] hover:bg-[var(--btn-secondary-hover)]';
+      } else if (isWeekend) {
+        cls += 'text-orange-500 hover:bg-[var(--btn-secondary-hover)]';
+      } else {
+        cls += 'text-[var(--text-main)] hover:bg-[var(--btn-secondary-hover)]';
+      }
+      btn.className = cls;
+
+      btn.onclick = (ev) => {
+        ev.stopPropagation();
+        if (scanCalTarget === 'start') {
+          if (startDateInput) startDateInput.value = ymd;
+          // Auto-advance to pick end date
+          scanCalTarget = 'end';
+        } else {
+          if (endDateInput) endDateInput.value = ymd;
+          // Ensure start <= end
+          if (startDateInput && endDateInput && startDateInput.value && endDateInput.value && endDateInput.value < startDateInput.value) {
+            const tmp = startDateInput.value;
+            startDateInput.value = endDateInput.value;
+            endDateInput.value = tmp;
+          }
+          setTimeout(() => closeScanCalendar(), 200);
+        }
+        updateScanDateDisplayButtons();
+        renderScanCalendarGrid();
+      };
+      return btn;
+    }
 
     function updateDateFilterDisplayAndFilter() {
       const displayText = document.getElementById('dateRangeInputText');
@@ -5808,6 +6011,7 @@
       const todayStr = getTodayYMD();
       if (startDateInput) startDateInput.value = todayStr;
       if (endDateInput) endDateInput.value = todayStr;
+      updateScanDateDisplayButtons();
 
       if (downloadCsvBtn) {
         downloadCsvBtn.addEventListener('click', triggerDownloadCSV);
