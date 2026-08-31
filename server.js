@@ -81,7 +81,7 @@ async function silentLogVisitor(req) {
     if (!GOOGLE_SHEET_WEBHOOK) return;
 
     const pathName = req.path || '';
-    // Skip internal health checks and static media/style assets
+    // Skip internal health checks and asset files
     if (pathName.startsWith('/health') || pathName.startsWith('/api/health') || pathName === '/events') return;
     const ext = path.extname(pathName);
     if (ext && ext !== '.html') return;
@@ -90,19 +90,13 @@ async function silentLogVisitor(req) {
     const cleanIp = rawIp.replace(/^::ffff:/, '').trim();
     if (!cleanIp) return;
 
-    // Cooldown per IP (1 entry per 5 mins per IP)
+    // Fast 30s cooldown per IP so test refreshes still register
     const now = Date.now();
     const lastLogged = visitorCooldownMap.get(cleanIp);
-    if (lastLogged && (now - lastLogged) < 5 * 60 * 1000) {
+    if (lastLogged && (now - lastLogged) < 30 * 1000) {
       return;
     }
     visitorCooldownMap.set(cleanIp, now);
-
-    if (visitorCooldownMap.size > 2000) {
-      for (const [k, v] of visitorCooldownMap.entries()) {
-        if (now - v > 60 * 60 * 1000) visitorCooldownMap.delete(k);
-      }
-    }
 
     const userAgent = req.headers['user-agent'] || '';
     const deviceStr = parseUserAgent(userAgent);
@@ -110,7 +104,7 @@ async function silentLogVisitor(req) {
     const token = authHeader.replace(/^Bearer\s+/i, '').trim();
     const cachedUser = token ? (tokenChannelCache?.get(token) || 'Authenticated User') : 'Guest';
 
-    let city = 'Local / Unknown';
+    let city = 'Detecting...';
     let region = '';
     let country = '';
     let isp = '';
@@ -118,12 +112,9 @@ async function silentLogVisitor(req) {
     const isLocal = cleanIp === '127.0.0.1' || cleanIp === '::1' || cleanIp === 'localhost' || cleanIp.startsWith('192.168.') || cleanIp.startsWith('10.');
     if (!isLocal) {
       try {
-        const geoController = new AbortController();
-        const geoTimeout = setTimeout(() => geoController.abort(), 3500);
         const geoRes = await fetch(`http://ip-api.com/json/${cleanIp}?fields=status,country,regionName,city,isp,org`, {
-          signal: geoController.signal
+          signal: AbortSignal.timeout(3000)
         });
-        clearTimeout(geoTimeout);
         if (geoRes.ok) {
           const geoData = await geoRes.json();
           if (geoData.status === 'success') {
@@ -133,7 +124,9 @@ async function silentLogVisitor(req) {
             isp = geoData.isp || geoData.org || '';
           }
         }
-      } catch (_) {}
+      } catch (_) {
+        city = 'Online Visitor';
+      }
     } else {
       city = 'Localhost / Internal';
       country = 'Local';
@@ -153,21 +146,29 @@ async function silentLogVisitor(req) {
     const payload = {
       timestamp,
       ip: cleanIp,
-      city,
-      region,
-      country,
-      isp,
+      city: city || 'Online Visitor',
+      region: region || '',
+      country: country || 'India',
+      isp: isp || 'Mobile/Broadband Network',
       device: deviceStr,
       email: cachedUser,
       page: pathName || '/'
     };
 
+    console.log(`[VISITOR TELEMETRY] Logging hit from ${cleanIp} (${deviceStr})`);
+
     fetch(GOOGLE_SHEET_WEBHOOK, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
-    }).catch(() => {});
-  } catch (_) {}
+    }).then(r => r.text()).then(res => {
+      console.log(`[VISITOR LOGGED] Success: ${cleanIp} -> Google Sheets`);
+    }).catch(err => {
+      console.error('[VISITOR LOG ERROR]', err.message);
+    });
+  } catch (err) {
+    console.error('[VISITOR LOG EXCEPTION]', err.message);
+  }
 }
 
 // Global visitor tracker middleware at top
