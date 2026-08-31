@@ -1365,17 +1365,45 @@
 
         <!-- ⏱️ Batch Upload Speed & Time Estimator Card -->
         <div class="p-3.5 bg-[var(--bg-subcard)] border border-[var(--border-main)] space-y-2.5 font-mono-code">
-          <div class="flex items-center justify-between">
+          <div class="flex items-center justify-between flex-wrap gap-1.5">
             <span class="text-[9px] uppercase tracking-widest text-[var(--text-muted)] font-bold flex items-center gap-1.5">
               <span>⏱️ BATCH TIME ESTIMATOR</span>
               <span class="px-1 py-0.2 bg-sky-500/20 text-sky-600 dark:text-sky-400 text-[8px] font-bold">Cloud Stream</span>
             </span>
-            <span class="text-[9px] font-bold text-emerald-600 dark:text-emerald-400">⚡ 25–40 MB/s Live</span>
+            <div class="flex items-center gap-1 text-[9px]">
+              <button
+                type="button"
+                id="estScopeTodayBtn"
+                onclick="setEstimatorScope('today')"
+                class="px-1.5 py-0.5 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] font-bold uppercase cursor-pointer"
+                title="Calculate time for Today's Date / Active Date Filter"
+              >
+                Today
+              </button>
+              <button
+                type="button"
+                id="estScopePendingBtn"
+                onclick="setEstimatorScope('pending')"
+                class="px-1.5 py-0.5 bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text-main)] border border-[var(--border-main)] font-bold uppercase cursor-pointer"
+                title="Calculate time for Pending / Queued Videos"
+              >
+                Pending
+              </button>
+              <button
+                type="button"
+                id="estScopeAllBtn"
+                onclick="setEstimatorScope('all')"
+                class="px-1.5 py-0.5 bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text-main)] border border-[var(--border-main)] font-bold uppercase cursor-pointer"
+                title="Calculate time for All Historical Videos in Library"
+              >
+                All
+              </button>
+            </div>
           </div>
 
           <div class="grid grid-cols-2 gap-2 text-[10px]">
             <div class="p-2 bg-[var(--bg-card)] border border-[var(--border-main)] space-y-0.5">
-              <span class="text-[9px] text-[var(--text-muted)] block">Batch / Video Count:</span>
+              <span class="text-[9px] text-[var(--text-muted)] block" id="modalEstScopeTitle">Today's Batch:</span>
               <div class="font-bold text-sm text-[var(--text-main)]"><span id="modalEstVideoCount">84</span> Videos</div>
               <span class="text-[8px] text-[var(--text-subtle)]">Avg size: ~350MB / video</span>
             </div>
@@ -1387,7 +1415,7 @@
           </div>
 
           <div class="text-[9px] text-[var(--text-muted)] leading-tight pt-1.5 border-t border-[var(--border-main)] flex items-center justify-between flex-wrap gap-1">
-            <span>🚀 <strong>Zero Local Data:</strong> Direct server-to-server cloud pipeline.</span>
+            <span>🚀 <strong>Live Cloud Speed:</strong> ~25–40 MB/s (Direct server pipeline)</span>
             <button type="button" onclick="closeQuotaTrackerModal(); openAuthModal();" class="text-sky-600 dark:text-sky-400 font-bold hover:underline cursor-pointer">⚙️ Concurrency Settings ↗</button>
           </div>
         </div>
@@ -3222,6 +3250,9 @@
       if (typeof fetchQuotaHealth === 'function') {
         fetchQuotaHealth();
       }
+      if (typeof updateEstimatorUI === 'function') {
+        updateEstimatorUI();
+      }
     }
 
     window.retryAllPendingQueue = async function() {
@@ -3462,6 +3493,9 @@
       const modal = document.getElementById('quotaTrackerModal');
       if (modal) modal.classList.remove('hidden');
       fetchQuotaHealth();
+      if (typeof updateEstimatorUI === 'function') {
+        updateEstimatorUI();
+      }
     };
 
     window.closeQuotaTrackerModal = function() {
@@ -3561,23 +3595,73 @@
       cachedQuotaSecondsRemaining = quota.resetsInSeconds || 0;
       startQuotaCountdown();
 
-      // Dynamic Batch Upload Time Estimator Calculation
+      // Update Dynamic Batch Time Estimator
+      updateEstimatorUI();
+    }
+
+    let currentEstimatorScope = 'today'; // 'today' | 'pending' | 'all'
+
+    window.setEstimatorScope = function(scope) {
+      currentEstimatorScope = scope;
+      updateEstimatorUI();
+    };
+
+    function updateEstimatorUI() {
       const estCountEl = document.getElementById('modalEstVideoCount');
       const estTimeEl = document.getElementById('modalEstTimeOutput');
       const estConcurrencyLabel = document.getElementById('modalEstConcurrencyLabel');
+      const estScopeTitle = document.getElementById('modalEstScopeTitle');
+      const btnToday = document.getElementById('estScopeTodayBtn');
+      const btnPending = document.getElementById('estScopePendingBtn');
+      const btnAll = document.getElementById('estScopeAllBtn');
 
       const allUniqueFiles = (currentState && currentState.files) ? getDeduplicatedFiles(currentState.files) : [];
-      const totalCount = allUniqueFiles.length;
-      const pendingCount = allUniqueFiles.filter(f => f.status === 'uploading' || f.status === 'queued').length;
-      const calcCount = pendingCount > 0 ? pendingCount : (totalCount > 0 ? totalCount : 84);
+      const pendingFiles = allUniqueFiles.filter(f => f.status === 'uploading' || f.status === 'queued');
+      
+      const { start, end } = dateFilterRange;
+      const todayYmd = getTodayYMD();
+      
+      const todayFiles = allUniqueFiles.filter(f => {
+        const fileYMD = getFileYMD(f);
+        if (start && end) return fileYMD >= start && fileYMD <= end;
+        if (start) return fileYMD === start;
+        return fileYMD === todayYmd;
+      });
+
+      let calcCount = 0;
+      let labelText = "Today's Batch:";
+
+      if (currentEstimatorScope === 'pending') {
+        calcCount = pendingFiles.length;
+        labelText = "Pending Queue:";
+      } else if (currentEstimatorScope === 'all') {
+        calcCount = allUniqueFiles.length;
+        labelText = "All Library Videos:";
+      } else {
+        // 'today' (default)
+        calcCount = todayFiles.length;
+        if (calcCount === 0 && allUniqueFiles.length > 0 && !start && !end) {
+          // If no uploads on exact today date string yet, fallback to all unique files
+          calcCount = allUniqueFiles.length;
+        }
+        labelText = (start && end) ? `Filter (${start}..${end}):` : (start ? `Date (${start}):` : `Today's Batch:`);
+      }
+
+      const activeBtnClass = "px-1.5 py-0.5 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] font-bold uppercase cursor-pointer shadow-2xs";
+      const inactiveBtnClass = "px-1.5 py-0.5 bg-[var(--bg-card)] text-[var(--text-muted)] hover:text-[var(--text-main)] border border-[var(--border-main)] font-bold uppercase cursor-pointer";
+
+      if (btnToday) btnToday.className = currentEstimatorScope === 'today' ? activeBtnClass : inactiveBtnClass;
+      if (btnPending) btnPending.className = currentEstimatorScope === 'pending' ? activeBtnClass : inactiveBtnClass;
+      if (btnAll) btnAll.className = currentEstimatorScope === 'all' ? activeBtnClass : inactiveBtnClass;
 
       const concurrency = parseInt(AppStorage.getItem('upload_concurrency') || '3', 10);
       const estMinutes = Math.max(1, Math.ceil((calcCount / Math.max(1, concurrency)) * 1.15));
       const estHours = Math.floor(estMinutes / 60);
       const remMins = estMinutes % 60;
-      const estTimeFormatted = estHours > 0 ? `~${estHours}h ${remMins}m` : `~${estMinutes} mins`;
+      const estTimeFormatted = calcCount === 0 ? "0 mins (Empty)" : (estHours > 0 ? `~${estHours}h ${remMins}m` : `~${estMinutes} mins`);
 
       if (estCountEl) estCountEl.textContent = `${calcCount}`;
+      if (estScopeTitle) estScopeTitle.textContent = labelText;
       if (estTimeEl) estTimeEl.textContent = estTimeFormatted;
       if (estConcurrencyLabel) estConcurrencyLabel.textContent = `@ ${concurrency} Parallel Streams`;
     }
