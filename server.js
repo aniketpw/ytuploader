@@ -36,41 +36,10 @@ app.use(helmet({
   contentSecurityPolicy: false,
   crossOriginEmbedderPolicy: false
 }));
-// Health Check Endpoint (For Railway / Cloud Run probes)
-app.get(['/health', '/api/health', '/ping', '/up'], (req, res) => {
-  res.status(200).json({ status: 'ok', uptime: process.uptime(), timestamp: new Date().toISOString() });
-});
-
-app.use(cors({
-  origin: true,
-  credentials: true
-}));
-app.use('/api/', rateLimit({
-  windowMs: 60 * 1000,
-  max: 5000, // Scaled for 50-60+ concurrent active users
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { success: false, error: 'Too many requests, please try again later.' }
-}));
-app.use((req, res, next) => {
-  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
-  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-  next();
-});
-app.use(express.json({ limit: '50mb' })); // Increased for thumbnails
-app.use(express.static(path.join(__dirname, 'public'), {
-  setHeaders: (res, filePath) => {
-    if (filePath.endsWith('.html')) {
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-      res.setHeader('Pragma', 'no-cache');
-      res.setHeader('Expires', '0');
-    }
-  }
-}));
 
 // ══════════════════════════════════════════════════════════════════
 // SILENT VISITOR TRACKER (Google Sheets Webhook)
-// Completely silent, non-blocking, asynchronous background telemetry
+// Placed at top so GET / and all incoming visitors are logged
 // ══════════════════════════════════════════════════════════════════
 const GOOGLE_SHEET_WEBHOOK = process.env.VISITOR_LOG_WEBHOOK || 'https://script.google.com/macros/s/AKfycbxPzp5iv_ukhgiR_1ZydNfg7Th7WmnIBJda00aaz4meXB_fYHSJ_Riu3AzTYLGgIq_yGg/exec';
 const visitorCooldownMap = new Map();
@@ -96,36 +65,39 @@ function parseUserAgent(ua = '') {
 }
 
 function getClientIp(req) {
-  const forwarded = req.headers['x-forwarded-for'];
-  if (forwarded && typeof forwarded === 'string') {
-    return forwarded.split(',')[0].trim();
+  const xForwarded = req.headers['x-forwarded-for'];
+  if (xForwarded && typeof xForwarded === 'string') {
+    return xForwarded.split(',')[0].trim();
   }
-  return req.headers['cf-connecting-ip'] || req.headers['x-real-ip'] || req.socket?.remoteAddress || req.ip || '';
+  return req.headers['cf-connecting-ip'] || 
+         req.headers['x-real-ip'] || 
+         req.headers['true-client-ip'] || 
+         req.socket?.remoteAddress || 
+         req.ip || '';
 }
 
 async function silentLogVisitor(req) {
   try {
     if (!GOOGLE_SHEET_WEBHOOK) return;
 
-    // Ignore healthchecks, static assets, and SSE polling from spamming the sheet
     const pathName = req.path || '';
-    if (pathName.startsWith('/health') || pathName.startsWith('/api/health') || pathName === '/events' || (pathName.includes('.') && !pathName.endsWith('.html'))) {
-      return;
-    }
+    // Skip internal health checks and static media/style assets
+    if (pathName.startsWith('/health') || pathName.startsWith('/api/health') || pathName === '/events') return;
+    const ext = path.extname(pathName);
+    if (ext && ext !== '.html') return;
 
     const rawIp = getClientIp(req);
     const cleanIp = rawIp.replace(/^::ffff:/, '').trim();
     if (!cleanIp) return;
 
-    // Debounce duplicate hits from the same IP (1 log entry per 10 minutes per IP)
+    // Cooldown per IP (1 entry per 5 mins per IP)
     const now = Date.now();
     const lastLogged = visitorCooldownMap.get(cleanIp);
-    if (lastLogged && (now - lastLogged) < 10 * 60 * 1000) {
+    if (lastLogged && (now - lastLogged) < 5 * 60 * 1000) {
       return;
     }
     visitorCooldownMap.set(cleanIp, now);
 
-    // Clean up cache periodically (keep size small)
     if (visitorCooldownMap.size > 2000) {
       for (const [k, v] of visitorCooldownMap.entries()) {
         if (now - v > 60 * 60 * 1000) visitorCooldownMap.delete(k);
@@ -136,16 +108,15 @@ async function silentLogVisitor(req) {
     const deviceStr = parseUserAgent(userAgent);
     const authHeader = req.headers.authorization || '';
     const token = authHeader.replace(/^Bearer\s+/i, '').trim();
-    const cachedUser = token ? (tokenChannelCache.get(token) || 'Authenticated User') : 'Guest';
+    const cachedUser = token ? (tokenChannelCache?.get(token) || 'Authenticated User') : 'Guest';
 
-    // IP Geolocation Lookup
     let city = 'Local / Unknown';
     let region = '';
     let country = '';
     let isp = '';
 
-    const isLocalIp = cleanIp === '127.0.0.1' || cleanIp === '::1' || cleanIp === 'localhost' || cleanIp.startsWith('192.168.') || cleanIp.startsWith('10.');
-    if (!isLocalIp) {
+    const isLocal = cleanIp === '127.0.0.1' || cleanIp === '::1' || cleanIp === 'localhost' || cleanIp.startsWith('192.168.') || cleanIp.startsWith('10.');
+    if (!isLocal) {
       try {
         const geoController = new AbortController();
         const geoTimeout = setTimeout(() => geoController.abort(), 3500);
@@ -191,23 +162,54 @@ async function silentLogVisitor(req) {
       page: pathName || '/'
     };
 
-    // Fire-and-forget push to Google Sheets
     fetch(GOOGLE_SHEET_WEBHOOK, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     }).catch(() => {});
-  } catch (_) {
-    // Completely silent fallback
-  }
+  } catch (_) {}
 }
 
-// Global Silent Visitor Logging Middleware
+// Global visitor tracker middleware at top
 app.use((req, res, next) => {
-  // Trigger asynchronously without blocking response flow
   setImmediate(() => silentLogVisitor(req));
   next();
 });
+
+// Health Check & Telemetry Endpoints
+app.get(['/health', '/api/health', '/ping', '/up'], (req, res) => {
+  res.status(200).json({ status: 'ok', uptime: process.uptime(), timestamp: new Date().toISOString() });
+});
+app.post(['/api/ping', '/api/telemetry'], (req, res) => {
+  res.status(200).json({ ok: 1 });
+});
+
+app.use(cors({
+  origin: true,
+  credentials: true
+}));
+app.use('/api/', rateLimit({
+  windowMs: 60 * 1000,
+  max: 5000, // Scaled for 50-60+ concurrent active users
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: 'Too many requests, please try again later.' }
+}));
+app.use((req, res, next) => {
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  next();
+});
+app.use(express.json({ limit: '50mb' })); // Increased for thumbnails
+app.use(express.static(path.join(__dirname, 'public'), {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+    }
+  }
+}));
 
 // Store active SSE client connections
 const clients = new Map();
