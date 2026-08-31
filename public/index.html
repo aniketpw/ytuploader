@@ -3471,7 +3471,52 @@
       }
     };
 
-    // ─── Universal Modal Manager ──────────────────────────────────────────
+    // ─── Universal Modal Scroll-Lock Engine ────────────────────────────────
+    const ALL_MODAL_IDS = [
+      'scanReviewModal',
+      'videoModal',
+      'editVideoModal',
+      'quotaTrackerModal',
+      'authConfigModal',
+      'manualUploadModal',
+      'infoModal'
+    ];
+
+    function syncBodyScrollLock() {
+      const anyOpen = ALL_MODAL_IDS.some(id => {
+        const el = document.getElementById(id);
+        return el && !el.classList.contains('hidden');
+      });
+      if (anyOpen) {
+        document.body.classList.add('overflow-hidden');
+        document.documentElement.classList.add('overflow-hidden');
+      } else {
+        document.body.classList.remove('overflow-hidden');
+        document.documentElement.classList.remove('overflow-hidden');
+      }
+    }
+
+    // Auto-listen to modal class mutations for 100% airtight background scroll locking
+    window.addEventListener('DOMContentLoaded', () => {
+      const observer = new MutationObserver(() => {
+        syncBodyScrollLock();
+      });
+
+      ALL_MODAL_IDS.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          observer.observe(el, { attributes: true, attributeFilter: ['class', 'style'] });
+        }
+      });
+    });
+
+    // Press Escape to close active modal
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeAllModals();
+      }
+    });
+
     window.closeAllModals = function() {
       const ids = ['scanReviewModal', 'videoModal', 'editVideoModal', 'quotaTrackerModal', 'authConfigModal', 'manualUploadModal', 'infoModal', 'navToolsMenu'];
       ids.forEach(id => {
@@ -3480,6 +3525,8 @@
       });
       const chevron = document.getElementById('navToolsChevron');
       if (chevron) chevron.classList.remove('rotate-180');
+      document.body.classList.remove('overflow-hidden');
+      document.documentElement.classList.remove('overflow-hidden');
     };
 
     window.openQuotaTrackerModal = function() {
