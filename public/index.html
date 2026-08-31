@@ -296,16 +296,9 @@
         line-height: 1.25 !important;
       }
 
-      /* Filter stats bar: scrollable row */
-      .flex.items-center.justify-between.gap-2.flex-wrap.font-mono-code {
-        flex-wrap: nowrap !important;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none;
-        gap: 0.5rem !important;
-      }
-      .flex.items-center.justify-between.gap-2.flex-wrap.font-mono-code::-webkit-scrollbar {
-        display: none;
+      /* Filter stats bar */
+      #filterStatsBar {
+        overflow: visible !important;
       }
 
       /* Table: make it horizontally scrollable */
@@ -739,8 +732,8 @@
       </div>
 
       <!-- Stats Filter Bar (Total, Uploaded, In Progress, Source Tabs) -->
-      <div class="flex items-center justify-between gap-2 flex-nowrap sm:flex-wrap font-mono-code text-xs border border-[var(--border-main)] bg-[var(--bg-card)] p-2 overflow-x-auto">
-        <div class="flex items-center gap-1.5 sm:gap-2 overflow-x-auto shrink-0">
+      <div id="filterStatsBar" class="flex items-center justify-between gap-2 flex-wrap font-mono-code text-xs border border-[var(--border-main)] bg-[var(--bg-card)] p-2 relative z-30 overflow-visible">
+        <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap shrink-0">
           <button
             type="button"
             id="filterPillAll"
@@ -811,16 +804,16 @@
           </div>
         </div>
 
-        <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        <div class="flex items-center gap-2 shrink-0 relative z-40 overflow-visible">
           <!-- Segmented Source Filters -->
-          <div class="flex items-center border border-[var(--border-main)] bg-[var(--bg-card)] p-0.5 text-[10px] font-mono-code font-bold uppercase">
-            <button type="button" id="sourceFilterAll" onclick="setSourceFilter('all')" class="px-2 py-0.5 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)]">All (<span id="sourceCountAll">0</span>)</button>
-            <button type="button" id="sourceFilterYouTube" onclick="setSourceFilter('youtube')" class="px-2 py-0.5 text-[var(--text-muted)] hover:text-[var(--text-main)]">YouTube (<span id="sourceCountYouTube">0</span>)</button>
-            <button type="button" id="sourceFilterDrive" onclick="setSourceFilter('drive')" class="px-2 py-0.5 text-[var(--text-muted)] hover:text-[var(--text-main)]">Drive (<span id="sourceCountDrive">0</span>)</button>
+          <div class="flex items-center border border-[var(--border-main)] bg-[var(--bg-card)] p-0.5 text-[10px] font-mono-code font-bold uppercase shrink-0">
+            <button type="button" id="sourceFilterAll" onclick="setSourceFilter('all')" class="px-2 py-0.5 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] cursor-pointer">All (<span id="sourceCountAll">0</span>)</button>
+            <button type="button" id="sourceFilterYouTube" onclick="setSourceFilter('youtube')" class="px-2 py-0.5 text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer">YouTube (<span id="sourceCountYouTube">0</span>)</button>
+            <button type="button" id="sourceFilterDrive" onclick="setSourceFilter('drive')" class="px-2 py-0.5 text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer">Drive (<span id="sourceCountDrive">0</span>)</button>
           </div>
 
           <!-- Single Unified Export & Share Dropdown (Animated Cascading Drop) -->
-          <div class="relative" id="exportDropdownWrapper">
+          <div class="relative z-50 overflow-visible" id="exportDropdownWrapper">
             <button
               type="button"
               id="exportDropdownBtn"
@@ -840,7 +833,8 @@
             <!-- Animated Cascading Dropdown Menu -->
             <div
               id="exportDropdownMenu"
-              class="hidden absolute right-0 top-9 z-50 w-56 bg-[var(--bg-card)] border-2 border-[var(--border-main)] shadow-2xl p-1 space-y-0.5 font-mono-code text-xs select-none origin-top"
+              class="hidden absolute right-0 top-full mt-1.5 z-50 w-60 bg-[var(--bg-card)] border-2 border-[var(--border-main)] shadow-2xl p-1 space-y-0.5 font-mono-code text-xs select-none origin-top"
+              style="box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);"
             >
               <!-- 1. Download CSV -->
               <button
