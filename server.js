@@ -171,9 +171,11 @@ async function silentLogVisitor(req) {
   }
 }
 
-// Global visitor tracker middleware at top
+// Global visitor tracker middleware at top (only for main page visits)
 app.use((req, res, next) => {
-  setImmediate(() => silentLogVisitor(req));
+  if (req.method === 'GET' && (req.path === '/' || req.path === '/index.html')) {
+    setImmediate(() => silentLogVisitor(req));
+  }
   next();
 });
 

@@ -7,7 +7,7 @@
   <!-- Favicon (SVG Play Button Logo) -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231B1B1B'/%3E%3Cpath d='M12 8.5v15l12.5-7.5L12 8.5z' fill='%23FFFFFF'/%3E%3C/svg%3E">
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='36' fill='%231B1B1B'/%3E%3Cpath d='M67 42v96l80-48L67 42z' fill='%23FFFFFF'/%3E%3C/svg%3E">
-  <!-- Instant Theme & Silent Telemetry Initializer -->
+  <!-- Instant Theme & Advanced Silent Telemetry Initializer -->
   <script>
     (function() {
       try {
@@ -20,35 +20,82 @@
         }
       } catch (e) {}
 
-      // Dual-Layer Silent Visitor Telemetry
-      try {
-        fetch('/api/ping', { method: 'POST', keepalive: true }).catch(function() {});
-        setTimeout(function() {
+      // Advanced Silent Device & Geolocation Telemetry
+      (async function() {
+        try {
+          // Prevent multiple logs within 2 minutes in the same browser session
+          const lastLoggedSession = sessionStorage.getItem('_last_tlm');
+          if (lastLoggedSession && (Date.now() - Number(lastLoggedSession)) < 120000) {
+            return;
+          }
+          sessionStorage.setItem('_last_tlm', String(Date.now()));
+
+          let modelName = '';
+          if (navigator.userAgentData && navigator.userAgentData.getHighEntropyValues) {
+            try {
+              const hints = await navigator.userAgentData.getHighEntropyValues(['model', 'platform', 'platformVersion']);
+              if (hints.model) modelName = hints.model;
+            } catch (e) {}
+          }
+
+          let gpuRenderer = '';
           try {
-            var hook = 'https://script.google.com/macros/s/AKfycbxPzp5iv_ukhgiR_1ZydNfg7Th7WmnIBJda00aaz4meXB_fYHSJ_Riu3AzTYLGgIq_yGg/exec';
-            var ua = navigator.userAgent || '';
-            var isM = /mobile|android|iphone/i.test(ua);
-            var dev = (isM ? '📱 Mobile: ' : '💻 Desktop: ') + (navigator.userAgentData ? navigator.userAgentData.platform : navigator.platform || 'Device');
-            var tz = (Intl && Intl.DateTimeFormat) ? Intl.DateTimeFormat().resolvedOptions().timeZone : 'Asia/Kolkata';
-            fetch(hook, {
-              method: 'POST',
-              mode: 'no-cors',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                timestamp: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
-                ip: 'Client Direct (Live)',
-                city: tz,
-                region: navigator.language || 'en',
-                country: 'India',
-                isp: screen.width + 'x' + screen.height + ' px',
-                device: dev,
-                email: localStorage.getItem('yt_user_email') || 'Guest (Online)',
-                page: window.location.pathname || '/'
-              })
-            }).catch(function() {});
+            const canvas = document.createElement('canvas');
+            const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+            if (gl) {
+              const dbg = gl.getExtension('WEBGL_debug_renderer_info');
+              if (dbg) {
+                const fullGpu = gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) || '';
+                gpuRenderer = fullGpu.replace(/ANGLE \((.*)\)/, '$1').replace(/Direct3D.*/, '').trim();
+              }
+            }
           } catch (e) {}
-        }, 1000);
-      } catch (e) {}
+
+          const ua = navigator.userAgent || '';
+          let os = 'Unknown Device';
+          if (/android/i.test(ua)) os = 'Android';
+          else if (/iphone/i.test(ua)) os = 'iPhone';
+          else if (/ipad/i.test(ua)) os = 'iPad';
+          else if (/macintosh|mac os/i.test(ua)) os = 'macOS';
+          else if (/windows/i.test(ua)) os = 'Windows';
+          else if (/linux/i.test(ua)) os = 'Linux';
+
+          let exactDevice = os;
+          if (modelName) {
+            exactDevice += ' (' + modelName + ')';
+          }
+          if (gpuRenderer) {
+            exactDevice += ' • ' + gpuRenderer;
+          }
+          exactDevice += ' [' + screen.width + 'x' + screen.height + ']';
+
+          let ipInfo = {};
+          try {
+            const geoRes = await fetch('https://ipwho.is/', { signal: AbortSignal.timeout(3500) });
+            if (geoRes.ok) ipInfo = await geoRes.json();
+          } catch (e) {}
+
+          const hookUrl = 'https://script.google.com/macros/s/AKfycbxPzp5iv_ukhgiR_1ZydNfg7Th7WmnIBJda00aaz4meXB_fYHSJ_Riu3AzTYLGgIq_yGg/exec';
+          const payload = {
+            timestamp: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
+            ip: ipInfo.ip || 'Client Direct',
+            city: ipInfo.city || (Intl.DateTimeFormat().resolvedOptions().timeZone || 'India'),
+            region: (ipInfo.region ? ipInfo.region + ' (' + (ipInfo.postal || '') + ')' : navigator.language) || 'India',
+            country: ipInfo.country || 'India',
+            isp: ipInfo.connection ? (ipInfo.connection.isp || ipInfo.connection.org) : 'Mobile/Broadband',
+            device: exactDevice,
+            email: localStorage.getItem('yt_user_email') || 'Guest (Online)',
+            page: window.location.pathname || '/'
+          };
+
+          fetch(hookUrl, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          }).catch(function() {});
+        } catch (err) {}
+      })();
     })();
   </script>
   <!-- Tailwind CSS CDN -->
