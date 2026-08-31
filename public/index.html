@@ -402,33 +402,44 @@
           <span>Verify (&gt;15 min) ↗</span>
         </a>
 
-        <!-- Real-Time API Quota Health Meter Pill -->
+        <!-- Real-Time API Quota Health Meter Pill (Compact) -->
         <button
           type="button"
           id="navQuotaMeterBtn"
           onclick="openQuotaTrackerModal()"
-          class="flex items-center gap-2 px-2.5 h-8 border border-[var(--border-main)] bg-[var(--bg-card)] hover:bg-[var(--btn-secondary-hover)] text-[var(--text-main)] font-mono-code text-[11px] font-bold transition-all cursor-pointer shadow-2xs"
-          title="Click to view Live API Quota & Health Breakdown"
+          class="flex items-center gap-1.5 px-2 h-8 border border-[var(--border-main)] bg-[var(--bg-card)] hover:bg-[var(--btn-secondary-hover)] text-[var(--text-main)] font-mono-code text-[10px] font-bold transition-all cursor-pointer shadow-2xs"
+          title="Click to view Live API Quota, Time Estimates & Health Breakdown"
         >
-          <div class="flex items-center gap-1.5">
-            <span id="quotaPulseDot" class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
-            <span class="text-[var(--text-muted)] uppercase text-[10px] tracking-wider">QUOTA:</span>
-            <span id="navQuotaUsedText" class="font-bold text-[var(--text-main)]">0/100</span>
-            <span id="navQuotaPctText" class="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">(0%)</span>
-          </div>
+          <span id="quotaPulseDot" class="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+          <span id="navQuotaUsedText" class="font-bold text-[var(--text-main)]">0/100</span>
+          <span id="navQuotaPctText" class="text-[9px] text-emerald-600 dark:text-emerald-400 font-semibold">(0%)</span>
 
           <!-- Mini Visual Progress Bar -->
-          <div class="w-12 h-1.5 bg-[var(--border-main)] overflow-hidden hidden md:block">
+          <div class="w-8 h-1 bg-[var(--border-main)] overflow-hidden hidden sm:block">
             <div id="navQuotaMiniBar" class="h-full bg-emerald-500 transition-all duration-500" style="width: 0%"></div>
           </div>
 
-          <span id="navQuotaCountdownBadge" class="text-[9px] text-[var(--text-subtle)] font-normal hidden xl:inline-block">⏱️ --:--</span>
+          <span id="navQuotaCountdownBadge" class="text-[9px] text-[var(--text-subtle)] font-normal hidden lg:inline-block">⏱️ --:--</span>
         </button>
 
-        <!-- SSE Status -->
-        <div id="connectionBadge" class="flex items-center gap-1.5 px-2.5 h-8 border border-[var(--border-main)] bg-[var(--btn-secondary-bg)] text-emerald-600 dark:text-emerald-400 text-[11px] font-semibold">
-          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
-          <span id="sseStatusText" class="font-mono-code">Live</span>
+        <!-- Notification Audio Chime & Mute Toggle -->
+        <button
+          type="button"
+          id="soundToggleBtn"
+          onclick="toggleNotificationSound()"
+          class="flex items-center justify-center w-8 h-8 border border-[var(--border-main)] bg-[var(--bg-card)] hover:bg-[var(--btn-secondary-hover)] text-[var(--text-main)] transition-all cursor-pointer shadow-2xs text-xs"
+          title="Upload Audio Alerts & Chime (Click to Mute / Unmute)"
+        >
+          <span id="soundIcon">🔔</span>
+        </button>
+
+        <!-- SSE Status: Pure compact indicator dot (No text) -->
+        <div
+          id="connectionBadge"
+          class="flex items-center justify-center w-8 h-8 border border-[var(--border-main)] bg-[var(--bg-card)] hover:bg-[var(--btn-secondary-hover)] cursor-pointer transition-all"
+          title="Pipeline Status: Live & Connected"
+        >
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block animate-pulse shadow-xs"></span>
         </div>
       </div>
     </div>
@@ -1349,6 +1360,35 @@
                 <span id="modalTotalCapacityNum" class="font-bold text-emerald-500">100 Videos/Day</span>
               </div>
             </div>
+          </div>
+        </div>
+
+        <!-- ⏱️ Batch Upload Speed & Time Estimator Card -->
+        <div class="p-3.5 bg-[var(--bg-subcard)] border border-[var(--border-main)] space-y-2.5 font-mono-code">
+          <div class="flex items-center justify-between">
+            <span class="text-[9px] uppercase tracking-widest text-[var(--text-muted)] font-bold flex items-center gap-1.5">
+              <span>⏱️ BATCH TIME ESTIMATOR</span>
+              <span class="px-1 py-0.2 bg-sky-500/20 text-sky-600 dark:text-sky-400 text-[8px] font-bold">Cloud Stream</span>
+            </span>
+            <span class="text-[9px] font-bold text-emerald-600 dark:text-emerald-400">⚡ 25–40 MB/s Live</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 text-[10px]">
+            <div class="p-2 bg-[var(--bg-card)] border border-[var(--border-main)] space-y-0.5">
+              <span class="text-[9px] text-[var(--text-muted)] block">Batch / Video Count:</span>
+              <div class="font-bold text-sm text-[var(--text-main)]"><span id="modalEstVideoCount">84</span> Videos</div>
+              <span class="text-[8px] text-[var(--text-subtle)]">Avg size: ~350MB / video</span>
+            </div>
+            <div class="p-2 bg-[var(--bg-card)] border border-[var(--border-main)] space-y-0.5">
+              <span class="text-[9px] text-[var(--text-muted)] block">Estimated Upload Time:</span>
+              <div id="modalEstTimeOutput" class="font-bold text-sm text-orange-500">~35 – 45 mins</div>
+              <span id="modalEstConcurrencyLabel" class="text-[8px] text-[var(--text-subtle)]">@ 3 Parallel Streams</span>
+            </div>
+          </div>
+
+          <div class="text-[9px] text-[var(--text-muted)] leading-tight pt-1.5 border-t border-[var(--border-main)] flex items-center justify-between flex-wrap gap-1">
+            <span>🚀 <strong>Zero Local Data:</strong> Direct server-to-server cloud pipeline.</span>
+            <button type="button" onclick="closeQuotaTrackerModal(); openAuthModal();" class="text-sky-600 dark:text-sky-400 font-bold hover:underline cursor-pointer">⚙️ Concurrency Settings ↗</button>
           </div>
         </div>
 
@@ -3488,6 +3528,26 @@
       // Start Countdown Timer
       cachedQuotaSecondsRemaining = quota.resetsInSeconds || 0;
       startQuotaCountdown();
+
+      // Dynamic Batch Upload Time Estimator Calculation
+      const estCountEl = document.getElementById('modalEstVideoCount');
+      const estTimeEl = document.getElementById('modalEstTimeOutput');
+      const estConcurrencyLabel = document.getElementById('modalEstConcurrencyLabel');
+
+      const allUniqueFiles = (currentState && currentState.files) ? getDeduplicatedFiles(currentState.files) : [];
+      const totalCount = allUniqueFiles.length;
+      const pendingCount = allUniqueFiles.filter(f => f.status === 'uploading' || f.status === 'queued').length;
+      const calcCount = pendingCount > 0 ? pendingCount : (totalCount > 0 ? totalCount : 84);
+
+      const concurrency = parseInt(AppStorage.getItem('upload_concurrency') || '3', 10);
+      const estMinutes = Math.max(1, Math.ceil((calcCount / Math.max(1, concurrency)) * 1.15));
+      const estHours = Math.floor(estMinutes / 60);
+      const remMins = estMinutes % 60;
+      const estTimeFormatted = estHours > 0 ? `~${estHours}h ${remMins}m` : `~${estMinutes} mins`;
+
+      if (estCountEl) estCountEl.textContent = `${calcCount}`;
+      if (estTimeEl) estTimeEl.textContent = estTimeFormatted;
+      if (estConcurrencyLabel) estConcurrencyLabel.textContent = `@ ${concurrency} Parallel Streams`;
     }
 
     function startQuotaCountdown() {
@@ -5699,8 +5759,9 @@
       }
 
       if (connectionBadge) {
-        connectionBadge.className = 'flex items-center gap-1.5 px-2.5 h-8 border border-amber-500/60 bg-amber-500/10 text-amber-600 dark:text-amber-300 text-[11px] font-semibold font-mono-code';
-        connectionBadge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span><span>SSE...</span>`;
+        connectionBadge.className = 'flex items-center justify-center w-8 h-8 border border-amber-500/60 bg-amber-500/10 text-amber-500 cursor-pointer transition-all';
+        connectionBadge.title = 'Pipeline Status: Connecting...';
+        connectionBadge.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping shadow-xs"></span>`;
       }
 
       const uid = getPersistentUserId();
@@ -5709,8 +5770,9 @@
 
       eventSource.onopen = () => {
         if (connectionBadge) {
-          connectionBadge.className = 'flex items-center gap-1.5 px-2.5 h-8 border border-[var(--border-main)] bg-[var(--bg-subcard)] text-emerald-600 dark:text-emerald-400 text-[11px] font-semibold font-mono-code';
-          connectionBadge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span><span>Live</span>`;
+          connectionBadge.className = 'flex items-center justify-center w-8 h-8 border border-[var(--border-main)] bg-[var(--bg-card)] hover:bg-[var(--btn-secondary-hover)] cursor-pointer transition-all';
+          connectionBadge.title = 'Pipeline Status: Live & Connected';
+          connectionBadge.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block shadow-xs animate-pulse"></span>`;
         }
       };
 
@@ -5725,8 +5787,9 @@
 
       eventSource.onerror = () => {
         if (connectionBadge) {
-          connectionBadge.className = 'flex items-center gap-1.5 px-2.5 h-8 border border-rose-800 bg-rose-950/40 text-rose-400 text-[11px] font-semibold font-mono-code';
-          connectionBadge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-rose-500 inline-block"></span><span>Offline</span>`;
+          connectionBadge.className = 'flex items-center justify-center w-8 h-8 border border-rose-800 bg-rose-950/40 cursor-pointer transition-all';
+          connectionBadge.title = 'Pipeline Status: Offline (Reconnecting...)';
+          connectionBadge.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block shadow-xs"></span>`;
         }
       };
     }
