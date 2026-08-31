@@ -95,9 +95,20 @@ try {
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_history_ownerUserId ON uploaded_history(ownerUserId);'); } catch (e) {}
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_history_videoId ON uploaded_history(videoId);'); } catch (e) {}
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_history_channelId ON uploaded_history(channelId);'); } catch (e) {}
-  try { db.exec('CREATE INDEX IF NOT EXISTS idx_history_createdTime ON uploaded_history(createdTime);'); } catch (e) {}
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_history_name ON uploaded_history(name COLLATE NOCASE);'); } catch (e) {}
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_history_customTitle ON uploaded_history(customTitle COLLATE NOCASE);'); } catch (e) {}
+
+  // Auto-deduplicate any existing history rows by videoId on startup
+  try {
+    db.exec(`
+      DELETE FROM uploaded_history 
+      WHERE rowid NOT IN (
+        SELECT MIN(rowid) 
+        FROM uploaded_history 
+        GROUP BY COALESCE(NULLIF(videoId, ''), id)
+      );
+    `);
+  } catch (e) {}
 
   stmts = {
     insertHistory: db.prepare(`
@@ -244,19 +255,34 @@ function persistUploadedHistory(historyArray) {
 }
 
 function saveCompletedFileToHistory(fileObj) {
-  if (!fileObj || !fileObj.id) return;
+  if (!fileObj || (!fileObj.id && !fileObj.videoId)) return;
   if (isSqlite) {
     try {
+      const vid = fileObj.videoId;
+      if (vid && vid.length === 11) {
+        const existing = stmts.selectHistoryByVideoId.get(vid);
+        if (existing) {
+          const merged = { ...existing, ...fileObj, id: existing.id };
+          stmts.insertHistory.run(normalizeHistoryRecord(merged));
+          return;
+        }
+      }
       stmts.insertHistory.run(normalizeHistoryRecord(fileObj));
       return;
-    } catch (err) {}
+    } catch (err) {
+      console.warn('[db] SQLite insertHistory error:', err.message);
+    }
   }
-  const hist = readJsonFile(HISTORY_FILE, []);
-  const idx = hist.findIndex(h => (h.videoId && h.videoId === fileObj.videoId) || h.id === fileObj.id);
-  const rec = normalizeHistoryRecord(fileObj);
-  if (idx >= 0) hist[idx] = { ...hist[idx], ...rec };
-  else hist.unshift(rec);
-  writeJsonFile(HISTORY_FILE, hist);
+  // JSON Fallback
+  const history = readJsonFile(HISTORY_FILE, []);
+  const vid = fileObj.videoId;
+  const idx = history.findIndex(f => (vid && f.videoId === vid) || f.id === fileObj.id);
+  if (idx !== -1) {
+    history[idx] = { ...history[idx], ...fileObj };
+  } else {
+    history.push(normalizeHistoryRecord(fileObj));
+  }
+  writeJsonFile(HISTORY_FILE, history);
 }
 
 function deleteHistoryById(id) {

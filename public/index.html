@@ -3064,6 +3064,36 @@
       }, 4000);
     }
 
+    function getDeduplicatedFiles(files) {
+      if (!Array.isArray(files)) return [];
+      const map = new Map();
+      for (const f of files) {
+        if (!f) continue;
+        const vid = f.videoId && f.videoId.length === 11 && !f.videoId.includes('/') ? f.videoId : null;
+        const fid = f.id || null;
+        const key = vid || fid;
+        if (!key) continue;
+
+        if (!map.has(key)) {
+          map.set(key, f);
+        } else {
+          const existing = map.get(key);
+          const merged = {
+            ...existing,
+            ...f,
+            id: existing.id || f.id,
+            videoId: existing.videoId || f.videoId,
+            customTitle: existing.customTitle || f.customTitle || existing.name || f.name,
+            youtubeUrl: existing.youtubeUrl || f.youtubeUrl,
+            studioUrl: existing.studioUrl || f.studioUrl,
+            thumbnailUrl: (existing.thumbnailUrl && !existing.thumbnailUrl.includes('placehold')) ? existing.thumbnailUrl : (f.thumbnailUrl || existing.thumbnailUrl)
+          };
+          map.set(key, merged);
+        }
+      }
+      return Array.from(map.values());
+    }
+
     function updateDynamicMetrics() {
       if (!currentState || !currentState.files) {
         document.getElementById('metricTotal').textContent = '0';
@@ -3073,8 +3103,9 @@
         return;
       }
 
+      const allUniqueFiles = getDeduplicatedFiles(currentState.files);
       const { start, end } = dateFilterRange;
-      let matchingFiles = currentState.files;
+      let matchingFiles = allUniqueFiles;
 
       if (start && end) {
         matchingFiles = matchingFiles.filter(f => {
@@ -3091,7 +3122,7 @@
 
       const total = matchingFiles.length;
       const completed = matchingFiles.filter(f => f.status === 'completed').length;
-      const pending = currentState.files.filter(f => f.status === 'uploading' || f.status === 'queued').length;
+      const pending = allUniqueFiles.filter(f => f.status === 'uploading' || f.status === 'queued').length;
       const failed = matchingFiles.filter(f => f.status === 'failed').length;
 
       document.getElementById('metricTotal').textContent = total;
@@ -3802,13 +3833,11 @@
           // Use channel-filtered history directly from sync response
           if (data.history && Array.isArray(data.history)) {
             if (!currentState) currentState = {};
-            const activeFiles = (currentState.files || []).filter(f => f.status === 'uploading' || f.status === 'queued');
-            const notInActive = data.history.filter(h => !activeFiles.some(f => f.id === h.id || (f.videoId && f.videoId === h.videoId)));
-            currentState.files = [...activeFiles, ...notInActive];
+            currentState.files = getDeduplicatedFiles([...activeFiles, ...data.history]);
             currentState.stats = {
               total: currentState.files.length,
               pending: activeFiles.length,
-              completed: data.history.length,
+              completed: currentState.files.filter(f => f.status === 'completed').length,
               failed: 0
             };
             renderState(currentState);
@@ -4082,7 +4111,7 @@
         return [];
       }
 
-      let allFiles = [...(currentState.files || [])];
+      let allFiles = getDeduplicatedFiles(currentState.files || []);
       allFiles.sort((a, b) => {
         const tA = getFileTimestamp(a);
         const tB = getFileTimestamp(b);
@@ -5362,7 +5391,7 @@
         return;
       }
 
-      let allFiles = [...(currentState.files || [])];
+      let allFiles = getDeduplicatedFiles(currentState.files || []);
       allFiles.sort((a, b) => {
         const isLiveA = (a.status === 'uploading' || a.status === 'queued') ? 1 : 0;
         const isLiveB = (b.status === 'uploading' || b.status === 'queued') ? 1 : 0;
@@ -5943,8 +5972,7 @@
           currentState = data.state;
           if (data.history && Array.isArray(data.history) && data.history.length > 0) {
             const currentFiles = currentState.files || [];
-            const notInCurrent = data.history.filter(h => !currentFiles.some(f => f.id === h.id || (f.videoId && f.videoId === h.videoId)));
-            currentState.files = [...currentFiles, ...notInCurrent];
+            currentState.files = getDeduplicatedFiles([...currentFiles, ...data.history]);
           }
           renderState(currentState);
 
