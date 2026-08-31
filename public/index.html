@@ -172,6 +172,83 @@
       border-color: var(--btn-primary-bg);
       box-shadow: 0 0 0 1px var(--btn-primary-bg);
     }
+
+    /* ═══════════════════════════════════════════════════
+       MOBILE RESPONSIVE ENHANCEMENTS (< 640px)
+       Pure CSS — zero logic / zero JS changes
+       ═══════════════════════════════════════════════════ */
+    @media (max-width: 639px) {
+      /* Navbar: horizontal scroll strip instead of wrapping */
+      header .max-w-\[1400px\] {
+        flex-wrap: nowrap !important;
+        gap: 0.5rem !important;
+      }
+      header .max-w-\[1400px\] > div:last-child {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        gap: 0.35rem !important;
+        flex-wrap: nowrap !important;
+        padding-bottom: 2px;
+      }
+      header .max-w-\[1400px\] > div:last-child::-webkit-scrollbar {
+        display: none;
+      }
+      /* Slightly smaller nav buttons on mobile */
+      header .max-w-\[1400px\] > div:last-child button,
+      header .max-w-\[1400px\] > div:last-child a,
+      header .max-w-\[1400px\] > div:last-child > div {
+        flex-shrink: 0;
+        height: 2rem;
+        font-size: 10px;
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+      }
+
+      /* Main container: tighter padding on mobile */
+      main.flex-1 {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+        padding-top: 1rem !important;
+        padding-bottom: 1rem !important;
+      }
+
+      /* Hero heading: scale down gracefully */
+      main h2.text-3xl {
+        font-size: 1.6rem !important;
+        line-height: 1.25 !important;
+      }
+
+      /* Filter stats bar: scrollable row */
+      .flex.items-center.justify-between.gap-2.flex-wrap.font-mono-code {
+        flex-wrap: nowrap !important;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        gap: 0.5rem !important;
+      }
+      .flex.items-center.justify-between.gap-2.flex-wrap.font-mono-code::-webkit-scrollbar {
+        display: none;
+      }
+
+      /* Table: make it horizontally scrollable */
+      .border.border-\[var\(--border-main\)\].bg-\[var\(--bg-card\)\].overflow-hidden {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      /* Floating info & theme buttons: smaller on mobile */
+      #floatingInfoDock, #floatingThemeDock {
+        bottom: 1rem !important;
+      }
+      #floatingInfoDock { left: 1rem !important; }
+      #floatingThemeDock { right: 1rem !important; }
+      #floatingInfoDock button,
+      #floatingThemeDock button {
+        width: 2.25rem !important;
+        height: 2.25rem !important;
+      }
+    }
   </style>
 </head>
 <body class="min-h-full flex flex-col selection:bg-[var(--selection-bg)] selection:text-[var(--selection-text)]">
@@ -281,7 +358,7 @@
   </header>
 
   <!-- Main Container -->
-  <main class="flex-1 max-w-[1400px] w-full mx-auto px-6 py-6 space-y-6">
+  <main class="flex-1 max-w-[1400px] w-full mx-auto px-4 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6">
 
     <!-- Quota Alert Banner -->
     <div id="quotaAlertBanner" class="hidden border border-amber-700/60 bg-amber-950/30 p-3.5 flex items-center justify-between flex-wrap gap-3">
@@ -319,10 +396,10 @@
           DIRECT CLOUD PIPELINE • 0 MB LOCAL BANDWIDTH
         </div>
         <div class="flex items-baseline justify-between flex-wrap gap-2">
-          <h2 class="text-3xl md:text-4xl font-serif-editorial text-[var(--text-main)] tracking-tight leading-tight">
+          <h2 class="text-2xl sm:text-3xl md:text-4xl font-serif-editorial text-[var(--text-main)] tracking-tight leading-tight">
             Your Drive Videos, Now in Your <span class="italic font-normal text-[var(--btn-primary-bg)]">Channel.</span>
           </h2>
-          <span class="font-mono-code text-xs text-[var(--text-muted)]">
+          <span class="hidden sm:inline font-mono-code text-xs text-[var(--text-muted)]">
             // scan subfolders, preview &amp; select videos, unlisted 1080p stream
           </span>
         </div>
@@ -489,10 +566,10 @@
     <div class="space-y-3.5">
       
       <!-- Section Header with Date Range Filter -->
-      <div class="flex items-center justify-between flex-wrap gap-3">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-3">
         <div class="space-y-0.5">
           <div class="font-mono-code text-[10px] uppercase tracking-widest text-[var(--text-muted)]">LIBRARY</div>
-          <h3 class="text-xl font-bold font-serif-editorial text-[var(--text-main)]">Uploaded videos &amp; stream queue</h3>
+          <h3 class="text-lg sm:text-xl font-bold font-serif-editorial text-[var(--text-main)]">Uploaded videos &amp; stream queue</h3>
         </div>
 
         <!-- Date Range Filter -->
@@ -541,13 +618,13 @@
       </div>
 
       <!-- Stats Filter Bar (Total, Uploaded, In Progress, Source Tabs) -->
-      <div class="flex items-center justify-between gap-2 flex-wrap font-mono-code text-xs border border-[var(--border-main)] bg-[var(--bg-card)] p-2">
-        <div class="flex items-center gap-2 overflow-x-auto">
+      <div class="flex items-center justify-between gap-2 flex-nowrap sm:flex-wrap font-mono-code text-xs border border-[var(--border-main)] bg-[var(--bg-card)] p-2 overflow-x-auto">
+        <div class="flex items-center gap-1.5 sm:gap-2 overflow-x-auto shrink-0">
           <button
             type="button"
             id="filterPillAll"
             onclick="setTableFilter('all')"
-            class="px-2.5 py-1 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] font-bold text-[11px] uppercase tracking-wider cursor-pointer"
+            class="px-2 sm:px-2.5 py-1 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] font-bold text-[10px] sm:text-[11px] uppercase tracking-wider cursor-pointer whitespace-nowrap shrink-0"
           >
             Total (<span id="metricTotal">0</span>)
           </button>
@@ -556,7 +633,7 @@
             type="button"
             id="filterPillCompleted"
             onclick="setTableFilter('completed')"
-            class="px-2.5 py-1 bg-[var(--bg-subcard)] border border-[var(--border-main)] text-emerald-600 dark:text-emerald-400 font-semibold text-[11px] uppercase tracking-wider hover:bg-[var(--btn-secondary-hover)] cursor-pointer"
+            class="px-2 sm:px-2.5 py-1 bg-[var(--bg-subcard)] border border-[var(--border-main)] text-emerald-600 dark:text-emerald-400 font-semibold text-[10px] sm:text-[11px] uppercase tracking-wider hover:bg-[var(--btn-secondary-hover)] cursor-pointer whitespace-nowrap shrink-0"
           >
             Uploaded (<span id="metricUploaded">0</span>)
           </button>
@@ -565,7 +642,7 @@
             type="button"
             id="filterPillPending"
             onclick="setTableFilter('pending')"
-            class="px-2.5 py-1 bg-[var(--bg-subcard)] border border-[var(--border-main)] text-orange-600 dark:text-orange-400 font-semibold text-[11px] uppercase tracking-wider hover:bg-[var(--btn-secondary-hover)] cursor-pointer"
+            class="px-2 sm:px-2.5 py-1 bg-[var(--bg-subcard)] border border-[var(--border-main)] text-orange-600 dark:text-orange-400 font-semibold text-[10px] sm:text-[11px] uppercase tracking-wider hover:bg-[var(--btn-secondary-hover)] cursor-pointer whitespace-nowrap shrink-0"
           >
             In Progress (<span id="metricPending">0</span>)
           </button>
@@ -613,7 +690,7 @@
           </div>
         </div>
 
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <!-- Segmented Source Filters -->
           <div class="flex items-center border border-[var(--border-main)] bg-[var(--bg-card)] p-0.5 text-[10px] font-mono-code font-bold uppercase">
             <button type="button" id="sourceFilterAll" onclick="setSourceFilter('all')" class="px-2 py-0.5 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)]">All (<span id="sourceCountAll">0</span>)</button>
@@ -740,8 +817,8 @@
       </div>
 
       <!-- Main Video Data Table (Flat, Sharp Borders) -->
-      <div class="border border-[var(--border-main)] bg-[var(--bg-card)] overflow-hidden">
-        <table class="w-full text-left border-collapse text-xs">
+      <div class="border border-[var(--border-main)] bg-[var(--bg-card)] overflow-x-auto">
+        <table class="w-full text-left border-collapse text-xs min-w-[700px]">
           <thead>
             <tr class="border-b border-[var(--border-main)] bg-[var(--bg-subcard)] font-mono-code text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
               <th class="py-2.5 px-3 w-10 text-center border-r border-[var(--border-main)]">#</th>
