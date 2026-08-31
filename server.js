@@ -68,6 +68,147 @@ app.use(express.static(path.join(__dirname, 'public'), {
   }
 }));
 
+// ══════════════════════════════════════════════════════════════════
+// SILENT VISITOR TRACKER (Google Sheets Webhook)
+// Completely silent, non-blocking, asynchronous background telemetry
+// ══════════════════════════════════════════════════════════════════
+const GOOGLE_SHEET_WEBHOOK = process.env.VISITOR_LOG_WEBHOOK || 'https://script.google.com/macros/s/AKfycbxPzp5iv_ukhgiR_1ZydNfg7Th7WmnIBJda00aaz4meXB_fYHSJ_Riu3AzTYLGgIq_yGg/exec';
+const visitorCooldownMap = new Map();
+
+function parseUserAgent(ua = '') {
+  if (!ua) return 'Unknown Device';
+  let os = 'Unknown OS';
+  if (/android/i.test(ua)) os = 'Android';
+  else if (/iphone|ipad|ipod/i.test(ua)) os = 'iOS';
+  else if (/windows/i.test(ua)) os = 'Windows';
+  else if (/macintosh|mac os/i.test(ua)) os = 'macOS';
+  else if (/linux/i.test(ua)) os = 'Linux';
+
+  let browser = 'Browser';
+  if (/edg/i.test(ua)) browser = 'Edge';
+  else if (/chrome|crios/i.test(ua)) browser = 'Chrome';
+  else if (/safari/i.test(ua) && !/chrome|crios/i.test(ua)) browser = 'Safari';
+  else if (/firefox|fxios/i.test(ua)) browser = 'Firefox';
+  else if (/opera|opr/i.test(ua)) browser = 'Opera';
+
+  const isMobile = /mobile|android|iphone/i.test(ua);
+  return `${os} (${browser}${isMobile ? ' Mobile' : ''})`;
+}
+
+function getClientIp(req) {
+  const forwarded = req.headers['x-forwarded-for'];
+  if (forwarded && typeof forwarded === 'string') {
+    return forwarded.split(',')[0].trim();
+  }
+  return req.headers['cf-connecting-ip'] || req.headers['x-real-ip'] || req.socket?.remoteAddress || req.ip || '';
+}
+
+async function silentLogVisitor(req) {
+  try {
+    if (!GOOGLE_SHEET_WEBHOOK) return;
+
+    // Ignore healthchecks, static assets, and SSE polling from spamming the sheet
+    const pathName = req.path || '';
+    if (pathName.startsWith('/health') || pathName.startsWith('/api/health') || pathName === '/events' || (pathName.includes('.') && !pathName.endsWith('.html'))) {
+      return;
+    }
+
+    const rawIp = getClientIp(req);
+    const cleanIp = rawIp.replace(/^::ffff:/, '').trim();
+    if (!cleanIp) return;
+
+    // Debounce duplicate hits from the same IP (1 log entry per 10 minutes per IP)
+    const now = Date.now();
+    const lastLogged = visitorCooldownMap.get(cleanIp);
+    if (lastLogged && (now - lastLogged) < 10 * 60 * 1000) {
+      return;
+    }
+    visitorCooldownMap.set(cleanIp, now);
+
+    // Clean up cache periodically (keep size small)
+    if (visitorCooldownMap.size > 2000) {
+      for (const [k, v] of visitorCooldownMap.entries()) {
+        if (now - v > 60 * 60 * 1000) visitorCooldownMap.delete(k);
+      }
+    }
+
+    const userAgent = req.headers['user-agent'] || '';
+    const deviceStr = parseUserAgent(userAgent);
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+    const cachedUser = token ? (tokenChannelCache.get(token) || 'Authenticated User') : 'Guest';
+
+    // IP Geolocation Lookup
+    let city = 'Local / Unknown';
+    let region = '';
+    let country = '';
+    let isp = '';
+
+    const isLocalIp = cleanIp === '127.0.0.1' || cleanIp === '::1' || cleanIp === 'localhost' || cleanIp.startsWith('192.168.') || cleanIp.startsWith('10.');
+    if (!isLocalIp) {
+      try {
+        const geoController = new AbortController();
+        const geoTimeout = setTimeout(() => geoController.abort(), 3500);
+        const geoRes = await fetch(`http://ip-api.com/json/${cleanIp}?fields=status,country,regionName,city,isp,org`, {
+          signal: geoController.signal
+        });
+        clearTimeout(geoTimeout);
+        if (geoRes.ok) {
+          const geoData = await geoRes.json();
+          if (geoData.status === 'success') {
+            city = geoData.city || '';
+            region = geoData.regionName || '';
+            country = geoData.country || '';
+            isp = geoData.isp || geoData.org || '';
+          }
+        }
+      } catch (_) {}
+    } else {
+      city = 'Localhost / Internal';
+      country = 'Local';
+    }
+
+    const timestamp = new Date().toLocaleString('en-IN', {
+      timeZone: 'Asia/Kolkata',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true
+    });
+
+    const payload = {
+      timestamp,
+      ip: cleanIp,
+      city,
+      region,
+      country,
+      isp,
+      device: deviceStr,
+      email: cachedUser,
+      page: pathName || '/'
+    };
+
+    // Fire-and-forget push to Google Sheets
+    fetch(GOOGLE_SHEET_WEBHOOK, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).catch(() => {});
+  } catch (_) {
+    // Completely silent fallback
+  }
+}
+
+// Global Silent Visitor Logging Middleware
+app.use((req, res, next) => {
+  // Trigger asynchronously without blocking response flow
+  setImmediate(() => silentLogVisitor(req));
+  next();
+});
+
 // Store active SSE client connections
 const clients = new Map();
 
