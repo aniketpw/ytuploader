@@ -976,7 +976,10 @@ app.get('/api/events', async (req, res) => {
   if (isMyJob) {
     res.write(`data: ${JSON.stringify({ type: 'state_sync', state: jobState })}\n\n`);
   } else {
-    const userHistory = (channelId || userId) ? db.getHistoryByUserOrChannel(channelId, userId) : [];
+    let userHistory = (channelId || userId) ? db.getHistoryByUserOrChannel(channelId, userId) : [];
+    if (!userHistory || userHistory.length === 0) {
+      userHistory = db.loadUploadedHistory();
+    }
     const defaultState = getDefaultJobState();
     defaultState.files = userHistory;
     defaultState.stats = {
@@ -1004,10 +1007,25 @@ app.get('/api/events', async (req, res) => {
 
 app.get(['/api/status', '/api/job-status'], async (req, res) => {
   const userId = req.headers['x-user-id'] || req.query.userId || null;
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+  const editorToken = req.headers['x-editor-token'] || (token.startsWith('edt_') ? token : null);
+  const isEditor = !!(editorToken && db.getEditorSession(editorToken));
 
   try {
     const channelId = await resolveChannelId(req);
-    const userHistory = (channelId || userId) ? db.getHistoryByUserOrChannel(channelId, userId) : [];
+    let userHistory = [];
+    if (isEditor) {
+      userHistory = channelId ? db.getHistoryByChannel(channelId) : [];
+      if (!userHistory || userHistory.length === 0) {
+        userHistory = db.loadUploadedHistory();
+      }
+    } else {
+      userHistory = (channelId || userId) ? db.getHistoryByUserOrChannel(channelId, userId) : [];
+      if (!userHistory || userHistory.length === 0) {
+        userHistory = db.loadUploadedHistory();
+      }
+    }
 
     const isJobActive = jobState.status === 'processing' || jobState.status === 'scanning' || jobState.status === 'uploading';
     const isMyJob = isJobActive && (
@@ -1030,18 +1048,30 @@ app.get(['/api/status', '/api/job-status'], async (req, res) => {
     }
   } catch (err) {
     console.warn('Status endpoint error:', err.message);
-    res.json({ success: true, state: getDefaultJobState(), history: [] });
+    res.json({ success: true, state: getDefaultJobState(), history: db.loadUploadedHistory() });
   }
 });
 
 app.get('/api/history', async (req, res) => {
   const userId = req.headers['x-user-id'] || req.query.userId || null;
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+  const editorToken = req.headers['x-editor-token'] || (token.startsWith('edt_') ? token : null);
+  const isEditor = !!(editorToken && db.getEditorSession(editorToken));
+
   try {
     const channelId = await resolveChannelId(req);
-    const userHistory = (channelId || userId) ? db.getHistoryByUserOrChannel(channelId, userId) : [];
+    let userHistory = [];
+    if (isEditor) {
+      userHistory = channelId ? db.getHistoryByChannel(channelId) : [];
+      if (!userHistory || userHistory.length === 0) userHistory = db.loadUploadedHistory();
+    } else {
+      userHistory = (channelId || userId) ? db.getHistoryByUserOrChannel(channelId, userId) : db.loadUploadedHistory();
+      if (!userHistory || userHistory.length === 0) userHistory = db.loadUploadedHistory();
+    }
     res.json({ success: true, history: userHistory });
   } catch (err) {
-    res.json({ success: true, history: [] });
+    res.json({ success: true, history: db.loadUploadedHistory() });
   }
 });
 
@@ -2014,14 +2044,25 @@ async function sendOtpEmail(toEmail, otpCode) {
     </div>
   `;
 
-  if (smtpHost && smtpUser && smtpPass) {
+  if (smtpUser && smtpPass) {
     try {
-      const transporter = nodemailer.createTransport({
-        host: smtpHost,
-        port: smtpPort,
-        secure: smtpPort === 465,
-        auth: { user: smtpUser, pass: smtpPass }
-      });
+      const cleanPass = smtpPass.trim().replace(/\s+/g, '');
+      let transporter = null;
+
+      if (smtpUser.toLowerCase().includes('@gmail.com') || (smtpHost && smtpHost.includes('gmail'))) {
+        transporter = nodemailer.createTransport({
+          service: 'gmail',
+          auth: { user: smtpUser.trim(), pass: cleanPass }
+        });
+      } else {
+        transporter = nodemailer.createTransport({
+          host: smtpHost || 'smtp.gmail.com',
+          port: smtpPort,
+          secure: smtpPort === 465,
+          auth: { user: smtpUser.trim(), pass: cleanPass }
+        });
+      }
+
       await transporter.sendMail({
         from: smtpFrom,
         to: toEmail,
@@ -2033,6 +2074,7 @@ async function sendOtpEmail(toEmail, otpCode) {
       return { sent: true, method: 'smtp' };
     } catch (smtpErr) {
       console.warn(`[AUTH] SMTP delivery error for ${toEmail}:`, smtpErr.message);
+      return { sent: false, method: 'error', error: smtpErr.message, code: otpCode };
     }
   }
 
@@ -2040,6 +2082,42 @@ async function sendOtpEmail(toEmail, otpCode) {
   console.log(`[AUTH-OTP] Generated OTP for ${toEmail}: ${otpCode}`);
   return { sent: false, method: 'local', code: otpCode };
 }
+
+// SMTP Settings Endpoints
+app.get('/api/settings/smtp', (req, res) => {
+  res.json({
+    success: true,
+    smtpUser: db.getSetting('smtp_user') || process.env.SMTP_USER || '',
+    smtpHost: db.getSetting('smtp_host') || process.env.SMTP_HOST || '',
+    smtpPort: db.getSetting('smtp_port') || process.env.SMTP_PORT || '587',
+    hasPassword: !!(db.getSetting('smtp_pass') || process.env.SMTP_PASS)
+  });
+});
+
+app.post('/api/settings/smtp', (req, res) => {
+  const { smtpUser, smtpPass, smtpHost, smtpPort } = req.body || {};
+  if (smtpUser !== undefined) db.setSetting('smtp_user', (smtpUser || '').trim());
+  if (smtpPass) db.setSetting('smtp_pass', smtpPass.trim().replace(/\s+/g, ''));
+  if (smtpHost !== undefined) db.setSetting('smtp_host', (smtpHost || '').trim());
+  if (smtpPort !== undefined) db.setSetting('smtp_port', String(smtpPort || '587').trim());
+
+  res.json({ success: true, message: 'Email & SMTP settings saved successfully.' });
+});
+
+app.post('/api/settings/test-smtp', async (req, res) => {
+  const { testEmail } = req.body || {};
+  const targetEmail = testEmail || db.getSetting('smtp_user') || process.env.SMTP_USER;
+  if (!targetEmail) {
+    return res.status(400).json({ success: false, error: 'Please enter a test email address.' });
+  }
+
+  const result = await sendOtpEmail(targetEmail, '999888');
+  if (result.sent) {
+    return res.json({ success: true, message: `Test email sent successfully to ${targetEmail}!` });
+  } else {
+    return res.status(500).json({ success: false, error: result.error || 'SMTP delivery failed. Please check your Gmail App Password.' });
+  }
+});
 
 // 1. GET /api/team/editors — List all authorized editors
 app.get('/api/team/editors', (req, res) => {
@@ -2113,7 +2191,7 @@ app.post('/api/auth/send-otp', async (req, res) => {
 
     return res.json({
       success: true,
-      message: `Verification code sent to ${cleanEmail}`,
+      message: emailResult.sent ? `Verification code sent to ${cleanEmail}` : `OTP code generated for ${cleanEmail}`,
       email: cleanEmail,
       deliveredVia: emailResult.sent ? 'email' : 'system',
       ...(emailResult.sent ? {} : { fallbackCode: otpCode })

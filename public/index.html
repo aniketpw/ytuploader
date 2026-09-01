@@ -1504,6 +1504,41 @@
           </div>
         </div>
 
+        <!-- Gmail & SMTP Email Setup for Live OTP Delivery -->
+        <div class="p-3 bg-amber-500/10 border border-amber-500/40 text-xs space-y-2.5">
+          <div class="flex items-center justify-between font-bold text-amber-600 dark:text-amber-400 uppercase text-[10px]">
+            <span>📧 Gmail &amp; SMTP Setup (For Live OTP Delivery)</span>
+            <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener noreferrer" class="text-[9px] text-amber-500 underline lowercase font-normal hover:text-amber-400">get app password ↗</a>
+          </div>
+          <p class="text-[10px] text-[var(--text-muted)]">Configure your Gmail address and 16-character App Password to automatically dispatch verification OTPs straight to editors' inboxes.</p>
+
+          <div class="space-y-1.5">
+            <input
+              type="email"
+              id="smtpUserInput"
+              placeholder="Your Gmail address (e.g. yourname@gmail.com)..."
+              class="w-full p-2 text-xs border border-amber-500/40 bg-[var(--bg-card)] text-[var(--text-main)] focus:outline-none focus:border-amber-400"
+            />
+            <div class="flex gap-2">
+              <input
+                type="password"
+                id="smtpPassInput"
+                placeholder="Gmail 16-char App Password..."
+                class="flex-1 p-2 text-xs border border-amber-500/40 bg-[var(--bg-card)] text-[var(--text-main)] focus:outline-none focus:border-amber-400 font-mono"
+              />
+              <button
+                type="button"
+                id="smtpSaveBtn"
+                onclick="saveAndTestSmtp()"
+                class="px-3 py-2 bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs uppercase tracking-wider cursor-pointer whitespace-nowrap"
+              >
+                Save &amp; Test
+              </button>
+            </div>
+            <div id="smtpStatusNotice" class="text-[9px] text-[var(--text-muted)]"></div>
+          </div>
+        </div>
+
         <!-- Direct Token -->
         <div class="p-3 bg-emerald-500/10 border border-emerald-500/40 text-xs space-y-2">
           <div class="flex items-center justify-between font-bold text-emerald-700 dark:text-emerald-300 uppercase text-[10px]">
@@ -2540,12 +2575,12 @@
       return formatDateToYMD(d);
     }
 
-    // Date Range Picker State (Defaults strictly to Today)
+    // Date Range Picker State (Defaults to All Time so all library videos are immediately visible)
     const initialTodayYMD = getTodayYMD();
     let dateFilterRange = {
-      start: initialTodayYMD,
-      end: initialTodayYMD,
-      preset: 'today'
+      start: null,
+      end: null,
+      preset: 'all'
     };
     let calendarDisplayYear = new Date().getFullYear();
     let calendarDisplayMonth = new Date().getMonth();
@@ -3867,6 +3902,7 @@
       loadClientIds();
       loadServerSettings();
       loadTeamEditors();
+      loadSmtpSettings();
       showAuthLanding();
       if (modal) modal.classList.remove('hidden');
     };
@@ -4073,15 +4109,16 @@
           const hint = document.getElementById('editorOtpSentHint');
           if (s1) s1.classList.add('hidden');
           if (s2) s2.classList.remove('hidden');
-          if (hint) hint.textContent = `Sent to: ${email}`;
 
           const otpIn = document.getElementById('editorOtpInput');
           if (otpIn) {
             otpIn.focus();
             if (data.fallbackCode) {
               otpIn.value = data.fallbackCode;
-              showToast(`🔑 OTP code: ${data.fallbackCode}`, 'success');
+              if (hint) hint.innerHTML = `<span>Code Generated: <strong class="text-sky-300 font-mono text-sm tracking-wider">${data.fallbackCode}</strong> (Auto-Filled)</span><br/><span class="text-[9px] text-amber-400">💡 Configure Gmail in Settings to receive codes directly in your inbox.</span>`;
+              showToast(`🔑 Your 6-digit OTP is: ${data.fallbackCode}`, 'success');
             } else {
+              if (hint) hint.textContent = `✔ Sent to Gmail: ${email}`;
               showToast(`✔ 6-digit OTP sent to ${email}`, 'success');
             }
           }
@@ -4297,6 +4334,87 @@
         }
       } catch (err) {
         showToast('Error removing editor: ' + err.message, 'error');
+      }
+    };
+
+    // ─── Gmail & SMTP Configuration Engine ──────────────────────────────
+    window.loadSmtpSettings = async function() {
+      const emailInput = document.getElementById('smtpUserInput');
+      const passInput = document.getElementById('smtpPassInput');
+      const notice = document.getElementById('smtpStatusNotice');
+      if (!emailInput) return;
+
+      try {
+        const res = await fetch('/api/settings/smtp');
+        const data = await res.json();
+        if (data.success) {
+          if (data.smtpUser) emailInput.value = data.smtpUser;
+          if (data.hasPassword && passInput) passInput.placeholder = '•••••••••••••••• (Saved)';
+          if (notice) {
+            if (data.smtpUser && data.hasPassword) {
+              notice.innerHTML = `<span class="text-emerald-400 font-bold">✔ Gmail configured (${data.smtpUser})</span>`;
+            } else {
+              notice.innerHTML = `<span class="text-amber-400">⚠️ Enter Gmail &amp; App Password for live inbox delivery</span>`;
+            }
+          }
+        }
+      } catch (e) {}
+    };
+
+    window.saveAndTestSmtp = async function() {
+      const emailInput = document.getElementById('smtpUserInput');
+      const passInput = document.getElementById('smtpPassInput');
+      const btn = document.getElementById('smtpSaveBtn');
+      const notice = document.getElementById('smtpStatusNotice');
+
+      const smtpUser = emailInput?.value?.trim();
+      const smtpPass = passInput?.value?.trim();
+
+      if (!smtpUser || !smtpUser.includes('@')) {
+        showToast('Please enter your Gmail address.', 'error');
+        if (emailInput) emailInput.focus();
+        return;
+      }
+
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Testing...';
+      }
+      if (notice) notice.innerHTML = '<span class="text-sky-400">Saving and sending test email...</span>';
+
+      try {
+        // Save first
+        await fetch('/api/settings/smtp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ smtpUser, ...(smtpPass ? { smtpPass } : {}) })
+        });
+
+        // Test sending email
+        const testRes = await fetch('/api/settings/test-smtp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ testEmail: smtpUser })
+        });
+        const testData = await testRes.json();
+
+        if (testData.success) {
+          showToast(`✔ Test email sent to ${smtpUser}! Check your inbox.`, 'success');
+          if (notice) notice.innerHTML = `<span class="text-emerald-400 font-bold">✔ Verified! Live emails active for ${smtpUser}.</span>`;
+          if (passInput) passInput.value = '';
+          loadSmtpSettings();
+        } else {
+          showToast(testData.error || 'SMTP test failed.', 'error');
+          if (notice) notice.innerHTML = `<span class="text-rose-400 font-bold">❌ Error: ${testData.error || 'Check password'}</span>`;
+        }
+      } catch (err) {
+        showToast('SMTP error: ' + err.message, 'error');
+        if (notice) notice.innerHTML = `<span class="text-rose-400">❌ Error: ${err.message}</span>`;
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = 'Save & Test';
+        }
       }
     };
 
