@@ -3967,7 +3967,7 @@
       launchOAuthPopup();
     };
 
-    window.launchOAuthPopup = function() {
+    window.launchOAuthPopup = function(retryCount = 0) {
       const targetClientId = getNextClientId();
       if (!targetClientId) {
         openAuthModal();
@@ -4019,7 +4019,15 @@
           showToast('OAuth Init Error: Please check your Google OAuth Client ID.', 'error');
         }
       } else {
-        showToast('Google Identity Services SDK loading, please retry in 2 seconds...', 'info');
+        if (retryCount < 10) {
+          showToast('Connecting to Google Identity Services...', 'info');
+          setTimeout(() => {
+            launchOAuthPopup(retryCount + 1);
+          }, 400);
+        } else {
+          showToast('Google Identity SDK failed to load. Please check your internet or ad-blocker.', 'error');
+          openAuthModal();
+        }
       }
     };
 
@@ -4050,6 +4058,7 @@
           // Use channel-filtered history directly from sync response
           if (data.history && Array.isArray(data.history)) {
             if (!currentState) currentState = {};
+            const activeFiles = (currentState.files || []).filter(f => f.status === 'uploading' || f.status === 'queued');
             currentState.files = getDeduplicatedFiles([...activeFiles, ...data.history]);
             currentState.stats = {
               total: currentState.files.length,
