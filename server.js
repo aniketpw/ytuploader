@@ -31,10 +31,13 @@ function persistUploadedHistory(history) { db.persistUploadedHistory(history); }
 function saveCompletedFileToHistory(fileObj) { db.saveCompletedFileToHistory(fileObj); }
 
 
-// Middleware
+// Middleware (Permissive iframe and embedding for Hugging Face Spaces & Cloud)
 app.use(helmet({
   contentSecurityPolicy: false,
-  crossOriginEmbedderPolicy: false
+  crossOriginEmbedderPolicy: false,
+  frameguard: false,
+  crossOriginResourcePolicy: false,
+  crossOriginOpenerPolicy: false
 }));
 
 // ══════════════════════════════════════════════════════════════════
