@@ -16,9 +16,9 @@ COPY . .
 # Ensure data directory exists
 RUN mkdir -p data
 
-# Expose dynamic cloud port
-ENV PORT=3000
-EXPOSE 3000
+# Expose dynamic cloud port (7860 for Hugging Face Spaces, 3000 for standard)
+ENV PORT=7860
+EXPOSE 7860 3000
 
 # Start server
 CMD ["node", "server.js"]
