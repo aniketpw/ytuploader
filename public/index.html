@@ -290,6 +290,17 @@
           <span>Connect Google</span>
         </button>
 
+        <!-- Team Editor Login Button (Email OTP) -->
+        <button
+          type="button"
+          id="navEditorLoginBtn"
+          onclick="openEditorAuthModal()"
+          class="flex items-center gap-1.5 px-2.5 h-8 border border-sky-500/50 bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 font-semibold transition-all cursor-pointer text-[11px] uppercase tracking-wider"
+          title="Log in with authorized Work Email + OTP"
+        >
+          <span>🔑 Team Login</span>
+        </button>
+
         <!-- Manual Upload Direct Button -->
         <button
           type="button"
@@ -300,11 +311,18 @@
           <span>+ Manual Upload</span>
         </button>
 
-        <!-- Connected Badge -->
+        <!-- Connected Badge (Owner) -->
         <div id="navConnectedBadge" class="hidden items-center gap-2 px-3 h-8 border border-emerald-300 dark:border-emerald-700/60 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 font-semibold text-[11px] uppercase tracking-wider">
           <span class="w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400 inline-block"></span>
           <span>Google Connected</span>
           <button type="button" onclick="openAuthModal()" class="text-emerald-700 dark:text-emerald-400 hover:text-emerald-950 dark:hover:text-emerald-200 underline ml-1 cursor-pointer font-bold lowercase">settings</button>
+        </div>
+
+        <!-- Connected Badge (Editor) -->
+        <div id="navEditorConnectedBadge" class="hidden items-center gap-2 px-3 h-8 border border-sky-400/60 bg-sky-950/60 text-sky-300 font-semibold text-[11px] uppercase tracking-wider">
+          <span class="w-2 h-2 rounded-full bg-sky-400 inline-block animate-pulse"></span>
+          <span id="navEditorEmailLabel">Editor Mode</span>
+          <button type="button" onclick="logoutEditor()" class="text-rose-400 hover:text-rose-300 underline ml-1 cursor-pointer font-bold lowercase">logout</button>
         </div>
 
         <!-- Verify Channel Link (Compact) -->
@@ -1455,6 +1473,37 @@
           <p class="text-[9px] text-[var(--text-muted)]">Controls how many Drive-to-YouTube video streams process in parallel using the SQLite queue.</p>
         </div>
 
+        <!-- Team & Editor Permissions (Email OTP Access) -->
+        <div class="p-3 bg-sky-500/10 border border-sky-500/40 text-xs space-y-2.5">
+          <div class="flex items-center justify-between font-bold text-sky-400 uppercase text-[10px]">
+            <span>👥 Team &amp; Editor Permissions (Email OTP Access)</span>
+            <span class="text-[9px] bg-sky-500/20 text-sky-300 px-1.5 py-0.5 border border-sky-500/30 font-bold" id="teamEditorCount">0 members</span>
+          </div>
+          <p class="text-[10px] text-[var(--text-muted)]">Give team members/editors access to edit titles, subjects, batches, and update live YouTube thumbnails via Email OTP without needing Google login.</p>
+          
+          <div class="flex gap-2">
+            <input
+              type="email"
+              id="teamInviteEmailInput"
+              placeholder="Enter editor email (e.g. editor@physicswallah.com)..."
+              class="flex-1 p-2 text-xs border border-sky-500/40 bg-[var(--bg-card)] text-[var(--text-main)] focus:outline-none focus:border-sky-400"
+              onkeydown="if(event.key==='Enter') inviteTeamMember()"
+            />
+            <button
+              type="button"
+              onclick="inviteTeamMember()"
+              class="px-3 py-2 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs uppercase tracking-wider cursor-pointer whitespace-nowrap"
+            >
+              + Add Editor
+            </button>
+          </div>
+
+          <!-- Editors List Container -->
+          <div id="teamEditorsListContainer" class="space-y-1.5 max-h-36 overflow-y-auto border border-sky-500/30 p-2 bg-[var(--bg-card)] text-[10px]">
+            <div class="text-[var(--text-muted)] text-center py-2">Loading team members...</div>
+          </div>
+        </div>
+
         <!-- Direct Token -->
         <div class="p-3 bg-emerald-500/10 border border-emerald-500/40 text-xs space-y-2">
           <div class="flex items-center justify-between font-bold text-emerald-700 dark:text-emerald-300 uppercase text-[10px]">
@@ -1915,6 +1964,85 @@
           <span>START DIRECT UPLOAD ➔</span>
         </button>
       </div>
+    </div>
+  </div>
+
+  <!-- 8. Team Editor Email OTP Authentication Modal -->
+  <div id="editorAuthModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto font-mono-code">
+    <div class="bg-[var(--bg-card)] border-2 border-[var(--border-main)] max-w-md w-full shadow-2xl my-4 text-[var(--text-main)]">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between border-b border-[var(--border-main)] px-5 py-3.5 bg-[var(--bg-subcard)]">
+        <div class="flex items-center gap-2">
+          <span class="text-lg">🔑</span>
+          <div>
+            <h3 class="text-xs font-bold uppercase tracking-wider text-[var(--text-main)]">Team Editor Access</h3>
+            <p class="text-[10px] text-[var(--text-muted)]">Log in with authorized Work Email + 6-digit OTP</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeEditorAuthModal()" class="text-[var(--text-muted)] hover:text-[var(--text-main)] text-xl font-bold cursor-pointer">&times;</button>
+      </div>
+
+      <!-- Step 1: Request OTP -->
+      <div id="editorOtpStep1" class="p-5 space-y-4">
+        <div class="space-y-1">
+          <label class="text-[10px] font-bold uppercase text-[var(--text-muted)] tracking-wider">Authorized Email Address</label>
+          <input
+            type="email"
+            id="editorEmailInput"
+            placeholder="e.g. editor@physicswallah.com"
+            class="w-full p-2.5 text-xs border border-[var(--border-main)] bg-[var(--bg-card)] text-[var(--text-main)] focus:outline-none focus:border-sky-500"
+            onkeydown="if(event.key==='Enter') sendEditorOtp()"
+          />
+          <p class="text-[9px] text-[var(--text-muted)] mt-1">Enter the work email authorized by the channel owner in Settings ➔ Team Access.</p>
+        </div>
+
+        <button
+          type="button"
+          id="sendOtpBtn"
+          onclick="sendEditorOtp()"
+          class="w-full py-2.5 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs uppercase tracking-widest cursor-pointer transition-all shadow-md flex items-center justify-center gap-2"
+        >
+          <span>SEND 6-DIGIT OTP ➔</span>
+        </button>
+      </div>
+
+      <!-- Step 2: Verify OTP -->
+      <div id="editorOtpStep2" class="p-5 space-y-4 hidden">
+        <div class="p-3 bg-sky-500/10 border border-sky-500/30 text-xs">
+          <div class="flex items-center justify-between text-sky-400 font-bold text-[10px] uppercase">
+            <span>OTP Code Sent</span>
+            <button type="button" onclick="resetEditorOtpFlow()" class="text-[9px] underline cursor-pointer text-sky-300">Change Email</button>
+          </div>
+          <p class="text-[10px] text-[var(--text-main)] mt-1" id="editorOtpSentHint">Sent to: user@example.com</p>
+        </div>
+
+        <div class="space-y-1">
+          <label class="text-[10px] font-bold uppercase text-[var(--text-muted)] tracking-wider">Enter 6-Digit OTP Code</label>
+          <input
+            type="text"
+            id="editorOtpInput"
+            maxlength="6"
+            placeholder="000000"
+            class="w-full p-3 text-center tracking-[8px] font-mono font-bold text-xl border-2 border-sky-500/60 bg-[var(--bg-card)] text-[var(--text-main)] focus:outline-none focus:border-sky-400"
+            onkeydown="if(event.key==='Enter') verifyEditorOtp()"
+          />
+        </div>
+
+        <button
+          type="button"
+          id="verifyOtpBtn"
+          onclick="verifyEditorOtp()"
+          class="w-full py-2.5 bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs uppercase tracking-widest cursor-pointer transition-all shadow-md flex items-center justify-center gap-2"
+        >
+          <span>✔ VERIFY &amp; ENTER STUDIO</span>
+        </button>
+
+        <div class="text-center">
+          <button type="button" onclick="sendEditorOtp()" class="text-[10px] text-[var(--text-muted)] hover:text-sky-400 underline cursor-pointer">Resend OTP Code</button>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -3738,6 +3866,7 @@
 
       loadClientIds();
       loadServerSettings();
+      loadTeamEditors();
       showAuthLanding();
       if (modal) modal.classList.remove('hidden');
     };
@@ -3837,28 +3966,337 @@
 
     window.checkAuthStatus = function() {
       try {
-        if (window.isAuthenticated) {
-          if (navAuthBtn) {
-            navAuthBtn.classList.add('hidden');
-            navAuthBtn.classList.remove('flex');
+        const isEditor = !!window.isEditorSession;
+        const isAuth = !!window.isAuthenticated;
+        const navEditorBtn = document.getElementById('navEditorLoginBtn');
+        const navEditorBadge = document.getElementById('navEditorConnectedBadge');
+
+        if (navEditorBtn) {
+          if (isAuth) {
+            navEditorBtn.classList.add('hidden');
+            navEditorBtn.classList.remove('flex');
+          } else {
+            navEditorBtn.classList.remove('hidden');
+            navEditorBtn.classList.add('flex');
           }
+        }
+
+        if (isEditor) {
+          if (navAuthBtn) { navAuthBtn.classList.add('hidden'); navAuthBtn.classList.remove('flex'); }
+          if (navConnectedBadge) { navConnectedBadge.classList.add('hidden'); navConnectedBadge.classList.remove('flex'); }
+          if (navEditorBadge) {
+            navEditorBadge.classList.remove('hidden');
+            navEditorBadge.classList.add('flex');
+            const label = document.getElementById('navEditorEmailLabel');
+            if (label) label.textContent = `Editor (${window.editorEmail || 'Team'})`;
+          }
+        } else if (isAuth) {
+          if (navAuthBtn) { navAuthBtn.classList.add('hidden'); navAuthBtn.classList.remove('flex'); }
+          if (navEditorBadge) { navEditorBadge.classList.add('hidden'); navEditorBadge.classList.remove('flex'); }
           if (navConnectedBadge) {
             navConnectedBadge.classList.remove('hidden');
             navConnectedBadge.classList.add('flex');
           }
         } else {
+          if (navEditorBadge) { navEditorBadge.classList.add('hidden'); navEditorBadge.classList.remove('flex'); }
+          if (navConnectedBadge) { navConnectedBadge.classList.add('hidden'); navConnectedBadge.classList.remove('flex'); }
           if (navAuthBtn) {
             navAuthBtn.classList.remove('hidden');
             navAuthBtn.classList.add('flex');
-          }
-          if (navConnectedBadge) {
-            navConnectedBadge.classList.add('hidden');
-            navConnectedBadge.classList.remove('flex');
           }
         }
         renderFilteredTable();
       } catch (e) {
         console.error('Failed to check auth status:', e);
+      }
+    };
+
+    // ══════════════════════════════════════════════════════════════════
+    // TEAM & EDITOR ACCESS ENGINE (EMAIL + OTP)
+    // ══════════════════════════════════════════════════════════════════
+
+    window.openEditorAuthModal = function() {
+      closeAllModals();
+      resetEditorOtpFlow();
+      const modal = document.getElementById('editorAuthModal');
+      if (modal) modal.classList.remove('hidden');
+      const emailInput = document.getElementById('editorEmailInput');
+      if (emailInput) {
+        emailInput.focus();
+        const savedEmail = AppStorage.getItem('editor_last_email');
+        if (savedEmail) emailInput.value = savedEmail;
+      }
+    };
+
+    window.closeEditorAuthModal = function() {
+      const modal = document.getElementById('editorAuthModal');
+      if (modal) modal.classList.add('hidden');
+    };
+
+    window.resetEditorOtpFlow = function() {
+      const s1 = document.getElementById('editorOtpStep1');
+      const s2 = document.getElementById('editorOtpStep2');
+      if (s1) s1.classList.remove('hidden');
+      if (s2) s2.classList.add('hidden');
+      const otpIn = document.getElementById('editorOtpInput');
+      if (otpIn) otpIn.value = '';
+    };
+
+    window.sendEditorOtp = async function() {
+      const emailInput = document.getElementById('editorEmailInput');
+      const btn = document.getElementById('sendOtpBtn');
+      const email = emailInput?.value?.trim()?.toLowerCase();
+
+      if (!email || !email.includes('@')) {
+        showToast('Please enter a valid email address.', 'error');
+        if (emailInput) emailInput.focus();
+        return;
+      }
+
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'SENDING OTP...';
+      }
+
+      try {
+        const res = await fetch('/api/auth/send-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          AppStorage.setItem('editor_last_email', email);
+          const s1 = document.getElementById('editorOtpStep1');
+          const s2 = document.getElementById('editorOtpStep2');
+          const hint = document.getElementById('editorOtpSentHint');
+          if (s1) s1.classList.add('hidden');
+          if (s2) s2.classList.remove('hidden');
+          if (hint) hint.textContent = `Sent to: ${email}`;
+
+          const otpIn = document.getElementById('editorOtpInput');
+          if (otpIn) {
+            otpIn.focus();
+            if (data.fallbackCode) {
+              otpIn.value = data.fallbackCode;
+              showToast(`🔑 OTP code: ${data.fallbackCode}`, 'success');
+            } else {
+              showToast(`✔ 6-digit OTP sent to ${email}`, 'success');
+            }
+          }
+        } else {
+          showToast(data.error || 'Failed to send OTP.', 'error');
+        }
+      } catch (err) {
+        showToast('Error sending OTP: ' + err.message, 'error');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = 'SEND 6-DIGIT OTP ➔';
+        }
+      }
+    };
+
+    window.verifyEditorOtp = async function() {
+      const emailInput = document.getElementById('editorEmailInput');
+      const otpInput = document.getElementById('editorOtpInput');
+      const btn = document.getElementById('verifyOtpBtn');
+      const email = emailInput?.value?.trim()?.toLowerCase();
+      const otp = otpInput?.value?.trim();
+
+      if (!email || !otp || otp.length < 6) {
+        showToast('Please enter the 6-digit verification code.', 'error');
+        if (otpInput) otpInput.focus();
+        return;
+      }
+
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'VERIFYING...';
+      }
+
+      try {
+        const res = await fetch('/api/auth/verify-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, otp })
+        });
+        const data = await res.json();
+
+        if (data.success && data.token) {
+          AppStorage.setItem('editor_token', data.token);
+          AppStorage.setItem('editor_email', data.email);
+          window.gAccessToken = data.token;
+          window.isAuthenticated = true;
+          window.isEditorSession = true;
+          window.editorEmail = data.email;
+
+          closeEditorAuthModal();
+          checkAuthStatus();
+          connectSSE();
+          showToast(data.message || `✔ Logged in as Editor: ${data.email}`, 'success');
+          loadJobStatus();
+        } else {
+          showToast(data.error || 'Invalid OTP verification code.', 'error');
+        }
+      } catch (err) {
+        showToast('Verification failed: ' + err.message, 'error');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = '✔ VERIFY & ENTER STUDIO';
+        }
+      }
+    };
+
+    window.checkEditorAuthOnLoad = async function() {
+      const token = AppStorage.getItem('editor_token');
+      const email = AppStorage.getItem('editor_email');
+      if (!token) return false;
+
+      try {
+        const res = await fetch('/api/auth/editor-session', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (data.success && data.session) {
+          window.gAccessToken = token;
+          window.isAuthenticated = true;
+          window.isEditorSession = true;
+          window.editorEmail = data.session.email || email;
+          checkAuthStatus();
+          return true;
+        } else {
+          AppStorage.removeItem('editor_token');
+          AppStorage.removeItem('editor_email');
+          window.isEditorSession = false;
+        }
+      } catch (e) {
+        window.gAccessToken = token;
+        window.isAuthenticated = true;
+        window.isEditorSession = true;
+        window.editorEmail = email;
+        checkAuthStatus();
+        return true;
+      }
+      return false;
+    };
+
+    window.logoutEditor = async function() {
+      const token = AppStorage.getItem('editor_token');
+      if (token) {
+        fetch('/api/auth/editor-logout', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        }).catch(() => {});
+      }
+      AppStorage.removeItem('editor_token');
+      AppStorage.removeItem('editor_email');
+      window.gAccessToken = null;
+      window.isAuthenticated = false;
+      window.isEditorSession = false;
+      window.editorEmail = null;
+      if (currentState) currentState.files = [];
+      checkAuthStatus();
+      renderFilteredTable();
+      updateDynamicMetrics();
+      showToast('Logged out of Editor Mode.', 'info');
+    };
+
+    // ─── Owner Team Management (Settings Modal) ─────────────────────────
+    window.loadTeamEditors = async function() {
+      const container = document.getElementById('teamEditorsListContainer');
+      const countBadge = document.getElementById('teamEditorCount');
+      if (!container) return;
+
+      try {
+        const res = await fetch('/api/team/editors');
+        const data = await res.json();
+
+        if (data.success && Array.isArray(data.editors)) {
+          const editors = data.editors;
+          if (countBadge) countBadge.textContent = `${editors.length} member${editors.length === 1 ? '' : 's'}`;
+
+          if (editors.length === 0) {
+            container.innerHTML = `<div class="text-[var(--text-muted)] text-center py-2">No editors added yet. Add an email above to grant access.</div>`;
+            return;
+          }
+
+          container.innerHTML = editors.map(e => `
+            <div class="flex items-center justify-between p-1.5 bg-[var(--bg-subcard)] border border-[var(--border-main)] hover:border-sky-500/40 transition-colors">
+              <div class="flex items-center gap-2 overflow-hidden">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                <span class="font-bold text-[var(--text-main)] truncate">${e.email}</span>
+                <span class="text-[9px] bg-sky-500/20 text-sky-400 px-1 py-0.2 uppercase font-semibold">${e.role || 'Editor'}</span>
+              </div>
+              <button
+                type="button"
+                onclick="removeTeamMember('${e.email}')"
+                class="text-rose-400 hover:text-rose-300 font-bold px-1.5 py-0.5 text-[9px] uppercase cursor-pointer hover:underline shrink-0"
+                title="Revoke access for this email"
+              >
+                ✕ Remove
+              </button>
+            </div>
+          `).join('');
+        }
+      } catch (err) {
+        container.innerHTML = `<div class="text-rose-400 text-center py-2">Failed to load team list</div>`;
+      }
+    };
+
+    window.inviteTeamMember = async function() {
+      const input = document.getElementById('teamInviteEmailInput');
+      const email = input?.value?.trim()?.toLowerCase();
+
+      if (!email || !email.includes('@')) {
+        showToast('Please enter a valid email address.', 'error');
+        if (input) input.focus();
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/team/invite', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, role: 'editor' })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          showToast(`✔ Access granted to ${email}`, 'success');
+          if (input) input.value = '';
+          loadTeamEditors();
+        } else {
+          showToast(data.error || 'Failed to add editor.', 'error');
+        }
+      } catch (err) {
+        showToast('Error adding editor: ' + err.message, 'error');
+      }
+    };
+
+    window.removeTeamMember = async function(email) {
+      if (!confirm(`Revoke access for ${email}? They will no longer be able to log in.`)) {
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/team/remove', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          showToast(`Access revoked for ${email}`, 'info');
+          loadTeamEditors();
+        } else {
+          showToast(data.error || 'Failed to remove editor.', 'error');
+        }
+      } catch (err) {
+        showToast('Error removing editor: ' + err.message, 'error');
       }
     };
 
@@ -6680,33 +7118,38 @@
       // Check for auth callback redirect first
       checkServerAuthOnLoad();
 
-      // Auth Priority: 1) Server-side refresh token, 2) localStorage access token, 3) Silent GIS refresh
+      // Auth Priority: 1) Team Editor session (Email OTP), 2) Server-side refresh token, 3) localStorage access token, 4) Silent GIS refresh
       (async () => {
-        const hasServerAuth = await checkServerAuthStatus();
-        
-        if (hasServerAuth) {
-          console.log('[auth] Server-side permanent auth active (refresh token).');
+        const isEditor = await checkEditorAuthOnLoad();
+        if (isEditor) {
+          console.log('[auth] Active Team Editor session detected.');
         } else {
-          // Fallback to localStorage token
-          const token = AppStorage.getItem('oauth_access_token');
-          const expiry = AppStorage.getItem('oauth_token_expiry');
-          const remainingSecs = expiry ? Math.floor((parseInt(expiry, 10) - Date.now()) / 1000) : 0;
-
-          if (token && remainingSecs > 60) {
-            window.gAccessToken = token;
-            window.isAuthenticated = true;
-            scheduleTokenRefresh(remainingSecs);
-            startTokenHeartbeat();
+          const hasServerAuth = await checkServerAuthStatus();
+          
+          if (hasServerAuth) {
+            console.log('[auth] Server-side permanent auth active (refresh token).');
           } else {
-            window.isAuthenticated = false;
-            silentAutoRefreshToken(false);
+            // Fallback to localStorage token
+            const token = AppStorage.getItem('oauth_access_token');
+            const expiry = AppStorage.getItem('oauth_token_expiry');
+            const remainingSecs = expiry ? Math.floor((parseInt(expiry, 10) - Date.now()) / 1000) : 0;
+
+            if (token && remainingSecs > 60) {
+              window.gAccessToken = token;
+              window.isAuthenticated = true;
+              scheduleTokenRefresh(remainingSecs);
+              startTokenHeartbeat();
+            } else {
+              window.isAuthenticated = false;
+              silentAutoRefreshToken(false);
+            }
           }
         }
 
         checkAuthStatus();
         connectSSE();
         loadJobStatus();
-        if (window.isAuthenticated) {
+        if (window.isAuthenticated && !window.isEditorSession) {
           syncYouTubeUploads(true);
         }
         if (typeof fetchQuotaHealth === 'function') {

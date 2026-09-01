@@ -18,6 +18,7 @@ const path = require('path');
 const fs = require('fs');
 const { google } = require('googleapis');
 const { Transform } = require('stream');
+const nodemailer = require('nodemailer');
 const db = require('./db');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
@@ -227,6 +228,19 @@ let activeJobChannelId = null; // Track which user started the current upload jo
 async function resolveChannelId(req) {
   const authHeader = req.headers.authorization || '';
   const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+  const editorToken = req.headers['x-editor-token'] || (token.startsWith('edt_') ? token : null);
+
+  if (editorToken) {
+    const session = db.getEditorSession(editorToken);
+    if (session) {
+      if (session.channelId) return session.channelId;
+      const history = db.loadUploadedHistory();
+      if (history && history.length > 0 && history[0].channelId) {
+        return history[0].channelId;
+      }
+    }
+  }
+
   if (!token) return null;
 
   if (tokenChannelCache.has(token)) {
@@ -563,7 +577,22 @@ function getOAuth2Client(req) {
     accessToken = req.query.accessToken;
   }
 
-  if (!accessToken) {
+  // If token is an editor session token, or x-editor-token header is present, use owner stored credentials
+  const editorToken = (accessToken && accessToken.startsWith('edt_')) ? accessToken : (req.headers ? req.headers['x-editor-token'] : null);
+  if (editorToken) {
+    const session = db.getEditorSession(editorToken);
+    if (session) {
+      const creds = db.getActiveCredentials();
+      if (creds && creds.length > 0) {
+        const cred = creds[0];
+        const oauth2Client = new google.auth.OAuth2(cred.clientId, cred.clientSecret);
+        oauth2Client.setCredentials({ refresh_token: cred.refreshToken });
+        return oauth2Client;
+      }
+    }
+  }
+
+  if (!accessToken || accessToken.startsWith('edt_')) {
     const creds = db.getActiveCredentials();
     if (creds && creds.length > 0) {
       const cred = creds[0];
@@ -1953,6 +1982,244 @@ app.post('/api/settings/credentials', (req, res) => {
 app.delete('/api/settings/credentials/:id', (req, res) => {
   db.removeCredential(parseInt(req.params.id, 10));
   res.json({ success: true, message: 'Credential removed.' });
+});
+
+// ══════════════════════════════════════════════════════════════════
+// TEAM MEMBER & EMAIL OTP AUTHENTICATION
+// ══════════════════════════════════════════════════════════════════
+
+async function sendOtpEmail(toEmail, otpCode) {
+  const smtpHost = process.env.SMTP_HOST || db.getSetting('smtp_host');
+  const smtpPort = parseInt(process.env.SMTP_PORT || db.getSetting('smtp_port') || '587', 10);
+  const smtpUser = process.env.SMTP_USER || db.getSetting('smtp_user');
+  const smtpPass = process.env.SMTP_PASS || db.getSetting('smtp_pass');
+  const smtpFrom = process.env.SMTP_FROM || db.getSetting('smtp_from') || `"Drive2YouTube Studio" <${smtpUser || 'no-reply@drive2yt.local'}>`;
+
+  const htmlContent = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0c0a09; color: #f8fafc; padding: 40px 20px; text-align: center;">
+      <div style="max-width: 480px; margin: 0 auto; background-color: #1c1917; border: 1px solid #292524; border-radius: 8px; padding: 32px; box-shadow: 0 4px 20px rgba(0,0,0,0.6);">
+        <h2 style="color: #ea580c; margin-bottom: 6px; font-size: 20px; text-transform: uppercase; letter-spacing: 1px;">Drive to YouTube</h2>
+        <p style="color: #a8a29e; font-size: 12px; margin-bottom: 24px; text-transform: uppercase; letter-spacing: 0.5px;">Team Editor Workspace Login</p>
+        
+        <p style="color: #e7e5e4; font-size: 14px; margin-bottom: 16px;">Use the verification code below to log in and manage video titles, subjects, and live YouTube thumbnails:</p>
+        
+        <div style="background-color: #0c0a09; border: 2px dashed #ea580c; border-radius: 6px; padding: 18px; margin: 24px 0;">
+          <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #ffffff; font-family: monospace;">${otpCode}</span>
+        </div>
+        
+        <p style="color: #a8a29e; font-size: 12px; line-height: 1.5;">This 6-digit code is valid for <strong>10 minutes</strong>. Do not share it with anyone.</p>
+        <hr style="border: none; border-top: 1px solid #292524; margin: 24px 0;" />
+        <p style="color: #78716c; font-size: 10px;">Authorized team editor access granted by the channel owner.</p>
+      </div>
+    </div>
+  `;
+
+  if (smtpHost && smtpUser && smtpPass) {
+    try {
+      const transporter = nodemailer.createTransport({
+        host: smtpHost,
+        port: smtpPort,
+        secure: smtpPort === 465,
+        auth: { user: smtpUser, pass: smtpPass }
+      });
+      await transporter.sendMail({
+        from: smtpFrom,
+        to: toEmail,
+        subject: `🔑 ${otpCode} is your Drive2YouTube Studio login code`,
+        text: `Your Drive to YouTube Studio OTP verification code is: ${otpCode}. Valid for 10 minutes.`,
+        html: htmlContent
+      });
+      console.log(`[AUTH] OTP email sent successfully to ${toEmail} via SMTP.`);
+      return { sent: true, method: 'smtp' };
+    } catch (smtpErr) {
+      console.warn(`[AUTH] SMTP delivery error for ${toEmail}:`, smtpErr.message);
+    }
+  }
+
+  // Console log fallback for zero-configuration setup
+  console.log(`[AUTH-OTP] Generated OTP for ${toEmail}: ${otpCode}`);
+  return { sent: false, method: 'local', code: otpCode };
+}
+
+// 1. GET /api/team/editors — List all authorized editors
+app.get('/api/team/editors', (req, res) => {
+  try {
+    const editors = db.getAllowedEditors();
+    res.json({ success: true, editors });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 2. POST /api/team/invite — Owner adds an editor email
+app.post('/api/team/invite', (req, res) => {
+  try {
+    const { email, role } = req.body || {};
+    if (!email || !email.includes('@')) {
+      return res.status(400).json({ success: false, error: 'A valid email address is required.' });
+    }
+    const cleanEmail = email.trim().toLowerCase();
+    const added = db.addAllowedEditor(cleanEmail, role || 'editor', 'owner');
+    res.json({ success: true, message: `Access granted to ${cleanEmail}`, editor: added });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 3. POST /api/team/remove — Owner removes an editor email
+app.post('/api/team/remove', (req, res) => {
+  try {
+    const { email } = req.body || {};
+    if (!email) {
+      return res.status(400).json({ success: false, error: 'Email is required.' });
+    }
+    const cleanEmail = email.trim().toLowerCase();
+    db.removeAllowedEditor(cleanEmail);
+    res.json({ success: true, message: `Access revoked for ${cleanEmail}` });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 4. POST /api/auth/send-otp — Generate and send OTP to editor
+app.post('/api/auth/send-otp', async (req, res) => {
+  try {
+    const { email } = req.body || {};
+    if (!email || !email.includes('@')) {
+      return res.status(400).json({ success: false, error: 'Please enter a valid email address.' });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const allEditors = db.getAllowedEditors();
+    const isAllowed = db.isEditorAllowed(cleanEmail) || allEditors.length === 0;
+
+    if (!isAllowed) {
+      return res.status(403).json({
+        success: false,
+        error: `Email "${cleanEmail}" is not authorized. Please ask the channel owner to add your email under Settings ➔ Team Access.`
+      });
+    }
+
+    // Auto-authorize first editor if list was empty
+    if (allEditors.length === 0) {
+      db.addAllowedEditor(cleanEmail, 'admin', 'initial_setup');
+    }
+
+    // Generate 6-digit OTP
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    db.saveOtpCode(cleanEmail, otpCode, 10);
+
+    const emailResult = await sendOtpEmail(cleanEmail, otpCode);
+
+    return res.json({
+      success: true,
+      message: `Verification code sent to ${cleanEmail}`,
+      email: cleanEmail,
+      deliveredVia: emailResult.sent ? 'email' : 'system',
+      ...(emailResult.sent ? {} : { fallbackCode: otpCode })
+    });
+  } catch (err) {
+    console.error('Send OTP error:', err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 5. POST /api/auth/verify-otp — Verify OTP and issue persistent editor session token
+app.post('/api/auth/verify-otp', async (req, res) => {
+  try {
+    const { email, otp } = req.body || {};
+    if (!email || !otp) {
+      return res.status(400).json({ success: false, error: 'Email and 6-digit OTP code are required.' });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const verification = db.verifyOtpCode(cleanEmail, otp);
+
+    if (!verification.valid) {
+      return res.status(400).json({ success: false, error: verification.reason });
+    }
+
+    // Pre-resolve channel title & ID
+    let targetChannelId = null;
+    let channelTitle = 'YouTube Channel';
+
+    try {
+      const creds = db.getActiveCredentials();
+      if (creds && creds.length > 0) {
+        const cred = creds[0];
+        const oauth2Client = new google.auth.OAuth2(cred.clientId, cred.clientSecret);
+        oauth2Client.setCredentials({ refresh_token: cred.refreshToken });
+        const yt = google.youtube({ version: 'v3', auth: oauth2Client });
+        const chRes = await yt.channels.list({ part: ['snippet', 'id'], mine: true });
+        if (chRes.data.items && chRes.data.items.length > 0) {
+          targetChannelId = chRes.data.items[0].id;
+          channelTitle = chRes.data.items[0].snippet?.title || 'YouTube Channel';
+        }
+      }
+    } catch (e) {
+      console.warn('Could not pre-resolve channel for editor session:', e.message);
+    }
+
+    if (!targetChannelId) {
+      const history = db.loadUploadedHistory();
+      if (history && history.length > 0 && history[0].channelId) {
+        targetChannelId = history[0].channelId;
+        channelTitle = history[0].batch || 'YouTube Channel';
+      }
+    }
+
+    const session = db.createEditorSession(cleanEmail, 'editor', targetChannelId, null, 30);
+
+    return res.json({
+      success: true,
+      token: session.token,
+      email: cleanEmail,
+      role: session.role,
+      channelId: targetChannelId,
+      channelTitle,
+      message: `Welcome ${cleanEmail}! Connected to ${channelTitle}.`
+    });
+  } catch (err) {
+    console.error('Verify OTP error:', err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 6. GET /api/auth/editor-session — Check current editor session
+app.get('/api/auth/editor-session', (req, res) => {
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+  const editorToken = req.headers['x-editor-token'] || (token.startsWith('edt_') ? token : null);
+
+  if (!editorToken) {
+    return res.status(401).json({ success: false, error: 'No session token provided.' });
+  }
+
+  const session = db.getEditorSession(editorToken);
+  if (!session) {
+    return res.status(401).json({ success: false, error: 'Invalid or expired editor session.' });
+  }
+
+  return res.json({
+    success: true,
+    session: {
+      email: session.email,
+      role: session.role,
+      channelId: session.channelId,
+      createdAt: session.createdAt
+    }
+  });
+});
+
+// 7. POST /api/auth/editor-logout — Invalidate editor session
+app.post('/api/auth/editor-logout', (req, res) => {
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+  const editorToken = req.headers['x-editor-token'] || (token.startsWith('edt_') ? token : null);
+  if (editorToken) {
+    db.deleteEditorSession(editorToken);
+  }
+  return res.json({ success: true, message: 'Logged out successfully.' });
 });
 
 // In-memory TTL cache for Drive folder scan results (60s)

@@ -89,6 +89,32 @@ try {
       quotaUsedToday INTEGER DEFAULT 0,
       lastResetAt    TEXT
     );
+
+    CREATE TABLE IF NOT EXISTS allowed_editors (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      email      TEXT UNIQUE NOT NULL COLLATE NOCASE,
+      role       TEXT DEFAULT 'editor',
+      addedBy    TEXT,
+      createdAt  TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS otp_codes (
+      email      TEXT PRIMARY KEY COLLATE NOCASE,
+      code       TEXT NOT NULL,
+      expiresAt  INTEGER NOT NULL,
+      attempts   INTEGER DEFAULT 0,
+      createdAt  TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS editor_sessions (
+      token       TEXT PRIMARY KEY,
+      email       TEXT NOT NULL COLLATE NOCASE,
+      role        TEXT DEFAULT 'editor',
+      channelId   TEXT,
+      ownerUserId TEXT,
+      createdAt   TEXT,
+      expiresAt   INTEGER NOT NULL
+    );
   `);
 
   try { db.exec('ALTER TABLE uploaded_history ADD COLUMN ownerUserId TEXT;'); } catch (e) {}
@@ -97,6 +123,8 @@ try {
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_history_channelId ON uploaded_history(channelId);'); } catch (e) {}
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_history_name ON uploaded_history(name COLLATE NOCASE);'); } catch (e) {}
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_history_customTitle ON uploaded_history(customTitle COLLATE NOCASE);'); } catch (e) {}
+  try { db.exec('CREATE INDEX IF NOT EXISTS idx_editors_email ON allowed_editors(email COLLATE NOCASE);'); } catch (e) {}
+  try { db.exec('CREATE INDEX IF NOT EXISTS idx_sessions_email ON editor_sessions(email COLLATE NOCASE);'); } catch (e) {}
 
   // Auto-deduplicate any existing history rows by videoId on startup
   try {
@@ -173,7 +201,21 @@ try {
     updateCredentialQuota: db.prepare(`UPDATE credentials SET quotaUsedToday = ? WHERE id = ?`),
     resetAllCredentialQuotas: db.prepare(`UPDATE credentials SET quotaUsedToday = 0, lastResetAt = ?`),
     deleteCredential: db.prepare(`DELETE FROM credentials WHERE id = ?`),
-    selectCredentialById: db.prepare(`SELECT * FROM credentials WHERE id = ?`)
+    selectCredentialById: db.prepare(`SELECT * FROM credentials WHERE id = ?`),
+
+    selectAllEditors: db.prepare(`SELECT * FROM allowed_editors ORDER BY id DESC`),
+    selectEditorByEmail: db.prepare(`SELECT * FROM allowed_editors WHERE email = ? COLLATE NOCASE`),
+    insertEditor: db.prepare(`INSERT OR REPLACE INTO allowed_editors (email, role, addedBy, createdAt) VALUES (?, ?, ?, ?)`),
+    deleteEditorByEmail: db.prepare(`DELETE FROM allowed_editors WHERE email = ? COLLATE NOCASE`),
+
+    selectOtp: db.prepare(`SELECT * FROM otp_codes WHERE email = ? COLLATE NOCASE`),
+    upsertOtp: db.prepare(`INSERT OR REPLACE INTO otp_codes (email, code, expiresAt, attempts, createdAt) VALUES (?, ?, ?, ?, ?)`),
+    deleteOtp: db.prepare(`DELETE FROM otp_codes WHERE email = ? COLLATE NOCASE`),
+
+    selectEditorSession: db.prepare(`SELECT * FROM editor_sessions WHERE token = ?`),
+    insertEditorSession: db.prepare(`INSERT OR REPLACE INTO editor_sessions (token, email, role, channelId, ownerUserId, createdAt, expiresAt) VALUES (?, ?, ?, ?, ?, ?, ?)`),
+    deleteEditorSession: db.prepare(`DELETE FROM editor_sessions WHERE token = ?`),
+    deleteEditorSessionsByEmail: db.prepare(`DELETE FROM editor_sessions WHERE email = ? COLLATE NOCASE`)
   };
 
   bulkInsertHistoryTx = db.transaction((records) => {
@@ -565,6 +607,171 @@ function getCredentialById(id) {
   return readJsonFile(CREDS_FILE, []).find(c => c.id === id) || null;
 }
 
+// ─── Team / Editor Access Functions ──────────────────────────────────────────
+const EDITORS_FILE = path.join(DATA_DIR, 'allowed_editors.json');
+const OTP_FILE = path.join(DATA_DIR, 'otp_codes.json');
+const SESSIONS_FILE = path.join(DATA_DIR, 'editor_sessions.json');
+
+function getAllowedEditors() {
+  if (isSqlite) {
+    try { return stmts.selectAllEditors.all(); } catch (err) {}
+  }
+  return readJsonFile(EDITORS_FILE, []);
+}
+
+function isEditorAllowed(email) {
+  if (!email || typeof email !== 'string') return false;
+  const cleanEmail = email.trim().toLowerCase();
+  if (isSqlite) {
+    try {
+      const row = stmts.selectEditorByEmail.get(cleanEmail);
+      return !!row;
+    } catch (err) {}
+  }
+  const editors = readJsonFile(EDITORS_FILE, []);
+  return editors.some(e => (e.email || '').toLowerCase() === cleanEmail);
+}
+
+function addAllowedEditor(email, role = 'editor', addedBy = 'owner') {
+  if (!email || typeof email !== 'string') return null;
+  const cleanEmail = email.trim().toLowerCase();
+  const now = new Date().toISOString();
+  if (isSqlite) {
+    try {
+      stmts.insertEditor.run(cleanEmail, role, addedBy, now);
+      return { email: cleanEmail, role, addedBy, createdAt: now };
+    } catch (err) {
+      console.warn('[db] Add editor SQLite error:', err.message);
+    }
+  }
+  const editors = readJsonFile(EDITORS_FILE, []);
+  const existingIdx = editors.findIndex(e => (e.email || '').toLowerCase() === cleanEmail);
+  const rec = { id: Date.now(), email: cleanEmail, role, addedBy, createdAt: now };
+  if (existingIdx >= 0) {
+    editors[existingIdx] = rec;
+  } else {
+    editors.push(rec);
+  }
+  writeJsonFile(EDITORS_FILE, editors);
+  return rec;
+}
+
+function removeAllowedEditor(email) {
+  if (!email) return;
+  const cleanEmail = email.trim().toLowerCase();
+  if (isSqlite) {
+    try {
+      stmts.deleteEditorByEmail.run(cleanEmail);
+      stmts.deleteEditorSessionsByEmail.run(cleanEmail);
+      return;
+    } catch (err) {}
+  }
+  const editors = readJsonFile(EDITORS_FILE, []).filter(e => (e.email || '').toLowerCase() !== cleanEmail);
+  writeJsonFile(EDITORS_FILE, editors);
+  const sessions = readJsonFile(SESSIONS_FILE, []).filter(s => (s.email || '').toLowerCase() !== cleanEmail);
+  writeJsonFile(SESSIONS_FILE, sessions);
+}
+
+function saveOtpCode(email, code, ttlMinutes = 10) {
+  if (!email || !code) return;
+  const cleanEmail = email.trim().toLowerCase();
+  const expiresAt = Date.now() + ttlMinutes * 60 * 1000;
+  const now = new Date().toISOString();
+  if (isSqlite) {
+    try {
+      stmts.upsertOtp.run(cleanEmail, String(code).trim(), expiresAt, 0, now);
+      return { email: cleanEmail, code, expiresAt };
+    } catch (err) {}
+  }
+  const otps = readJsonFile(OTP_FILE, {});
+  otps[cleanEmail] = { code: String(code).trim(), expiresAt, attempts: 0, createdAt: now };
+  writeJsonFile(OTP_FILE, otps);
+  return { email: cleanEmail, code, expiresAt };
+}
+
+function verifyOtpCode(email, code) {
+  if (!email || !code) return { valid: false, reason: 'Email and OTP are required.' };
+  const cleanEmail = email.trim().toLowerCase();
+  const inputCode = String(code).trim();
+  let otpRecord = null;
+
+  if (isSqlite) {
+    try {
+      otpRecord = stmts.selectOtp.get(cleanEmail);
+    } catch (err) {}
+  } else {
+    const otps = readJsonFile(OTP_FILE, {});
+    otpRecord = otps[cleanEmail];
+  }
+
+  if (!otpRecord) {
+    return { valid: false, reason: 'No OTP requested for this email or OTP expired. Please request a new OTP.' };
+  }
+
+  if (Date.now() > otpRecord.expiresAt) {
+    if (isSqlite) try { stmts.deleteOtp.run(cleanEmail); } catch (e) {}
+    return { valid: false, reason: 'OTP has expired. Please request a new OTP.' };
+  }
+
+  if (otpRecord.code !== inputCode) {
+    return { valid: false, reason: 'Incorrect OTP code. Please check and try again.' };
+  }
+
+  // Valid! Delete used OTP
+  if (isSqlite) {
+    try { stmts.deleteOtp.run(cleanEmail); } catch (e) {}
+  } else {
+    const otps = readJsonFile(OTP_FILE, {});
+    delete otps[cleanEmail];
+    writeJsonFile(OTP_FILE, otps);
+  }
+
+  return { valid: true };
+}
+
+function createEditorSession(email, role = 'editor', channelId = null, ownerUserId = null, ttlDays = 30) {
+  const token = 'edt_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 12);
+  const cleanEmail = email.trim().toLowerCase();
+  const expiresAt = Date.now() + ttlDays * 24 * 60 * 60 * 1000;
+  const now = new Date().toISOString();
+
+  if (isSqlite) {
+    try {
+      stmts.insertEditorSession.run(token, cleanEmail, role, channelId, ownerUserId, now, expiresAt);
+      return { token, email: cleanEmail, role, channelId, ownerUserId, expiresAt };
+    } catch (err) {}
+  }
+  const sessions = readJsonFile(SESSIONS_FILE, []);
+  const rec = { token, email: cleanEmail, role, channelId, ownerUserId, createdAt: now, expiresAt };
+  sessions.push(rec);
+  writeJsonFile(SESSIONS_FILE, sessions);
+  return rec;
+}
+
+function getEditorSession(token) {
+  if (!token) return null;
+  if (isSqlite) {
+    try {
+      const session = stmts.selectEditorSession.get(token);
+      if (session && Date.now() < session.expiresAt) return session;
+      return null;
+    } catch (err) {}
+  }
+  const sessions = readJsonFile(SESSIONS_FILE, []);
+  const s = sessions.find(item => item.token === token);
+  if (s && Date.now() < s.expiresAt) return s;
+  return null;
+}
+
+function deleteEditorSession(token) {
+  if (!token) return;
+  if (isSqlite) {
+    try { stmts.deleteEditorSession.run(token); return; } catch (err) {}
+  }
+  const sessions = readJsonFile(SESSIONS_FILE, []).filter(s => s.token !== token);
+  writeJsonFile(SESSIONS_FILE, sessions);
+}
+
 // ─── One-Time Migration ───────────────────────────────────────────────────────
 function migrateFromJSON() {
   try {
@@ -647,6 +854,15 @@ module.exports = {
   incrementCredentialQuota,
   resetAllCredentialQuotas,
   removeCredential,
+  getAllowedEditors,
+  isEditorAllowed,
+  addAllowedEditor,
+  removeAllowedEditor,
+  saveOtpCode,
+  verifyOtpCode,
+  createEditorSession,
+  getEditorSession,
+  deleteEditorSession,
   closeDatabase,
   isSqliteActive: () => isSqlite,
   raw: db

@@ -26,7 +26,8 @@
     "express": "^4.21.2",
     "express-rate-limit": "^8.7.0",
     "googleapis": "^144.0.0",
-    "helmet": "^8.3.0"
+    "helmet": "^8.3.0",
+    "nodemailer": "^9.1.0"
   },
   "optionalDependencies": {
     "better-sqlite3": "^11.7.0"
