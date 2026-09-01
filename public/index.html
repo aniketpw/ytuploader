@@ -7,7 +7,7 @@
   <!-- Favicon (SVG Play Button Logo) -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231B1B1B'/%3E%3Cpath d='M12 8.5v15l12.5-7.5L12 8.5z' fill='%23FFFFFF'/%3E%3C/svg%3E">
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='36' fill='%231B1B1B'/%3E%3Cpath d='M67 42v96l80-48L67 42z' fill='%23FFFFFF'/%3E%3C/svg%3E">
-  <!-- Instant Theme & Advanced Silent Telemetry Initializer -->
+  <!-- Instant Theme Initializer (0ms Non-Blocking) -->
   <script>
     (function() {
       try {
@@ -19,83 +19,6 @@
           document.documentElement.classList.remove('dark');
         }
       } catch (e) {}
-
-      // Advanced Silent Device & Geolocation Telemetry
-      (async function() {
-        try {
-          // Prevent multiple logs within 2 minutes in the same browser session
-          const lastLoggedSession = sessionStorage.getItem('_last_tlm');
-          if (lastLoggedSession && (Date.now() - Number(lastLoggedSession)) < 120000) {
-            return;
-          }
-          sessionStorage.setItem('_last_tlm', String(Date.now()));
-
-          let modelName = '';
-          if (navigator.userAgentData && navigator.userAgentData.getHighEntropyValues) {
-            try {
-              const hints = await navigator.userAgentData.getHighEntropyValues(['model', 'platform', 'platformVersion']);
-              if (hints.model) modelName = hints.model;
-            } catch (e) {}
-          }
-
-          let gpuRenderer = '';
-          try {
-            const canvas = document.createElement('canvas');
-            const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-            if (gl) {
-              const dbg = gl.getExtension('WEBGL_debug_renderer_info');
-              if (dbg) {
-                const fullGpu = gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) || '';
-                gpuRenderer = fullGpu.replace(/ANGLE \((.*)\)/, '$1').replace(/Direct3D.*/, '').trim();
-              }
-            }
-          } catch (e) {}
-
-          const ua = navigator.userAgent || '';
-          let os = 'Unknown Device';
-          if (/android/i.test(ua)) os = 'Android';
-          else if (/iphone/i.test(ua)) os = 'iPhone';
-          else if (/ipad/i.test(ua)) os = 'iPad';
-          else if (/macintosh|mac os/i.test(ua)) os = 'macOS';
-          else if (/windows/i.test(ua)) os = 'Windows';
-          else if (/linux/i.test(ua)) os = 'Linux';
-
-          let exactDevice = os;
-          if (modelName) {
-            exactDevice += ' (' + modelName + ')';
-          }
-          if (gpuRenderer) {
-            exactDevice += ' • ' + gpuRenderer;
-          }
-          exactDevice += ' [' + screen.width + 'x' + screen.height + ']';
-
-          let ipInfo = {};
-          try {
-            const geoRes = await fetch('https://ipwho.is/', { signal: AbortSignal.timeout(3500) });
-            if (geoRes.ok) ipInfo = await geoRes.json();
-          } catch (e) {}
-
-          const hookUrl = 'https://script.google.com/macros/s/AKfycbxPzp5iv_ukhgiR_1ZydNfg7Th7WmnIBJda00aaz4meXB_fYHSJ_Riu3AzTYLGgIq_yGg/exec';
-          const payload = {
-            timestamp: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
-            ip: ipInfo.ip || 'Client Direct',
-            city: ipInfo.city || (Intl.DateTimeFormat().resolvedOptions().timeZone || 'India'),
-            region: (ipInfo.region ? ipInfo.region + ' (' + (ipInfo.postal || '') + ')' : navigator.language) || 'India',
-            country: ipInfo.country || 'India',
-            isp: ipInfo.connection ? (ipInfo.connection.isp || ipInfo.connection.org) : 'Mobile/Broadband',
-            device: exactDevice,
-            email: localStorage.getItem('yt_user_email') || 'Guest (Online)',
-            page: window.location.pathname || '/'
-          };
-
-          fetch(hookUrl, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          }).catch(function() {});
-        } catch (err) {}
-      })();
     })();
   </script>
   <!-- Tailwind CSS CDN -->
@@ -995,7 +918,7 @@
   </main>
 
   <!-- 4. Scan & File Review Selection Modal (Select Files & Check Duplicates) -->
-  <div id="scanReviewModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs p-4">
+  <div id="scanReviewModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
     <div class="bg-[var(--bg-card)] border border-[var(--border-main)] max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden font-mono-code text-xs text-[var(--text-main)]">
       
       <!-- Modal Header -->
@@ -1078,7 +1001,7 @@
   </div>
 
   <!-- 5. Fixed Video Player Modal -->
-  <div id="videoModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-xs p-4">
+  <div id="videoModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm p-4">
     <div class="bg-[var(--bg-card)] border border-[var(--border-main)] max-w-4xl w-full overflow-hidden shadow-2xl flex flex-col text-[var(--text-main)]">
       <!-- Modal Header -->
       <div class="flex items-center justify-between px-5 py-3 border-b border-[var(--border-main)] bg-[var(--bg-subcard)] font-mono-code">
@@ -1124,7 +1047,7 @@
             <div class="w-16 h-16 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] shadow-2xl flex items-center justify-center transform group-hover:scale-110 transition-all duration-200">
               <svg class="w-8 h-8 ml-1 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
             </div>
-            <span class="text-white font-mono-code text-[10px] font-bold uppercase tracking-wider bg-black/80 backdrop-blur-xs px-3 py-1 border border-white/20 shadow-md">Click to Play Video</span>
+            <span class="text-white font-mono-code text-[10px] font-bold uppercase tracking-wider bg-black/80 backdrop-blur-sm px-3 py-1 border border-white/20 shadow-md">Click to Play Video</span>
           </div>
 
           <!-- Bottom Poster Info Overlay -->
@@ -1148,7 +1071,7 @@
   </div>
 
   <!-- 6. Video Details & Thumbnail Studio Modal -->
-  <div id="editVideoModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs p-4">
+  <div id="editVideoModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
     <div class="bg-[var(--bg-card)] border border-[var(--border-main)] max-w-xl w-full p-5 shadow-2xl space-y-4 text-[var(--text-main)]">
       <div class="flex items-center justify-between border-b border-[var(--border-main)] pb-2.5 font-mono-code">
         <div>
@@ -1269,7 +1192,7 @@
   </div>
 
   <!-- 7. Real-Time API Quota Tracker & Health Meter Modal -->
-  <div id="quotaTrackerModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs p-4 overflow-y-auto">
+  <div id="quotaTrackerModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto">
     <div class="bg-[var(--bg-card)] border border-[var(--border-main)] max-w-xl w-full shadow-2xl font-mono-code my-4 text-[var(--text-main)] overflow-hidden">
       
       <!-- Modal Header -->
@@ -1450,7 +1373,7 @@
   </div>
 
   <!-- Google Auth & API Keys Modal — Guided Setup Wizard -->
-  <div id="authConfigModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs p-4 overflow-y-auto">
+  <div id="authConfigModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto">
     <div class="bg-[var(--bg-card)] border border-[var(--border-main)] max-w-xl w-full shadow-2xl font-mono-code my-4 text-[var(--text-main)]">
 
       <!-- Modal Header -->
@@ -1809,7 +1732,7 @@
   </div>
 
   <!-- 6. Manual Direct Video Upload Studio Modal -->
-  <div id="manualUploadModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs p-4 overflow-y-auto">
+  <div id="manualUploadModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto">
     <div class="bg-[var(--bg-card)] border-2 border-[var(--border-main)] max-w-2xl w-full shadow-2xl font-mono-code my-4 flex flex-col text-[var(--text-main)]">
       <!-- Header -->
       <div class="flex items-center justify-between border-b border-[var(--border-main)] px-5 py-3 bg-[var(--bg-subcard)]">
@@ -1996,7 +1919,7 @@
   </div>
 
   <!-- 7. Info, Privacy & Cloud Setup Modal (Opened via Left (i) Button) -->
-  <div id="infoModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs p-4 overflow-y-auto">
+  <div id="infoModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto">
     <div class="bg-[var(--bg-card)] border-2 border-[var(--border-main)] max-w-2xl w-full shadow-2xl font-mono-code my-4 flex flex-col text-[var(--text-main)] max-h-[90vh]">
       
       <!-- Modal Header with Navigation Tabs -->
