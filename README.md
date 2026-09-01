@@ -1,3 +1,13 @@
+---
+title: Drive2Youtube
+emoji: 🚀
+colorFrom: red
+colorTo: gray
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # 🌌 NEXUS: Next-Gen YouTube & Cloud Ingestion Matrix
 
 A hyper-scale, autonomous, zero-gravity (zero-RAM) streaming pipeline and cybernetic video management nexus powered by **Node.js**, **Express**, **Tailwind CSS**, and **Real-Time Subspace Broadcasts (SSE)**.
