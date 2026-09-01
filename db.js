@@ -177,7 +177,6 @@ try {
   };
 
   bulkInsertHistoryTx = db.transaction((records) => {
-    stmts.deleteAllHistory.run();
     for (const rec of records) {
       stmts.insertHistory.run(normalizeHistoryRecord(rec));
     }
@@ -244,25 +243,39 @@ function persistUploadedHistory(historyArray) {
   if (isSqlite) {
     try {
       if (!Array.isArray(historyArray) || historyArray.length === 0) {
-        stmts.deleteAllHistory.run();
         return;
       }
       bulkInsertHistoryTx(historyArray);
       return;
     } catch (err) {}
   }
-  writeJsonFile(HISTORY_FILE, Array.isArray(historyArray) ? historyArray : []);
+  const existing = readJsonFile(HISTORY_FILE, []);
+  const map = new Map();
+  for (const item of existing) map.set(item.id || item.videoId, item);
+  for (const item of (Array.isArray(historyArray) ? historyArray : [])) map.set(item.id || item.videoId, item);
+  writeJsonFile(HISTORY_FILE, Array.from(map.values()));
 }
 
 function saveCompletedFileToHistory(fileObj) {
   if (!fileObj || (!fileObj.id && !fileObj.videoId)) return;
   if (isSqlite) {
     try {
-      const vid = fileObj.videoId;
+      const vid = fileObj.videoId || (fileObj.id && fileObj.id.length === 11 ? fileObj.id : null);
       if (vid && vid.length === 11) {
         const existing = stmts.selectHistoryByVideoId.get(vid);
         if (existing) {
-          const merged = { ...existing, ...fileObj, id: existing.id };
+          const merged = {
+            ...existing,
+            ...fileObj,
+            id: existing.id,
+            customTitle: fileObj.customTitle || existing.customTitle || fileObj.name || existing.name,
+            name: fileObj.name || existing.name || fileObj.customTitle || existing.customTitle,
+            batch: (fileObj.batch && fileObj.batch !== 'Batch') ? fileObj.batch : (existing.batch || fileObj.batch || 'Batch'),
+            subject: (fileObj.subject && fileObj.subject !== 'Lecture') ? fileObj.subject : (existing.subject || fileObj.subject || 'Lecture'),
+            channelId: fileObj.channelId || existing.channelId || null,
+            ownerUserId: fileObj.ownerUserId || existing.ownerUserId || null,
+            thumbnailUrl: fileObj.thumbnailUrl || existing.thumbnailUrl || ''
+          };
           stmts.insertHistory.run(normalizeHistoryRecord(merged));
           return;
         }
@@ -275,10 +288,21 @@ function saveCompletedFileToHistory(fileObj) {
   }
   // JSON Fallback
   const history = readJsonFile(HISTORY_FILE, []);
-  const vid = fileObj.videoId;
+  const vid = fileObj.videoId || (fileObj.id && fileObj.id.length === 11 ? fileObj.id : null);
   const idx = history.findIndex(f => (vid && f.videoId === vid) || f.id === fileObj.id);
   if (idx !== -1) {
-    history[idx] = { ...history[idx], ...fileObj };
+    const existing = history[idx];
+    history[idx] = {
+      ...existing,
+      ...fileObj,
+      customTitle: fileObj.customTitle || existing.customTitle || fileObj.name || existing.name,
+      name: fileObj.name || existing.name || fileObj.customTitle || existing.customTitle,
+      batch: (fileObj.batch && fileObj.batch !== 'Batch') ? fileObj.batch : (existing.batch || fileObj.batch || 'Batch'),
+      subject: (fileObj.subject && fileObj.subject !== 'Lecture') ? fileObj.subject : (existing.subject || fileObj.subject || 'Lecture'),
+      channelId: fileObj.channelId || existing.channelId || null,
+      ownerUserId: fileObj.ownerUserId || existing.ownerUserId || null,
+      thumbnailUrl: fileObj.thumbnailUrl || existing.thumbnailUrl || ''
+    };
   } else {
     history.push(normalizeHistoryRecord(fileObj));
   }

@@ -286,8 +286,10 @@ function fetchUrlAsBuffer(url) {
 // Scopes narrowed to minimum required for upload, playlist, title/thumbnail management
 const SCOPES = [
   'https://www.googleapis.com/auth/drive.readonly',
+  'https://www.googleapis.com/auth/drive',
   'https://www.googleapis.com/auth/youtube.upload',
-  'https://www.googleapis.com/auth/youtube.force-ssl'
+  'https://www.googleapis.com/auth/youtube.force-ssl',
+  'https://www.googleapis.com/auth/youtube'
 ];
 
 let jobState = loadJobState();
@@ -1304,8 +1306,12 @@ app.post('/api/retry-pending', async (req, res) => {
     completed: jobState.files.filter(f => f.status === 'completed').length,
     failed: 0
   };
+  const channelId = await resolveChannelId(req);
+  const userId = req.headers['x-user-id'] || req.body?.userId || req.query?.userId || null;
+  const userFilter = (userId || channelId) ? { userId, channelId } : null;
+
   persistJobState();
-  broadcastSSE({ type: 'state_sync', state: jobState });
+  broadcastSSE({ type: 'state_sync', state: jobState }, userFilter);
 
   res.json({ success: true, retriedCount: pendingItems.length, message: `Resuming upload for ${pendingItems.length} video(s)...` });
 
@@ -1323,11 +1329,15 @@ app.post('/api/retry-pending', async (req, res) => {
  * Real-Time Video Title Update Endpoint (Pre-upload or Live YouTube)
  */
 app.post('/api/update-title', async (req, res) => {
-  const { fileId, newTitle } = req.body;
+  const { fileId, newTitle } = req.body || {};
 
   if (!fileId || !newTitle || !newTitle.trim()) {
     return res.status(400).json({ success: false, error: 'File ID and a valid title are required.' });
   }
+
+  const channelId = await resolveChannelId(req);
+  const userId = req.headers['x-user-id'] || req.body?.userId || req.query?.userId || null;
+  const userFilter = (userId || channelId) ? { userId, channelId } : null;
 
   const trimmedTitle = sanitizeYouTubeTitle(newTitle);
   const fileObj = jobState.files.find(f => f.id === fileId);
@@ -1368,13 +1378,13 @@ app.post('/api/update-title', async (req, res) => {
         saveCompletedFileToHistory(fileObj);
         persistJobState();
 
-        addJobLog(`✔ Updated live YouTube video title to: "${trimmedTitle}"`, 'success');
+        addJobLog(`✔ Updated live YouTube video title to: "${trimmedTitle}"`, 'success', userFilter);
         broadcastSSE({
           type: 'title_updated',
           fileId: fileObj.id,
           newTitle: trimmedTitle,
           updatedOnYouTube: true
-        });
+        }, userFilter);
 
         return res.json({
           success: true,
@@ -1396,13 +1406,13 @@ app.post('/api/update-title', async (req, res) => {
   saveCompletedFileToHistory(fileObj);
   persistJobState();
 
-  addJobLog(`✔ Updated queued video title to: "${trimmedTitle}"`, 'highlight');
+  addJobLog(`✔ Updated queued video title to: "${trimmedTitle}"`, 'highlight', userFilter);
   broadcastSSE({
     type: 'title_updated',
     fileId: fileObj.id,
     newTitle: trimmedTitle,
     updatedOnYouTube: false
-  });
+  }, userFilter);
 
   return res.json({
     success: true,
@@ -1423,6 +1433,10 @@ app.post('/api/thumbnail', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Target Video ID or File ID is required.' });
     }
 
+    const channelId = await resolveChannelId(req);
+    const userId = req.headers['x-user-id'] || req.body?.userId || req.query?.userId || null;
+    const userFilter = (userId || channelId) ? { userId, channelId } : null;
+
     let fileObj = jobState.files.find(f => f.id === targetId || f.videoId === targetId);
     const history = loadUploadedHistory();
     const histItem = history.find(f => f.id === targetId || f.videoId === targetId);
@@ -1434,6 +1448,7 @@ app.post('/api/thumbnail', async (req, res) => {
     const auth = getOAuth2Client(req);
     let newThumbUrl = imageUrl || imageBase64;
     let ytUpdated = false;
+    let ytError = null;
     const targetVideoId = (fileObj && fileObj.videoId) || (videoId && videoId.length === 11 ? videoId : null);
 
     // If we have YouTube OAuth & a real 11-char YouTube Video ID, upload thumbnail directly to YouTube
@@ -1457,8 +1472,8 @@ app.post('/api/thumbnail', async (req, res) => {
 
         if (buffer) {
           const youtube = google.youtube({ version: 'v3', auth });
-          const stream = new (require('stream').PassThrough)();
-          stream.end(buffer);
+          const { Readable } = require('stream');
+          const stream = Readable.from(buffer);
 
           const thumbRes = await youtube.thumbnails.set({
             videoId: targetVideoId,
@@ -1470,13 +1485,23 @@ app.post('/api/thumbnail', async (req, res) => {
 
           if (thumbRes.data && thumbRes.data.items && thumbRes.data.items[0]) {
             const item = thumbRes.data.items[0];
-            newThumbUrl = (item.high || item.medium || item.default)?.url || newThumbUrl;
+            newThumbUrl = (item.maxres || item.standard || item.high || item.medium || item.default)?.url || `https://i.ytimg.com/vi/${targetVideoId}/hqdefault.jpg?t=${Date.now()}`;
+          } else {
+            newThumbUrl = `https://i.ytimg.com/vi/${targetVideoId}/hqdefault.jpg?t=${Date.now()}`;
           }
           ytUpdated = true;
-          addJobLog(`✔ Custom thumbnail set directly on YouTube for video ID: ${targetVideoId}`, 'success');
+          addJobLog(`✔ Custom thumbnail set directly on YouTube for video ID: ${targetVideoId}`, 'success', userFilter);
         }
       } catch (ytErr) {
-        console.warn('YouTube thumbnails.set note (saved to dashboard):', ytErr.message);
+        ytUpdated = false;
+        const rawMsg = ytErr.response?.data?.error?.message || ytErr.message || 'YouTube upload error';
+        console.warn('YouTube thumbnails.set error:', rawMsg);
+        if (rawMsg.toLowerCase().includes('permission') || rawMsg.toLowerCase().includes('custom') || ytErr.response?.status === 403) {
+          ytError = 'YouTube requires 15M+ Phone Verification to set custom thumbnails (visit youtube.com/verify).';
+        } else {
+          ytError = rawMsg;
+        }
+        addJobLog(`Thumbnail notice for ${targetVideoId}: ${ytError}`, 'warn', userFilter);
       }
     }
 
@@ -1488,7 +1513,7 @@ app.post('/api/thumbnail', async (req, res) => {
 
     if (histItem) {
       histItem.thumbnailUrl = newThumbUrl;
-      persistUploadedHistory(history);
+      saveCompletedFileToHistory(histItem);
     }
 
     broadcastSSE({
@@ -1496,14 +1521,15 @@ app.post('/api/thumbnail', async (req, res) => {
       fileId: fileObj ? fileObj.id : targetId,
       videoId: targetVideoId || targetId,
       thumbnailUrl: newThumbUrl
-    });
+    }, userFilter);
 
     return res.json({
       success: true,
-      message: ytUpdated ? 'Thumbnail updated on YouTube and dashboard!' : 'Thumbnail updated on dashboard successfully!',
+      message: ytUpdated ? 'Thumbnail updated on YouTube and dashboard!' : (ytError ? `Saved in dashboard. Notice: ${ytError}` : 'Thumbnail updated on dashboard successfully!'),
       thumbnailUrl: newThumbUrl,
       file: fileObj,
-      ytUpdated
+      ytUpdated,
+      ytError
     });
   } catch (err) {
     console.error('Thumbnail update error:', err);
@@ -1520,6 +1546,10 @@ app.post('/api/edit-video', async (req, res) => {
     if (!fileId) {
       return res.status(400).json({ success: false, error: 'File ID is required.' });
     }
+
+    const channelId = await resolveChannelId(req);
+    const userId = req.headers['x-user-id'] || req.body?.userId || req.query?.userId || null;
+    const userFilter = (userId || channelId) ? { userId, channelId } : null;
 
     let fileObj = jobState.files.find(f => f.id === fileId || f.videoId === fileId);
     const history = loadUploadedHistory();
@@ -1550,12 +1580,12 @@ app.post('/api/edit-video', async (req, res) => {
               snippet: {
                 title: trimmedTitle,
                 description: `Lecture Video: ${trimmedTitle}\nBatch: ${batch || fileObj.batch}\nSubject: ${subject || fileObj.subject}`,
-                tags: ['DriveToYouTube', subject || fileObj.subject, batch || fileObj.batch],
+                tags: ['DriveToYouTube', subject || fileObj.subject, batch || fileObj.batch].filter(Boolean),
                 categoryId: '27'
               }
             }
           });
-          addJobLog(`✔ Updated live YouTube title to: "${trimmedTitle}"`, 'success');
+          addJobLog(`✔ Updated live YouTube title to: "${trimmedTitle}"`, 'success', userFilter);
         } catch (err) {
           console.warn('YouTube title update warning:', err.message);
         }
@@ -1566,6 +1596,8 @@ app.post('/api/edit-video', async (req, res) => {
     if (subject) fileObj.subject = subject.trim();
 
     let newThumb = imageBase64 || (thumbnailUrl ? thumbnailUrl.trim() : null);
+    let ytUpdated = false;
+    let ytError = null;
 
     if (newThumb) {
       fileObj.thumbnailUrl = newThumb;
@@ -1606,8 +1638,8 @@ app.post('/api/edit-video', async (req, res) => {
 
           if (buffer) {
             const youtube = google.youtube({ version: 'v3', auth });
-            const stream = new (require('stream').PassThrough)();
-            stream.end(buffer);
+            const { Readable } = require('stream');
+            const stream = Readable.from(buffer);
             const thumbRes = await youtube.thumbnails.set({
               videoId: targetVideoId,
               media: { mimeType, body: stream }
@@ -1619,11 +1651,19 @@ app.post('/api/edit-video', async (req, res) => {
               newThumb = `https://i.ytimg.com/vi/${targetVideoId}/hqdefault.jpg?t=${Date.now()}`;
             }
             fileObj.thumbnailUrl = newThumb;
-            addJobLog(`✔ Instantly updated live YouTube thumbnail for video ID: ${targetVideoId}`, 'success');
+            ytUpdated = true;
+            addJobLog(`✔ Instantly updated live YouTube thumbnail for video ID: ${targetVideoId}`, 'success', userFilter);
           }
         } catch (err) {
-          console.warn('YouTube thumbnail set error:', err.message);
-          addJobLog(`Thumbnail update notice for ${targetVideoId}: ${err.message}`, 'warn');
+          ytUpdated = false;
+          const rawMsg = err.response?.data?.error?.message || err.message || 'YouTube thumbnail upload error';
+          console.warn('YouTube thumbnail set error:', rawMsg);
+          if (rawMsg.toLowerCase().includes('permission') || rawMsg.toLowerCase().includes('custom') || err.response?.status === 403) {
+            ytError = 'YouTube requires 15M+ Phone Verification to set custom thumbnails (visit youtube.com/verify).';
+          } else {
+            ytError = rawMsg;
+          }
+          addJobLog(`Thumbnail update notice for ${targetVideoId}: ${ytError}`, 'warn', userFilter);
         }
       }
     }
@@ -1637,21 +1677,22 @@ app.post('/api/edit-video', async (req, res) => {
       histItem.batch = fileObj.batch;
       histItem.subject = fileObj.subject;
       if (newThumb) histItem.thumbnailUrl = newThumb;
-      persistUploadedHistory(history);
+      saveCompletedFileToHistory(histItem);
     }
 
-    broadcastSSE({ type: 'state_sync', state: jobState });
     broadcastSSE({
       type: 'thumbnail_updated',
       fileId: fileObj.id,
       videoId: fileObj.videoId,
       thumbnailUrl: fileObj.thumbnailUrl
-    });
+    }, userFilter);
 
     return res.json({
       success: true,
-      message: 'Video details and thumbnail updated live on YouTube!',
-      file: fileObj
+      message: ytUpdated ? 'Video details and thumbnail updated live on YouTube!' : (ytError ? `Details saved. Notice: ${ytError}` : 'Video details updated!'),
+      file: fileObj,
+      ytUpdated,
+      ytError
     });
   } catch (err) {
     console.error('Edit video error:', err);
@@ -1667,7 +1708,11 @@ app.post('/api/delete-video', async (req, res) => {
   if (!auth) {
     return res.status(401).json({ success: false, error: 'Authentication required.' });
   }
-  const { fileId, videoId, deleteFromYouTube } = req.body;
+  const channelId = await resolveChannelId(req);
+  const userId = req.headers['x-user-id'] || req.body?.userId || req.query?.userId || null;
+  const userFilter = (userId || channelId) ? { userId, channelId } : null;
+
+  const { fileId, videoId, deleteFromYouTube } = req.body || {};
   const targetId = videoId || fileId;
   if (!targetId) {
     return res.status(400).json({ success: false, error: 'File ID or Video ID is required.' });
@@ -1678,18 +1723,17 @@ app.post('/api/delete-video', async (req, res) => {
     try {
       const youtube = google.youtube({ version: 'v3', auth });
       await youtube.videos.delete({ id: targetId });
-      addJobLog(`✔ Permanently deleted video "${targetId}" from YouTube channel.`, 'info');
+      addJobLog(`✔ Permanently deleted video "${targetId}" from YouTube channel.`, 'info', userFilter);
     } catch (ytErr) {
       console.warn('YouTube video delete warning:', ytErr.message);
     }
   }
 
-  const initialCount = jobState.files.length;
   jobState.files = jobState.files.filter(f => f.id !== fileId && f.videoId !== videoId && f.id !== targetId);
 
-  // Also remove from history
-  const history = loadUploadedHistory().filter(f => f.id !== fileId && f.videoId !== videoId && f.id !== targetId);
-  persistUploadedHistory(history);
+  // Also remove from DB
+  if (fileId) db.deleteHistoryById(fileId);
+  if (videoId && videoId !== fileId) db.deleteHistoryById(videoId);
 
   jobState.stats = {
     total: jobState.files.length,
@@ -1699,7 +1743,7 @@ app.post('/api/delete-video', async (req, res) => {
   };
 
   persistJobState();
-  broadcastSSE({ type: 'state_sync', state: jobState });
+  broadcastSSE({ type: 'state_sync', state: jobState }, userFilter);
 
   return res.json({
     success: true,
@@ -1711,10 +1755,14 @@ app.post('/api/delete-video', async (req, res) => {
 /**
  * Cancel Running Job Endpoint
  */
-app.post(['/api/cancel', '/api/cancel-job', '/api/stop'], (req, res) => {
+app.post(['/api/cancel', '/api/cancel-job', '/api/stop'], async (req, res) => {
   if (!getOAuth2Client(req)) {
     return res.status(401).json({ success: false, error: 'Authentication required.' });
   }
+  const channelId = await resolveChannelId(req);
+  const userId = req.headers['x-user-id'] || req.body?.userId || req.query?.userId || null;
+  const userFilter = (userId || channelId) ? { userId, channelId } : null;
+
   if (activeAbortController) {
     try {
       activeAbortController.abort();
@@ -1727,9 +1775,9 @@ app.post(['/api/cancel', '/api/cancel-job', '/api/stop'], (req, res) => {
       f.percentage = 0;
     }
   });
-  addJobLog('Upload pipeline was manually stopped/cancelled by user.', 'warn');
-  broadcastSSE({ type: 'job_cancelled', message: 'Job was cancelled.' });
-  broadcastSSE({ type: 'state_sync', state: jobState });
+  addJobLog('Upload pipeline was manually stopped/cancelled by user.', 'warn', userFilter);
+  broadcastSSE({ type: 'job_cancelled', message: 'Job was cancelled.' }, userFilter);
+  broadcastSSE({ type: 'state_sync', state: jobState }, userFilter);
   persistJobState();
   return res.json({ success: true, message: 'Job stopped successfully.' });
 });
@@ -1739,6 +1787,10 @@ app.post(['/api/cancel', '/api/cancel-job', '/api/stop'], (req, res) => {
  */
 app.post('/api/convert-to-drive', async (req, res) => {
   try {
+    const channelId = await resolveChannelId(req);
+    const userId = req.headers['x-user-id'] || req.body?.userId || req.query?.userId || null;
+    const userFilter = (userId || channelId) ? { userId, channelId } : null;
+
     const { fileId, allFailed, allPending } = req.body || {};
     let convertedCount = 0;
 
@@ -1775,9 +1827,9 @@ app.post('/api/convert-to-drive', async (req, res) => {
       jobState.finishedAt = new Date().toISOString();
     }
 
-    addJobLog(`Converted ${convertedCount} video(s) to Secure Google Drive Player.`, 'success');
+    addJobLog(`Converted ${convertedCount} video(s) to Secure Google Drive Player.`, 'success', userFilter);
     persistJobState();
-    broadcastSSE({ type: 'state_sync', state: jobState });
+    broadcastSSE({ type: 'state_sync', state: jobState }, userFilter);
 
     return res.json({
       success: true,
@@ -1793,10 +1845,14 @@ app.post('/api/convert-to-drive', async (req, res) => {
 /**
  * Reset Job State Endpoint (Only clears inputs/queue, preserves completed video history)
  */
-app.post('/api/reset', (req, res) => {
+app.post('/api/reset', async (req, res) => {
   if (!getOAuth2Client(req)) {
     return res.status(401).json({ success: false, error: 'Authentication required.' });
   }
+  const channelId = await resolveChannelId(req);
+  const userId = req.headers['x-user-id'] || req.body?.userId || req.query?.userId || null;
+  const userFilter = (userId || channelId) ? { userId, channelId } : null;
+
   if (jobState.status === 'processing' || jobState.status === 'scanning') {
     return res.status(400).json({ success: false, error: 'Cannot reset while a job is running. Cancel it first.' });
   }
@@ -1817,7 +1873,7 @@ app.post('/api/reset', (req, res) => {
     };
   }
   persistJobState();
-  broadcastSSE({ type: 'state_sync', state: jobState });
+  broadcastSSE({ type: 'state_sync', state: jobState }, userFilter);
   res.json({ success: true, message: 'Filter reset. Uploaded videos preserved.' });
 });
 
@@ -1829,15 +1885,18 @@ app.post('/api/resume', async (req, res) => {
   if (!auth) {
     return res.status(401).json({ success: false, error: 'Google OAuth2 access token missing.' });
   }
+  const channelId = await resolveChannelId(req);
+  const userId = req.headers['x-user-id'] || req.body?.userId || req.query?.userId || null;
+  const userFilter = (userId || channelId) ? { userId, channelId } : null;
 
   if (jobState.status !== 'paused_quota') {
     return res.status(400).json({ success: false, error: 'No paused job found to resume.' });
   }
 
   jobState.status = 'processing';
-  addJobLog('Resuming background queue with new API credentials...', 'highlight');
+  addJobLog('Resuming background queue with new API credentials...', 'highlight', userFilter);
   persistJobState();
-  broadcastSSE({ type: 'state_sync', state: jobState });
+  broadcastSSE({ type: 'state_sync', state: jobState }, userFilter);
 
   // Start processing again with the new auth
   (async () => {
@@ -1848,16 +1907,16 @@ app.post('/api/resume', async (req, res) => {
       if (jobState.status !== 'cancelled' && jobState.status !== 'paused_quota') {
         jobState.status = 'completed';
         jobState.finishedAt = new Date().toISOString();
-        addJobLog('All videos in queue processed successfully.', 'success');
-        broadcastSSE({ type: 'process_completed', message: 'All videos processed successfully.' });
+        addJobLog('All videos in queue processed successfully.', 'success', userFilter);
+        broadcastSSE({ type: 'process_completed', message: 'All videos processed successfully.' }, userFilter);
         persistJobState();
       }
     } catch(err) {
       console.error('Background process queue error during resume:', err);
       jobState.status = 'error';
-      addJobLog('Fatal error during background processing resume: ' + err.message, 'error');
+      addJobLog('Fatal error during background processing resume: ' + err.message, 'error', userFilter);
       persistJobState();
-      broadcastSSE({ type: 'error', message: err.message });
+      broadcastSSE({ type: 'error', message: err.message }, userFilter);
     } finally {
       activeAbortController = null;
     }
@@ -2194,8 +2253,8 @@ app.post(['/api/process', '/api/process-folder'], async (req, res) => {
       if (rawFiles.length === 0) {
         jobState.status = 'completed';
         jobState.finishedAt = new Date().toISOString();
-        addJobLog('No video files found matching the selection in the given Google Drive folder.', 'warn');
-        broadcastSSE({ type: 'no_files_found', message: 'No video files found matching the selection.' });
+        addJobLog('No video files found matching the selection in the given Google Drive folder.', 'warn', userFilter);
+        broadcastSSE({ type: 'no_files_found', message: 'No video files found matching the selection.' }, userFilter);
         persistJobState();
         return;
       }
@@ -2206,19 +2265,19 @@ app.post(['/api/process', '/api/process-folder'], async (req, res) => {
 
       if (targetPlaylistTitle && jobState.processingMode !== 'drive_secure') {
         try {
-          addJobLog(`Setting up YouTube Playlist: "${targetPlaylistTitle}" (Unlisted)...`);
+          addJobLog(`Setting up YouTube Playlist: "${targetPlaylistTitle}" (Unlisted)...`, 'info', userFilter);
           const pId = await getOrCreatePlaylist(youtube, targetPlaylistTitle);
           jobState.playlistId = pId;
           jobState.playlistUrl = `https://www.youtube.com/playlist?list=${pId}`;
-          addJobLog(`✔ Playlist Ready: ${jobState.playlistUrl}`, 'success');
+          addJobLog(`✔ Playlist Ready: ${jobState.playlistUrl}`, 'success', userFilter);
           broadcastSSE({
             type: 'playlist_ready',
             playlistTitle: targetPlaylistTitle,
             playlistId: pId,
             playlistUrl: jobState.playlistUrl
-          });
+          }, userFilter);
         } catch (pErr) {
-          addJobLog(`Playlist notice: ${pErr.message}. Videos will still upload directly.`, 'warn');
+          addJobLog(`Playlist notice: ${pErr.message}. Videos will still upload directly.`, 'warn', userFilter);
         }
       } else {
         jobState.playlistId = null;
@@ -2292,17 +2351,17 @@ app.post(['/api/process', '/api/process-folder'], async (req, res) => {
         failed: 0
       };
 
-      addJobLog(`Discovered ${jobState.files.length} video(s) created today. Starting stream queue...`, 'highlight');
+      addJobLog(`Discovered ${jobState.files.length} video(s) created today. Starting stream queue...`, 'highlight', userFilter);
       persistJobState();
-      broadcastSSE({ type: 'state_sync', state: jobState });
+      broadcastSSE({ type: 'state_sync', state: jobState }, userFilter);
 
       await runUploadQueue(auth);
 
       if (jobState.status !== 'cancelled' && jobState.status !== 'paused_quota') {
         jobState.status = 'completed';
         jobState.finishedAt = new Date().toISOString();
-        addJobLog('All videos in queue processed successfully.', 'success');
-        broadcastSSE({ type: 'process_completed', message: 'All videos processed successfully.' });
+        addJobLog('All videos in queue processed successfully.', 'success', userFilter);
+        broadcastSSE({ type: 'process_completed', message: 'All videos processed successfully.' }, userFilter);
         persistJobState();
       }
 
@@ -2310,11 +2369,11 @@ app.post(['/api/process', '/api/process-folder'], async (req, res) => {
       console.error('Fatal background error:', fatalErr);
       jobState.status = 'error';
       if (isAuthError(fatalErr)) {
-        addJobLog(`Google Authentication Error: ${fatalErr.message}. Please re-connect Google account.`, 'error');
-        broadcastSSE({ type: 'auth_required', message: `Authentication expired or invalid. Please click 'Connect Google' to authorize.` });
+        addJobLog(`Google Authentication Error: ${fatalErr.message}. Please re-connect Google account.`, 'error', userFilter);
+        broadcastSSE({ type: 'auth_required', message: `Authentication expired or invalid. Please click 'Connect Google' to authorize.` }, userFilter);
       } else {
-        addJobLog(`Pipeline encountered fatal error: ${fatalErr.message}`, 'error');
-        broadcastSSE({ type: 'error', message: fatalErr.message });
+        addJobLog(`Pipeline encountered fatal error: ${fatalErr.message}`, 'error', userFilter);
+        broadcastSSE({ type: 'error', message: fatalErr.message }, userFilter);
       }
       persistJobState();
     } finally {
@@ -2789,8 +2848,9 @@ function scheduleQuotaResume(auth) {
     });
     jobState.status = 'processing';
     persistJobState();
-    addJobLog('Quota reset detected — auto-resuming scheduled uploads.', 'highlight');
-    broadcastSSE({ type: 'state_sync', state: jobState });
+    const userFilter = (jobState.ownerUserId || activeJobChannelId) ? { userId: jobState.ownerUserId, channelId: activeJobChannelId } : null;
+    addJobLog('Quota reset detected — auto-resuming scheduled uploads.', 'highlight', userFilter);
+    broadcastSSE({ type: 'state_sync', state: jobState }, userFilter);
 
     // Try to get auth from stored credentials
     try {
@@ -2800,17 +2860,17 @@ function scheduleQuotaResume(auth) {
         if (jobState.status !== 'cancelled' && jobState.status !== 'paused_quota') {
           jobState.status = 'completed';
           jobState.finishedAt = new Date().toISOString();
-          addJobLog('All scheduled uploads completed successfully after quota reset.', 'success');
-          broadcastSSE({ type: 'process_completed', message: 'All videos processed successfully.' });
+          addJobLog('All scheduled uploads completed successfully after quota reset.', 'success', userFilter);
+          broadcastSSE({ type: 'process_completed', message: 'All videos processed successfully.' }, userFilter);
           persistJobState();
         }
       } else {
-        addJobLog('No valid credentials available for auto-resume. Please connect Google account manually.', 'error');
-        broadcastSSE({ type: 'auth_required', message: 'Auto-resume failed: no stored credentials. Please re-authorize.' });
+        addJobLog('No valid credentials available for auto-resume. Please connect Google account manually.', 'error', userFilter);
+        broadcastSSE({ type: 'auth_required', message: 'Auto-resume failed: no stored credentials. Please re-authorize.' }, userFilter);
       }
     } catch (err) {
       console.error('Auto-resume error:', err);
-      addJobLog('Auto-resume failed: ' + err.message, 'error');
+      addJobLog('Auto-resume failed: ' + err.message, 'error', userFilter);
     }
   }, resumeMs);
 }

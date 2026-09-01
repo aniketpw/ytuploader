@@ -4139,6 +4139,7 @@
                 AppStorage.setItem('oauth_access_token', tokenResponse.access_token);
                 AppStorage.setItem('oauth_token_expiry', Date.now() + expiresIn * 1000);
                 checkAuthStatus();
+                connectSSE();
                 scheduleTokenRefresh(expiresIn);
                 startTokenHeartbeat();
                 if (isBackgroundRenewal) {
@@ -4238,6 +4239,7 @@
                 AppStorage.setItem('oauth_access_token', tokenResponse.access_token);
                 AppStorage.setItem('oauth_token_expiry', Date.now() + expiresIn * 1000);
                 checkAuthStatus();
+                connectSSE();
                 closeAuthModal();
                 scheduleTokenRefresh(expiresIn);
                 showToast('✔ Google Account connected permanently! Auto-renewal active.', 'success');
@@ -5743,10 +5745,12 @@
       showToast('✔ Applying live thumbnail on YouTube...', 'info');
 
       try {
+        const uid = getPersistentUserId();
         const res = await fetch('/api/edit-video', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'x-user-id': uid,
             ...(window.gAccessToken ? { 'Authorization': `Bearer ${window.gAccessToken}` } : {})
           },
           body: JSON.stringify({
@@ -5756,7 +5760,8 @@
             subject,
             thumbnailUrl: urlThumb,
             imageBase64: base64Thumb,
-            accessToken: window.gAccessToken || null
+            accessToken: window.gAccessToken || null,
+            userId: uid
           })
         });
 
@@ -5764,11 +5769,22 @@
         if (data.success) {
           if (data.file && data.file.thumbnailUrl) {
             const target = currentState?.files?.find(f => f.id === fileId || f.videoId === fileId);
-            if (target) target.thumbnailUrl = `${data.file.thumbnailUrl}?t=${Date.now()}`;
+            if (target) {
+              target.thumbnailUrl = `${data.file.thumbnailUrl}${data.file.thumbnailUrl.includes('?') ? '&' : '?'}t=${Date.now()}`;
+              if (data.file.name) target.name = data.file.name;
+              if (data.file.customTitle) target.customTitle = data.file.customTitle;
+              if (data.file.batch) target.batch = data.file.batch;
+              if (data.file.subject) target.subject = data.file.subject;
+            }
           }
-          showToast('✔ Thumbnail updated live on YouTube!', 'success');
+          if (data.ytUpdated) {
+            showToast('✔ Thumbnail and details updated live on YouTube!', 'success');
+          } else if (data.ytError) {
+            showToast(`Notice: Saved to portal. YouTube error: ${data.ytError}`, 'warn');
+          } else {
+            showToast(data.message || '✔ Video details updated!', 'success');
+          }
           renderFilteredTable();
-          loadJobStatus();
         } else {
           showToast('Notice: ' + (data.error || 'Saved locally'), 'info');
         }
@@ -6484,9 +6500,11 @@
       }
 
       try {
+        const uid = getPersistentUserId();
         const res = await fetch('/api/status', {
           headers: {
-            'Authorization': `Bearer ${window.gAccessToken}`
+            'x-user-id': uid,
+            ...(window.gAccessToken ? { 'Authorization': `Bearer ${window.gAccessToken}` } : {})
           }
         });
         const data = await res.json();
@@ -6498,8 +6516,8 @@
           }
           renderState(currentState);
 
-          // Auto-sync channel uploads silently in background
-          if (!currentState.files || currentState.files.length === 0 || currentState.status === 'idle') {
+          // Auto-sync channel uploads silently only if library has no videos loaded yet
+          if (!currentState.files || currentState.files.length === 0) {
             syncYouTubeUploads(true);
           }
         }
