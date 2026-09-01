@@ -247,6 +247,16 @@ async function resolveChannelId(req) {
   }
 }
 
+function sanitizeYouTubeTitle(title) {
+  if (!title || typeof title !== 'string') return 'Lecture Video';
+  let cleaned = title.replace(/[<>]/g, '').trim();
+  if (!cleaned) cleaned = 'Lecture Video';
+  if (cleaned.length > 100) {
+    cleaned = cleaned.substring(0, 100).trim();
+  }
+  return cleaned;
+}
+
 function filterHistoryByChannel(history, channelId) {
   if (!channelId) return [];
   return history.filter(h => h.channelId === channelId);
@@ -1193,7 +1203,7 @@ app.post('/api/update-title', async (req, res) => {
     return res.status(400).json({ success: false, error: 'File ID and a valid title are required.' });
   }
 
-  const trimmedTitle = newTitle.trim();
+  const trimmedTitle = sanitizeYouTubeTitle(newTitle);
   const fileObj = jobState.files.find(f => f.id === fileId);
 
   if (!fileObj) {
@@ -1400,7 +1410,7 @@ app.post('/api/edit-video', async (req, res) => {
     const auth = getOAuth2Client(req);
 
     if (title && title.trim()) {
-      const trimmedTitle = title.trim();
+      const trimmedTitle = sanitizeYouTubeTitle(title);
       fileObj.name = trimmedTitle;
       fileObj.customTitle = trimmedTitle;
 
@@ -2241,7 +2251,8 @@ app.post('/api/stream-manual-upload', async (req, res) => {
   }
 
   try {
-    const title = (req.query.title || 'Direct Lecture Video').trim();
+    const rawTitle = (req.query.title || 'Direct Lecture Video').trim();
+    const title = sanitizeYouTubeTitle(rawTitle);
     const batch = req.query.batch ? req.query.batch.trim() : 'Manual Upload';
     const subject = req.query.subject ? req.query.subject.trim() : 'Lecture';
     const playlistName = req.query.playlistName ? req.query.playlistName.trim() : null;
@@ -2698,7 +2709,7 @@ async function getNextAvailableAuth() {
 
 // ─── Single File Upload with Retry ───────────────────────────────────────────
 async function uploadSingleFile(drive, youtube, auth, fileObj, index, total, credentialId) {
-  const uploadTitle = fileObj.customTitle || fileObj.name || fileObj.originalName;
+  const uploadTitle = sanitizeYouTubeTitle(fileObj.customTitle || fileObj.name || fileObj.originalName);
   fileObj.status = 'uploading';
   fileObj.channelId = activeJobChannelId || fileObj.channelId || null;
   fileObj.ownerUserId = jobState.ownerUserId || fileObj.ownerUserId || null;

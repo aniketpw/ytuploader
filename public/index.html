@@ -1833,10 +1833,15 @@
         <div class="space-y-3 bg-[var(--bg-subcard)] p-4 border border-[var(--border-main)]">
           <!-- Title Input -->
           <div class="space-y-1">
-            <label class="block text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">YouTube Video Title</label>
+            <div class="flex items-center justify-between">
+              <label class="block text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">YouTube Video Title</label>
+              <span id="manualTitleCounter" class="text-[9px] font-mono-code text-[var(--text-muted)]">0 / 100 max</span>
+            </div>
             <input
               type="text"
               id="manualTitleInput"
+              maxlength="100"
+              oninput="handleManualTitleInput(this)"
               placeholder="Enter YouTube Video Title..."
               class="w-full h-8 px-2.5 om-box-input text-xs font-bold text-[var(--text-main)]"
             />
@@ -4816,10 +4821,11 @@
         dropPrompt.textContent = `✔ Selected: ${file.name} (${formatBytes(file.size)})`;
       }
 
-      const cleanName = file.name.replace(/\.[^/.]+$/, '');
+      const cleanName = file.name.replace(/\.[^/.]+$/, '').substring(0, 100);
       const titleInput = document.getElementById('manualTitleInput');
       if (titleInput && (!titleInput.value || titleInput.value === 'Direct Lecture Video')) {
         titleInput.value = cleanName;
+        handleManualTitleInput(titleInput);
       }
 
       const playerContainer = document.getElementById('manualLocalPlayerContainer');
@@ -4839,6 +4845,20 @@
 
       generateManualSmartThumb();
       showToast(`✔ Video loaded: ${file.name}`, 'success');
+    };
+
+    window.handleManualTitleInput = function(input) {
+      const counter = document.getElementById('manualTitleCounter');
+      if (!input || !counter) return;
+      const len = input.value.length;
+      counter.textContent = `${len} / 100 max`;
+      if (len >= 100) {
+        counter.className = 'text-[9px] font-mono-code text-rose-500 font-bold';
+      } else if (len >= 85) {
+        counter.className = 'text-[9px] font-mono-code text-amber-500 font-semibold';
+      } else {
+        counter.className = 'text-[9px] font-mono-code text-[var(--text-muted)]';
+      }
     };
 
     window.generateManualSmartThumb = function() {
@@ -4970,7 +4990,10 @@
       const privacySelect = document.getElementById('manualPrivacySelect');
       const thumbUrlInput = document.getElementById('manualThumbUrlInput');
 
-      const title = (titleInput && titleInput.value.trim()) ? titleInput.value.trim() : manualSelectedFile.name.replace(/\.[^/.]+$/, '');
+      const rawTitle = (titleInput && titleInput.value.trim()) ? titleInput.value.trim() : manualSelectedFile.name.replace(/\.[^/.]+$/, '');
+      let title = rawTitle.replace(/[<>]/g, '').trim();
+      if (!title) title = 'Direct Lecture Video';
+      if (title.length > 100) title = title.substring(0, 100).trim();
       const batch = (batchInput && batchInput.value.trim()) ? batchInput.value.trim() : 'Manual Upload';
       const subject = (subjectInput && subjectInput.value.trim()) ? subjectInput.value.trim() : 'Lecture';
       const playlistName = (playlistInput && playlistInput.value.trim()) ? playlistInput.value.trim() : null;
