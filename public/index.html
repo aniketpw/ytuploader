@@ -3967,6 +3967,84 @@
       launchOAuthPopup();
     };
 
+    // ─── Permanent Session & Silent Auto-Renewal Engine ───────────────────
+    let tokenRefreshTimer = null;
+
+    window.scheduleTokenRefresh = function(expiresInSeconds = 3500) {
+      if (tokenRefreshTimer) clearTimeout(tokenRefreshTimer);
+      // Automatically refresh token 5 minutes before expiration (or minimum after 60s)
+      const refreshInMs = Math.max(60000, (expiresInSeconds - 300) * 1000);
+      tokenRefreshTimer = setTimeout(() => {
+        console.log('[auth] Proactive background token renewal initiated...');
+        silentAutoRefreshToken(true);
+      }, refreshInMs);
+    };
+
+    window.silentAutoRefreshToken = function(isBackgroundRenewal = false) {
+      const targetClientId = getNextClientId();
+      if (!targetClientId) return;
+
+      const scopes = [
+        'https://www.googleapis.com/auth/drive.readonly',
+        'https://www.googleapis.com/auth/drive',
+        'https://www.googleapis.com/auth/youtube.upload',
+        'https://www.googleapis.com/auth/youtube.force-ssl',
+        'https://www.googleapis.com/auth/youtube'
+      ].join(' ');
+
+      const executeSilentRefresh = () => {
+        if (!window.google || !window.google.accounts || !window.google.accounts.oauth2) {
+          return;
+        }
+        try {
+          const tokenClient = google.accounts.oauth2.initTokenClient({
+            client_id: targetClientId,
+            scope: scopes,
+            callback: (tokenResponse) => {
+              if (tokenResponse && tokenResponse.access_token) {
+                window.gAccessToken = tokenResponse.access_token;
+                window.isAuthenticated = true;
+                const expiresIn = tokenResponse.expires_in || 3500;
+                AppStorage.setItem('oauth_access_token', tokenResponse.access_token);
+                AppStorage.setItem('oauth_token_expiry', Date.now() + expiresIn * 1000);
+                checkAuthStatus();
+                scheduleTokenRefresh(expiresIn);
+                if (isBackgroundRenewal) {
+                  console.log('[auth] Token silently renewed in background.');
+                } else {
+                  loadJobStatus();
+                  syncYouTubeUploads(true);
+                  if (typeof fetchQuotaHealth === 'function') fetchQuotaHealth();
+                }
+              }
+            },
+            error_callback: (err) => {
+              console.warn('[auth] Silent token refresh notice:', err);
+            }
+          });
+          // prompt: '' enables silent token retrieval without user prompt if session is active
+          tokenClient.requestAccessToken({ prompt: '' });
+        } catch (e) {
+          console.warn('[auth] Silent token client error:', e);
+        }
+      };
+
+      if (window.google && window.google.accounts && window.google.accounts.oauth2) {
+        executeSilentRefresh();
+      } else {
+        let attempts = 0;
+        const checkSdkInterval = setInterval(() => {
+          attempts++;
+          if (window.google && window.google.accounts && window.google.accounts.oauth2) {
+            clearInterval(checkSdkInterval);
+            executeSilentRefresh();
+          } else if (attempts >= 10) {
+            clearInterval(checkSdkInterval);
+          }
+        }, 300);
+      }
+    };
+
     window.launchOAuthPopup = function(retryCount = 0) {
       const targetClientId = getNextClientId();
       if (!targetClientId) {
@@ -3994,11 +4072,13 @@
               if (tokenResponse && tokenResponse.access_token) {
                 window.gAccessToken = tokenResponse.access_token;
                 window.isAuthenticated = true;
+                const expiresIn = tokenResponse.expires_in || 3500;
                 AppStorage.setItem('oauth_access_token', tokenResponse.access_token);
-                AppStorage.setItem('oauth_token_expiry', Date.now() + (tokenResponse.expires_in || 3500) * 1000);
+                AppStorage.setItem('oauth_token_expiry', Date.now() + expiresIn * 1000);
                 checkAuthStatus();
                 closeAuthModal();
-                showToast('✔ Google Account authorized successfully!', 'success');
+                scheduleTokenRefresh(expiresIn);
+                showToast('✔ Google Account connected permanently! Auto-renewal active.', 'success');
                 setTimeout(() => {
                   syncYouTubeUploads();
                 }, 600);
@@ -6362,11 +6442,15 @@
 
       const token = AppStorage.getItem('oauth_access_token');
       const expiry = AppStorage.getItem('oauth_token_expiry');
-      if (token && expiry && Date.now() < parseInt(expiry, 10)) {
+      const remainingSecs = expiry ? Math.floor((parseInt(expiry, 10) - Date.now()) / 1000) : 0;
+
+      if (token && remainingSecs > 60) {
         window.gAccessToken = token;
         window.isAuthenticated = true;
+        scheduleTokenRefresh(remainingSecs);
       } else {
         window.isAuthenticated = false;
+        silentAutoRefreshToken(false);
       }
 
       checkAuthStatus();
