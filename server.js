@@ -2263,6 +2263,83 @@ app.post('/api/auth/verify-otp', async (req, res) => {
   }
 });
 
+// 5B. POST /api/auth/pin-login — Verify 4-digit PIN and issue persistent editor session token
+app.post('/api/auth/pin-login', async (req, res) => {
+  try {
+    const { pin, name } = req.body || {};
+    const storedPin = db.getSetting('team_pin') || process.env.TEAM_PIN || '1234';
+
+    if (!pin || String(pin).trim() !== String(storedPin).trim()) {
+      return res.status(401).json({
+        success: false,
+        error: 'Incorrect Passcode / PIN. Please enter the valid PIN.'
+      });
+    }
+
+    const editorName = (name || 'Team Editor').trim();
+
+    // Pre-resolve channel title & ID
+    let targetChannelId = null;
+    let channelTitle = 'YouTube Channel';
+
+    try {
+      const creds = db.getActiveCredentials();
+      if (creds && creds.length > 0) {
+        const cred = creds[0];
+        const oauth2Client = new google.auth.OAuth2(cred.clientId, cred.clientSecret);
+        oauth2Client.setCredentials({ refresh_token: cred.refreshToken });
+        const yt = google.youtube({ version: 'v3', auth: oauth2Client });
+        const chRes = await yt.channels.list({ part: ['snippet', 'id'], mine: true });
+        if (chRes.data.items && chRes.data.items.length > 0) {
+          targetChannelId = chRes.data.items[0].id;
+          channelTitle = chRes.data.items[0].snippet?.title || 'YouTube Channel';
+        }
+      }
+    } catch (e) {
+      console.warn('Could not pre-resolve channel for PIN editor session:', e.message);
+    }
+
+    if (!targetChannelId) {
+      const history = db.loadUploadedHistory();
+      if (history && history.length > 0 && history[0].channelId) {
+        targetChannelId = history[0].channelId;
+        channelTitle = history[0].batch || 'YouTube Channel';
+      }
+    }
+
+    const session = db.createEditorSession(editorName, 'editor', targetChannelId, null, 30);
+
+    return res.json({
+      success: true,
+      token: session.token,
+      name: editorName,
+      role: session.role,
+      channelId: targetChannelId,
+      channelTitle,
+      message: `PIN Verified! Welcome ${editorName} to Studio.`
+    });
+  } catch (err) {
+    console.error('PIN Login error:', err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 5C. GET /api/settings/pin & POST /api/settings/pin
+app.get('/api/settings/pin', (req, res) => {
+  const currentPin = db.getSetting('team_pin') || process.env.TEAM_PIN || '1234';
+  res.json({ success: true, pin: currentPin });
+});
+
+app.post('/api/settings/pin', (req, res) => {
+  const { pin } = req.body || {};
+  if (!pin || String(pin).trim().length < 4) {
+    return res.status(400).json({ success: false, error: 'PIN must be at least 4 digits or characters.' });
+  }
+  const cleanPin = String(pin).trim();
+  db.setSetting('team_pin', cleanPin);
+  res.json({ success: true, pin: cleanPin, message: `Team PIN successfully updated to: ${cleanPin}` });
+});
+
 // 6. GET /api/auth/editor-session — Check current editor session
 app.get('/api/auth/editor-session', (req, res) => {
   const authHeader = req.headers.authorization || '';

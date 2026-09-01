@@ -290,15 +290,15 @@
           <span>Connect Google</span>
         </button>
 
-        <!-- Team Editor Login Button (Email OTP) -->
+        <!-- Team Editor PIN Login Button -->
         <button
           type="button"
           id="navEditorLoginBtn"
-          onclick="openEditorAuthModal()"
-          class="flex items-center gap-1.5 px-2.5 h-8 border border-sky-500/50 bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 font-semibold transition-all cursor-pointer text-[11px] uppercase tracking-wider"
-          title="Log in with authorized Work Email + OTP"
+          onclick="openPinLoginModal()"
+          class="flex items-center gap-1.5 px-3 h-8 border border-sky-500/60 bg-sky-500/15 hover:bg-sky-500/25 text-sky-400 font-bold transition-all cursor-pointer text-[11px] uppercase tracking-wider shadow-xs"
+          title="Log in with 4-digit Team PIN / Passcode"
         >
-          <span>🔑 Team Login</span>
+          <span>🔑 Team PIN Login</span>
         </button>
 
         <!-- Manual Upload Direct Button -->
@@ -1473,10 +1473,51 @@
           <p class="text-[9px] text-[var(--text-muted)]">Controls how many Drive-to-YouTube video streams process in parallel using the SQLite queue.</p>
         </div>
 
-        <!-- Team & Editor Permissions (Email OTP Access) -->
-        <div class="p-3 bg-sky-500/10 border border-sky-500/40 text-xs space-y-2.5">
+        <!-- Team Passcode / PIN & 1-Click Magic Access Link (Primary Collaboration) -->
+        <div class="p-3 bg-sky-500/10 border-2 border-sky-500/60 text-xs space-y-2.5">
           <div class="flex items-center justify-between font-bold text-sky-400 uppercase text-[10px]">
-            <span>👥 Team &amp; Editor Permissions (Email OTP Access)</span>
+            <span>🔑 Team Editor Passcode / PIN (Instant Access)</span>
+            <span class="text-[9px] bg-sky-500/20 text-sky-300 px-1.5 py-0.5 border border-sky-500/30 font-bold font-mono" id="currentPinBadge">PIN: 1234</span>
+          </div>
+          <p class="text-[10px] text-[var(--text-muted)]">Set a 4-digit PIN for your team members. Anyone with this PIN can log in instantly and edit video titles, batches, and live YouTube thumbnails with zero friction.</p>
+
+          <div class="flex gap-2 items-center">
+            <div class="relative flex-1">
+              <input
+                type="text"
+                id="teamPinInput"
+                maxlength="10"
+                placeholder="Set 4-digit PIN (e.g. 1234)..."
+                value="1234"
+                class="w-full p-2 text-xs font-mono font-bold tracking-widest border border-sky-500/40 bg-[var(--bg-card)] text-[var(--text-main)] focus:outline-none focus:border-sky-400"
+              />
+            </div>
+            <button
+              type="button"
+              id="savePinBtn"
+              onclick="saveTeamPin()"
+              class="px-3 py-2 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs uppercase tracking-wider cursor-pointer whitespace-nowrap"
+            >
+              Save PIN
+            </button>
+          </div>
+
+          <div class="pt-1 flex items-center justify-between bg-[var(--bg-card)] border border-sky-500/30 p-2 text-[10px]">
+            <span class="text-[var(--text-muted)] truncate mr-2">🚀 Share 1-Click Instant Login Link with your editor:</span>
+            <button
+              type="button"
+              onclick="copyMagicEditorLink()"
+              class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] uppercase cursor-pointer whitespace-nowrap shrink-0 shadow-sm"
+            >
+              📋 Copy 1-Click Link
+            </button>
+          </div>
+        </div>
+
+        <!-- Team & Editor Permissions (Email OTP Access) -->
+        <div class="p-3 bg-sky-500/5 border border-sky-500/30 text-xs space-y-2.5">
+          <div class="flex items-center justify-between font-bold text-sky-400 uppercase text-[10px]">
+            <span>👥 Optional: Authorized Email List</span>
             <span class="text-[9px] bg-sky-500/20 text-sky-300 px-1.5 py-0.5 border border-sky-500/30 font-bold" id="teamEditorCount">0 members</span>
           </div>
           <p class="text-[10px] text-[var(--text-muted)]">Give team members/editors access to edit titles, subjects, batches, and update live YouTube thumbnails via Email OTP without needing Google login.</p>
@@ -2002,79 +2043,70 @@
     </div>
   </div>
 
-  <!-- 8. Team Editor Email OTP Authentication Modal -->
-  <div id="editorAuthModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto font-mono-code">
-    <div class="bg-[var(--bg-card)] border-2 border-[var(--border-main)] max-w-md w-full shadow-2xl my-4 text-[var(--text-main)]">
+  <!-- 8. Team Editor 4-Digit PIN Authentication Modal -->
+  <div id="pinAuthModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 font-mono-code">
+    <div class="bg-[var(--bg-card)] border-2 border-sky-500/60 max-w-sm w-full shadow-2xl my-4 text-[var(--text-main)] overflow-hidden">
       
       <!-- Modal Header -->
       <div class="flex items-center justify-between border-b border-[var(--border-main)] px-5 py-3.5 bg-[var(--bg-subcard)]">
         <div class="flex items-center gap-2">
-          <span class="text-lg">🔑</span>
+          <span class="text-xl">🔑</span>
           <div>
-            <h3 class="text-xs font-bold uppercase tracking-wider text-[var(--text-main)]">Team Editor Access</h3>
-            <p class="text-[10px] text-[var(--text-muted)]">Log in with authorized Work Email + 6-digit OTP</p>
+            <h3 class="text-xs font-bold uppercase tracking-wider text-sky-400">Team Studio Access</h3>
+            <p class="text-[10px] text-[var(--text-muted)]">Enter 4-Digit Passcode / PIN</p>
           </div>
         </div>
-        <button type="button" onclick="closeEditorAuthModal()" class="text-[var(--text-muted)] hover:text-[var(--text-main)] text-xl font-bold cursor-pointer">&times;</button>
+        <button type="button" onclick="closePinLoginModal()" class="text-[var(--text-muted)] hover:text-[var(--text-main)] text-xl font-bold cursor-pointer">&times;</button>
       </div>
 
-      <!-- Step 1: Request OTP -->
-      <div id="editorOtpStep1" class="p-5 space-y-4">
-        <div class="space-y-1">
-          <label class="text-[10px] font-bold uppercase text-[var(--text-muted)] tracking-wider">Authorized Email Address</label>
+      <!-- PIN Input Form -->
+      <div class="p-5 space-y-4">
+        <p class="text-[11px] text-[var(--text-muted)] text-center">Enter your 4-digit Team PIN to access all videos and update live YouTube thumbnails.</p>
+
+        <div class="space-y-1.5 text-center">
           <input
-            type="email"
-            id="editorEmailInput"
-            placeholder="e.g. editor@physicswallah.com"
-            class="w-full p-2.5 text-xs border border-[var(--border-main)] bg-[var(--bg-card)] text-[var(--text-main)] focus:outline-none focus:border-sky-500"
-            onkeydown="if(event.key==='Enter') sendEditorOtp()"
+            type="password"
+            id="editorPinInput"
+            maxlength="10"
+            placeholder="••••"
+            class="w-full p-3 text-center tracking-[12px] font-mono font-bold text-2xl border-2 border-sky-500/60 bg-[var(--bg-card)] text-[var(--text-main)] focus:outline-none focus:border-sky-400"
+            onkeydown="if(event.key==='Enter') submitPinLogin()"
+            autocomplete="off"
           />
-          <p class="text-[9px] text-[var(--text-muted)] mt-1">Enter the work email authorized by the channel owner in Settings ➔ Team Access.</p>
-        </div>
-
-        <button
-          type="button"
-          id="sendOtpBtn"
-          onclick="sendEditorOtp()"
-          class="w-full py-2.5 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs uppercase tracking-widest cursor-pointer transition-all shadow-md flex items-center justify-center gap-2"
-        >
-          <span>SEND 6-DIGIT OTP ➔</span>
-        </button>
-      </div>
-
-      <!-- Step 2: Verify OTP -->
-      <div id="editorOtpStep2" class="p-5 space-y-4 hidden">
-        <div class="p-3 bg-sky-500/10 border border-sky-500/30 text-xs">
-          <div class="flex items-center justify-between text-sky-400 font-bold text-[10px] uppercase">
-            <span>OTP Code Sent</span>
-            <button type="button" onclick="resetEditorOtpFlow()" class="text-[9px] underline cursor-pointer text-sky-300">Change Email</button>
+          <div class="flex items-center justify-between text-[10px] text-[var(--text-muted)] px-1">
+            <span>Passcode / PIN</span>
+            <button
+              type="button"
+              onclick="const el=document.getElementById('editorPinInput'); el.type = el.type === 'password' ? 'text' : 'password';"
+              class="hover:text-sky-400 underline cursor-pointer"
+            >
+              Show / Hide
+            </button>
           </div>
-          <p class="text-[10px] text-[var(--text-main)] mt-1" id="editorOtpSentHint">Sent to: user@example.com</p>
         </div>
 
         <div class="space-y-1">
-          <label class="text-[10px] font-bold uppercase text-[var(--text-muted)] tracking-wider">Enter 6-Digit OTP Code</label>
+          <label class="text-[9px] font-bold uppercase text-[var(--text-muted)] tracking-wider">Your Name (Optional)</label>
           <input
             type="text"
-            id="editorOtpInput"
-            maxlength="6"
-            placeholder="000000"
-            class="w-full p-3 text-center tracking-[8px] font-mono font-bold text-xl border-2 border-sky-500/60 bg-[var(--bg-card)] text-[var(--text-main)] focus:outline-none focus:border-sky-400"
-            onkeydown="if(event.key==='Enter') verifyEditorOtp()"
+            id="editorNameInput"
+            placeholder="e.g. Editor / Aniket"
+            class="w-full p-2 text-xs border border-[var(--border-main)] bg-[var(--bg-card)] text-[var(--text-main)] focus:outline-none focus:border-sky-400"
+            onkeydown="if(event.key==='Enter') submitPinLogin()"
           />
         </div>
 
         <button
           type="button"
-          id="verifyOtpBtn"
-          onclick="verifyEditorOtp()"
-          class="w-full py-2.5 bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs uppercase tracking-widest cursor-pointer transition-all shadow-md flex items-center justify-center gap-2"
+          id="pinLoginSubmitBtn"
+          onclick="submitPinLogin()"
+          class="w-full py-3 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs uppercase tracking-widest cursor-pointer transition-all shadow-md flex items-center justify-center gap-2"
         >
-          <span>✔ VERIFY &amp; ENTER STUDIO</span>
+          <span>ENTER STUDIO ➔</span>
         </button>
 
-        <div class="text-center">
-          <button type="button" onclick="sendEditorOtp()" class="text-[10px] text-[var(--text-muted)] hover:text-sky-400 underline cursor-pointer">Resend OTP Code</button>
+        <div class="p-2 bg-[var(--bg-subcard)] border border-[var(--border-main)] text-center text-[10px] text-[var(--text-muted)]">
+          <span>Default PIN is <button type="button" onclick="document.getElementById('editorPinInput').value='1234'; submitPinLogin('1234');" class="text-sky-400 font-mono font-bold underline cursor-pointer">1234</button></span>
         </div>
       </div>
 
@@ -3901,6 +3933,7 @@
 
       loadClientIds();
       loadServerSettings();
+      loadTeamPin();
       loadTeamEditors();
       loadSmtpSettings();
       showAuthLanding();
@@ -4024,7 +4057,7 @@
             navEditorBadge.classList.remove('hidden');
             navEditorBadge.classList.add('flex');
             const label = document.getElementById('navEditorEmailLabel');
-            if (label) label.textContent = `Editor (${window.editorEmail || 'Team'})`;
+            if (label) label.textContent = `Editor (${window.editorEmail || 'PIN Verified'})`;
           }
         } else if (isAuth) {
           if (navAuthBtn) { navAuthBtn.classList.add('hidden'); navAuthBtn.classList.remove('flex'); }
@@ -4048,13 +4081,142 @@
     };
 
     // ══════════════════════════════════════════════════════════════════
-    // TEAM & EDITOR ACCESS ENGINE (EMAIL + OTP)
+    // TEAM & EDITOR ACCESS ENGINE (4-DIGIT PIN & 1-CLICK MAGIC LINK)
     // ══════════════════════════════════════════════════════════════════
 
-    window.openEditorAuthModal = function() {
+    window.openPinLoginModal = function() {
       closeAllModals();
-      resetEditorOtpFlow();
-      const modal = document.getElementById('editorAuthModal');
+      const modal = document.getElementById('pinAuthModal');
+      if (modal) modal.classList.remove('hidden');
+      const pinInput = document.getElementById('editorPinInput');
+      if (pinInput) {
+        pinInput.value = '';
+        setTimeout(() => pinInput.focus(), 60);
+      }
+    };
+
+    window.closePinLoginModal = function() {
+      const modal = document.getElementById('pinAuthModal');
+      if (modal) modal.classList.add('hidden');
+    };
+
+    window.submitPinLogin = async function(customPin = null) {
+      const pinInput = document.getElementById('editorPinInput');
+      const nameInput = document.getElementById('editorNameInput');
+      const btn = document.getElementById('pinLoginSubmitBtn');
+      const pin = customPin || pinInput?.value?.trim();
+      const name = nameInput?.value?.trim() || 'Team Editor';
+
+      if (!pin) {
+        showToast('Please enter the 4-digit PIN.', 'error');
+        if (pinInput) pinInput.focus();
+        return;
+      }
+
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'VERIFYING PIN...';
+      }
+
+      try {
+        const res = await fetch('/api/auth/pin-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pin, name })
+        });
+        const data = await res.json();
+
+        if (data.success && data.token) {
+          AppStorage.setItem('editor_token', data.token);
+          AppStorage.setItem('editor_name', data.name || name);
+          AppStorage.setItem('editor_last_pin', pin);
+
+          window.gAccessToken = data.token;
+          window.isAuthenticated = true;
+          window.isEditorSession = true;
+          window.editorEmail = data.name || name;
+
+          closePinLoginModal();
+          checkAuthStatus();
+          connectSSE();
+          showToast(`✔ PIN Verified! Welcome to Studio.`, 'success');
+          loadJobStatus();
+        } else {
+          showToast(data.error || 'Incorrect PIN code. Please try again.', 'error');
+          if (pinInput) {
+            pinInput.value = '';
+            pinInput.focus();
+          }
+        }
+      } catch (err) {
+        showToast('Login error: ' + err.message, 'error');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = 'ENTER STUDIO ➔';
+        }
+      }
+    };
+
+    window.loadTeamPin = async function() {
+      const pinInput = document.getElementById('teamPinInput');
+      const pinBadge = document.getElementById('currentPinBadge');
+      try {
+        const res = await fetch('/api/settings/pin');
+        const data = await res.json();
+        if (data.success && data.pin) {
+          if (pinInput) pinInput.value = data.pin;
+          if (pinBadge) pinBadge.textContent = `PIN: ${data.pin}`;
+        }
+      } catch (e) {}
+    };
+
+    window.saveTeamPin = async function() {
+      const pinInput = document.getElementById('teamPinInput');
+      const btn = document.getElementById('savePinBtn');
+      const pin = pinInput?.value?.trim();
+
+      if (!pin || pin.length < 4) {
+        showToast('PIN must be at least 4 digits.', 'error');
+        if (pinInput) pinInput.focus();
+        return;
+      }
+
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'SAVING...';
+      }
+
+      try {
+        const res = await fetch('/api/settings/pin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pin })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          showToast(`✔ Team PIN updated to: ${data.pin}`, 'success');
+          loadTeamPin();
+        } else {
+          showToast(data.error || 'Failed to update PIN', 'error');
+        }
+      } catch (err) {
+        showToast('Error saving PIN: ' + err.message, 'error');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = 'Save PIN';
+        }
+      }
+    };
+
+    window.copyMagicEditorLink = async function() {
+      const pinInput = document.getElementById('teamPinInput');
+      const pin = pinInput?.value?.trim() || '1234';
+      const magicUrl = `${window.location.origin}/?pin=${encodeURIComponent(pin)}`;
+      await copyToClipboard(magicUrl, '1-Click Team Editor Link');
+    };
       if (modal) modal.classList.remove('hidden');
       const emailInput = document.getElementById('editorEmailInput');
       if (emailInput) {
@@ -7236,7 +7398,16 @@
       // Check for auth callback redirect first
       checkServerAuthOnLoad();
 
-      // Auth Priority: 1) Team Editor session (Email OTP), 2) Server-side refresh token, 3) localStorage access token, 4) Silent GIS refresh
+      // Check for 1-Click Magic Link (?pin=1234 or ?access=1234)
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlPin = urlParams.get('pin') || urlParams.get('access') || urlParams.get('key');
+      if (urlPin) {
+        console.log('[auth] 1-Click PIN detected in URL, auto-logging in...');
+        submitPinLogin(urlPin);
+        try { window.history.replaceState({}, document.title, window.location.pathname); } catch (e) {}
+      }
+
+      // Auth Priority: 1) Team Editor session (4-Digit PIN), 2) Server-side refresh token, 3) localStorage access token, 4) Silent GIS refresh
       (async () => {
         const isEditor = await checkEditorAuthOnLoad();
         if (isEditor) {
