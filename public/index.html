@@ -3972,17 +3972,85 @@
       launchOAuthPopup();
     };
 
-    // ─── Permanent Session & Silent Auto-Renewal Engine ───────────────────
+    // ─── Permanent Session & Ultra-Resilient Auto-Renewal Engine ───────────
     let tokenRefreshTimer = null;
+    let tokenHeartbeatInterval = null;
+    let silentRefreshFailCount = 0;
+    const MAX_SILENT_RETRIES = 2;
 
+    // Core: Schedule proactive token refresh before expiry
     window.scheduleTokenRefresh = function(expiresInSeconds = 3500) {
       if (tokenRefreshTimer) clearTimeout(tokenRefreshTimer);
-      // Automatically refresh token 5 minutes before expiration (or minimum after 60s)
+      // Refresh 5 minutes before expiration (minimum 60s)
       const refreshInMs = Math.max(60000, (expiresInSeconds - 300) * 1000);
       tokenRefreshTimer = setTimeout(() => {
         console.log('[auth] Proactive background token renewal initiated...');
         silentAutoRefreshToken(true);
       }, refreshInMs);
+    };
+
+    // Heartbeat: Check token health every 10 minutes as a safety net
+    function startTokenHeartbeat() {
+      if (tokenHeartbeatInterval) clearInterval(tokenHeartbeatInterval);
+      tokenHeartbeatInterval = setInterval(() => {
+        if (!window.isAuthenticated || !window.gAccessToken) return;
+        const expiry = parseInt(AppStorage.getItem('oauth_token_expiry') || '0', 10);
+        const now = Date.now();
+        const remainingSecs = Math.floor((expiry - now) / 1000);
+        
+        if (remainingSecs < 600) {
+          // Less than 10 min left — force background renewal now
+          console.log(`[auth-heartbeat] Token expiring in ${remainingSecs}s, triggering renewal...`);
+          silentAutoRefreshToken(true);
+        } else if (remainingSecs <= 0) {
+          // Already expired — try silent, if fails show re-auth
+          console.warn('[auth-heartbeat] Token expired, attempting recovery...');
+          silentAutoRefreshToken(false);
+        }
+      }, 10 * 60 * 1000); // every 10 minutes
+    }
+
+    // Visibility: When user comes back to tab, validate token freshness
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && window.isAuthenticated) {
+        const expiry = parseInt(AppStorage.getItem('oauth_token_expiry') || '0', 10);
+        const remainingSecs = Math.floor((expiry - Date.now()) / 1000);
+        
+        if (remainingSecs <= 0) {
+          // Token expired while tab was in background
+          console.warn('[auth-visibility] Token expired while tab was inactive, refreshing...');
+          silentAutoRefreshToken(false);
+        } else if (remainingSecs < 300) {
+          // About to expire — proactively renew
+          console.log('[auth-visibility] Token expiring soon, proactive renewal...');
+          silentAutoRefreshToken(true);
+        }
+      }
+    });
+
+    // Focus: Also check on window focus (some browsers don't fire visibilitychange reliably)
+    window.addEventListener('focus', () => {
+      if (!window.isAuthenticated) return;
+      const expiry = parseInt(AppStorage.getItem('oauth_token_expiry') || '0', 10);
+      if (Date.now() > expiry) {
+        console.warn('[auth-focus] Token expired, attempting recovery...');
+        silentAutoRefreshToken(false);
+      }
+    });
+
+    // Interceptor: Wrap fetch to auto-detect 401s and trigger re-auth
+    const originalFetch = window.fetch;
+    window.fetch = async function(...args) {
+      const response = await originalFetch.apply(this, args);
+      
+      // Only intercept our own API calls, not external requests
+      const url = typeof args[0] === 'string' ? args[0] : (args[0]?.url || '');
+      if (url.startsWith('/api/') && response.status === 401 && window.isAuthenticated) {
+        console.warn('[auth-interceptor] Got 401 on API call, token likely expired. Refreshing...');
+        silentAutoRefreshToken(false);
+      }
+      
+      return response;
     };
 
     window.silentAutoRefreshToken = function(isBackgroundRenewal = false) {
@@ -4007,6 +4075,8 @@
             scope: scopes,
             callback: (tokenResponse) => {
               if (tokenResponse && tokenResponse.access_token) {
+                // Success — reset failure counter
+                silentRefreshFailCount = 0;
                 window.gAccessToken = tokenResponse.access_token;
                 window.isAuthenticated = true;
                 const expiresIn = tokenResponse.expires_in || 3500;
@@ -4014,6 +4084,7 @@
                 AppStorage.setItem('oauth_token_expiry', Date.now() + expiresIn * 1000);
                 checkAuthStatus();
                 scheduleTokenRefresh(expiresIn);
+                startTokenHeartbeat();
                 if (isBackgroundRenewal) {
                   console.log('[auth] Token silently renewed in background.');
                 } else {
@@ -4021,16 +4092,21 @@
                   syncYouTubeUploads(true);
                   if (typeof fetchQuotaHealth === 'function') fetchQuotaHealth();
                 }
+              } else {
+                // Silent refresh returned but no token — Google session may have expired
+                handleSilentRefreshFailure(isBackgroundRenewal);
               }
             },
             error_callback: (err) => {
               console.warn('[auth] Silent token refresh notice:', err);
+              handleSilentRefreshFailure(isBackgroundRenewal);
             }
           });
-          // prompt: '' enables silent token retrieval without user prompt if session is active
+          // prompt: '' enables silent token retrieval without user interaction
           tokenClient.requestAccessToken({ prompt: '' });
         } catch (e) {
           console.warn('[auth] Silent token client error:', e);
+          handleSilentRefreshFailure(isBackgroundRenewal);
         }
       };
 
@@ -4043,12 +4119,37 @@
           if (window.google && window.google.accounts && window.google.accounts.oauth2) {
             clearInterval(checkSdkInterval);
             executeSilentRefresh();
-          } else if (attempts >= 10) {
+          } else if (attempts >= 15) {
             clearInterval(checkSdkInterval);
+            if (!isBackgroundRenewal) {
+              showToast('Google Identity SDK is loading slowly. Please check your internet connection.', 'info');
+            }
           }
         }, 300);
       }
     };
+
+    function handleSilentRefreshFailure(wasBackground) {
+      silentRefreshFailCount++;
+      console.warn(`[auth] Silent refresh failed (attempt ${silentRefreshFailCount}/${MAX_SILENT_RETRIES})`);
+      
+      if (silentRefreshFailCount <= MAX_SILENT_RETRIES) {
+        // Retry silently after a short delay
+        setTimeout(() => {
+          console.log('[auth] Retrying silent refresh...');
+          silentAutoRefreshToken(wasBackground);
+        }, 3000 * silentRefreshFailCount);
+      } else {
+        // All silent retries exhausted — need user interaction
+        silentRefreshFailCount = 0;
+        console.warn('[auth] Silent refresh exhausted. Requesting user re-authentication.');
+        showToast('Session expired. Please click "Connect Google" to re-authenticate.', 'info');
+        // Don't force logout — keep UI visible, just mark token as expired
+        AppStorage.removeItem('oauth_token_expiry');
+        // Auto-open the popup with consent to get a fresh token
+        launchOAuthPopup();
+      }
+    }
 
     window.launchOAuthPopup = function(retryCount = 0) {
       const targetClientId = getNextClientId();
@@ -6504,6 +6605,7 @@
         window.gAccessToken = token;
         window.isAuthenticated = true;
         scheduleTokenRefresh(remainingSecs);
+        startTokenHeartbeat();
       } else {
         window.isAuthenticated = false;
         silentAutoRefreshToken(false);
