@@ -3666,7 +3666,7 @@
     });
 
     window.closeAllModals = function() {
-      const ids = ['scanReviewModal', 'videoModal', 'editVideoModal', 'quotaTrackerModal', 'authConfigModal', 'manualUploadModal', 'infoModal', 'navToolsMenu'];
+      const ids = ['scanReviewModal', 'videoModal', 'editVideoModal', 'quotaTrackerModal', 'authConfigModal', 'manualUploadModal', 'infoModal', 'pinAuthModal', 'navToolsMenu'];
       ids.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.classList.add('hidden');
@@ -4216,14 +4216,6 @@
       const pin = pinInput?.value?.trim() || '1234';
       const magicUrl = `${window.location.origin}/?pin=${encodeURIComponent(pin)}`;
       await copyToClipboard(magicUrl, '1-Click Team Editor Link');
-    };
-      if (modal) modal.classList.remove('hidden');
-      const emailInput = document.getElementById('editorEmailInput');
-      if (emailInput) {
-        emailInput.focus();
-        const savedEmail = AppStorage.getItem('editor_last_email');
-        if (savedEmail) emailInput.value = savedEmail;
-      }
     };
 
     window.closeEditorAuthModal = function() {
