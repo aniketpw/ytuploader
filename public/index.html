@@ -1390,214 +1390,139 @@
     </div>
   </div>
 
-  <!-- Google Auth & API Keys Modal — Guided Setup Wizard -->
-  <div id="authConfigModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto">
-    <div class="bg-[var(--bg-card)] border border-[var(--border-main)] max-w-xl w-full shadow-2xl font-mono-code my-4 text-[var(--text-main)]">
+  <!-- Google Auth & API Keys Modal — Compact, Scrollable Studio Settings -->
+  <div id="authConfigModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-3">
+    <div class="bg-[var(--bg-card)] border-2 border-[var(--border-main)] max-w-md w-full shadow-2xl font-mono-code text-[var(--text-main)] max-h-[82vh] flex flex-col overflow-hidden my-auto">
 
-      <!-- Modal Header -->
-      <div class="flex items-center justify-between border-b border-[var(--border-main)] px-5 py-3 bg-[var(--bg-subcard)]">
+      <!-- Modal Header (Fixed) -->
+      <div class="flex items-center justify-between border-b border-[var(--border-main)] px-4 py-2.5 bg-[var(--bg-subcard)] shrink-0">
         <div>
-          <h3 class="text-sm font-bold uppercase tracking-wider text-[var(--text-main)]">Connect Google Account</h3>
-          <p class="text-[10px] text-[var(--text-muted)]">Upload videos from Drive to YouTube — your account, your quota</p>
+          <h3 class="text-xs font-bold uppercase tracking-wider text-[var(--text-main)]">Studio Settings</h3>
+          <p class="text-[10px] text-[var(--text-muted)]">YouTube channel, team PIN &amp; upload defaults</p>
         </div>
-        <button type="button" onclick="closeAuthModal()" class="text-[var(--text-muted)] hover:text-[var(--text-main)] text-lg font-bold cursor-pointer">&times;</button>
+        <button type="button" onclick="closeAuthModal()" class="text-[var(--text-muted)] hover:text-[var(--text-main)] text-xl font-bold cursor-pointer p-1">&times;</button>
       </div>
 
-      <!-- LANDING VIEW: Choose Path -->
-      <div id="authLanding" class="p-5 space-y-3">
+      <!-- Scrollable Modal Body -->
+      <div class="flex-1 overflow-y-auto p-4 space-y-3">
 
-        <!-- Already Have Client ID — Quick Connect -->
-        <div class="p-4 bg-[var(--bg-subcard)] border-2 border-[var(--border-main)] hover:bg-[var(--btn-secondary-hover)] cursor-pointer transition-colors" onclick="showAuthQuickConnect()">
-          <div class="flex items-center justify-between">
-            <div>
-              <div class="font-bold text-[var(--text-main)] text-xs uppercase tracking-wide">🚀 Quick Connect</div>
-              <p class="text-[10px] text-[var(--text-muted)] mt-0.5">I already have a Google OAuth Client ID</p>
+        <!-- LANDING VIEW: Choose Path -->
+        <div id="authLanding" class="space-y-3">
+
+          <!-- Team Passcode / PIN & 1-Click Magic Access Link (Primary Collaboration) -->
+          <div class="p-3 bg-sky-500/10 border-2 border-sky-500/60 text-xs space-y-2">
+            <div class="flex items-center justify-between font-bold text-sky-400 uppercase text-[10px]">
+              <span>🔑 Team 4-Digit PIN Access</span>
+              <span class="text-[9px] bg-sky-500/20 text-sky-300 px-1.5 py-0.2 border border-sky-500/30 font-bold font-mono" id="currentPinBadge">PIN: 1234</span>
             </div>
-            <span class="text-lg text-[var(--text-muted)]">→</span>
-          </div>
-        </div>
+            <p class="text-[10px] text-[var(--text-muted)]">Team members can log in using this 4-digit PIN to edit video titles, batches, and live YouTube thumbnails.</p>
 
-        <!-- Setup From Scratch — Guided Wizard -->
-        <div class="p-4 bg-amber-500/10 border-2 border-amber-500/60 hover:bg-amber-500/20 cursor-pointer transition-colors" onclick="showSetupWizard(1)">
-          <div class="flex items-center justify-between">
-            <div>
-              <div class="font-bold text-[var(--text-main)] text-xs uppercase tracking-wide">⚡ Setup Your Own API <span class="text-[9px] font-bold bg-amber-500/20 text-amber-700 dark:text-amber-200 px-1.5 py-0.5 ml-1.5">FREE • 5 MIN</span></div>
-              <p class="text-[10px] text-amber-700 dark:text-amber-300 mt-0.5">Get your own 10,000 daily quota — step-by-step guided setup</p>
+            <div class="flex gap-2 items-center">
+              <input
+                type="text"
+                id="teamPinInput"
+                maxlength="10"
+                placeholder="4-digit PIN..."
+                value="1234"
+                class="flex-1 p-1.5 text-xs font-mono font-bold tracking-widest border border-sky-500/40 bg-[var(--bg-card)] text-[var(--text-main)] focus:outline-none focus:border-sky-400"
+              />
+              <button
+                type="button"
+                id="savePinBtn"
+                onclick="saveTeamPin()"
+                class="px-3 py-1.5 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs uppercase cursor-pointer whitespace-nowrap shadow-xs"
+              >
+                Save PIN
+              </button>
             </div>
-            <span class="text-lg text-amber-600 dark:text-amber-300">→</span>
-          </div>
-        </div>
 
-        <!-- Description & Tags Presets -->
-        <div class="p-3 bg-[var(--bg-subcard)] border border-[var(--border-main)] text-xs space-y-2">
-          <div class="flex items-center justify-between font-bold text-[var(--text-main)] uppercase text-[10px]">
-            <span>🏷️ Description &amp; Tags Template</span>
-            <span class="text-[var(--text-muted)] font-normal lowercase">auto-added to uploads</span>
+            <div class="pt-1 flex items-center justify-between bg-[var(--bg-card)] border border-sky-500/30 p-1.5 text-[10px]">
+              <span class="text-[var(--text-muted)] truncate mr-2">🚀 Share 1-Click Login Link:</span>
+              <button
+                type="button"
+                onclick="copyMagicEditorLink()"
+                class="px-2 py-0.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] uppercase cursor-pointer whitespace-nowrap shrink-0 shadow-sm"
+              >
+                📋 Copy Link
+              </button>
+            </div>
           </div>
-          <div class="space-y-1.5">
-            <textarea
-              id="presetDescFooterInput"
-              rows="2"
-              placeholder="Default description footer (e.g. 📌 Telegram: https://t.me/pw_updates | 📚 App Notes)"
-              class="w-full p-2 text-xs border border-[var(--border-main)] bg-[var(--bg-card)] text-[var(--text-main)] focus:outline-none focus:border-[var(--btn-primary-bg)]"
-              onchange="saveMetadataPresets()"
-            ></textarea>
-            <input
-              type="text"
-              id="presetTagsInput"
-              placeholder="Default custom tags (comma separated, e.g. PW, JEE 2026, Physics, NEET)"
-              class="w-full p-2 text-xs border border-[var(--border-main)] bg-[var(--bg-card)] text-[var(--text-main)] focus:outline-none focus:border-[var(--btn-primary-bg)]"
-              onchange="saveMetadataPresets()"
-            />
-          </div>
-        </div>
 
-        <!-- Concurrency & Performance Settings -->
-        <div class="p-3 bg-[var(--bg-subcard)] border border-[var(--border-main)] text-xs space-y-2">
-          <div class="flex items-center justify-between font-bold text-[var(--text-main)] uppercase text-[10px]">
-            <span>⚡ Concurrent Upload Streams</span>
-            <span class="text-[var(--text-muted)] font-normal lowercase" id="concurrencyHint">1-10 simultaneous</span>
+          <!-- Quick Connect Button -->
+          <div class="p-3 bg-[var(--bg-subcard)] border border-[var(--border-main)] hover:bg-[var(--btn-secondary-hover)] cursor-pointer transition-colors" onclick="showAuthQuickConnect()">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="font-bold text-[var(--text-main)] text-xs uppercase tracking-wide">🚀 Quick Connect Google OAuth</div>
+                <p class="text-[10px] text-[var(--text-muted)] mt-0.5">Connect with Google OAuth Client ID &amp; Secret</p>
+              </div>
+              <span class="text-sm text-[var(--text-muted)]">→</span>
+            </div>
           </div>
-          <div class="flex items-center gap-3">
+
+          <!-- Setup From Scratch — Guided Wizard -->
+          <div class="p-3 bg-amber-500/10 border border-amber-500/40 hover:bg-amber-500/20 cursor-pointer transition-colors" onclick="showSetupWizard(1)">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="font-bold text-[var(--text-main)] text-xs uppercase tracking-wide">⚡ Setup Your Own API <span class="text-[9px] font-bold bg-amber-500/20 text-amber-700 dark:text-amber-200 px-1 py-0.2 ml-1">FREE • 5 MIN</span></div>
+                <p class="text-[10px] text-amber-700 dark:text-amber-300 mt-0.5">Get your own 10,000 daily quota — step-by-step wizard</p>
+              </div>
+              <span class="text-sm text-amber-600 dark:text-amber-300">→</span>
+            </div>
+          </div>
+
+          <!-- Description & Tags Presets -->
+          <div class="p-3 bg-[var(--bg-subcard)] border border-[var(--border-main)] text-xs space-y-2">
+            <div class="flex items-center justify-between font-bold text-[var(--text-main)] uppercase text-[10px]">
+              <span>🏷️ Description &amp; Tags Template</span>
+            </div>
+            <div class="space-y-1.5">
+              <textarea
+                id="presetDescFooterInput"
+                rows="2"
+                placeholder="Default description footer (e.g. 📌 Telegram updates)..."
+                class="w-full p-1.5 text-xs border border-[var(--border-main)] bg-[var(--bg-card)] text-[var(--text-main)] focus:outline-none"
+                onchange="saveMetadataPresets()"
+              ></textarea>
+              <input
+                type="text"
+                id="presetTagsInput"
+                placeholder="Default custom tags (comma separated, e.g. PW, JEE 2026)"
+                class="w-full p-1.5 text-xs border border-[var(--border-main)] bg-[var(--bg-card)] text-[var(--text-main)] focus:outline-none"
+                onchange="saveMetadataPresets()"
+              />
+            </div>
+          </div>
+
+          <!-- Concurrency -->
+          <div class="p-3 bg-[var(--bg-subcard)] border border-[var(--border-main)] text-xs space-y-1.5">
+            <div class="flex items-center justify-between font-bold text-[var(--text-main)] uppercase text-[10px]">
+              <span>⚡ Concurrent Upload Streams</span>
+              <span id="concurrencyValueBadge" class="px-2 py-0.2 bg-sky-500/20 text-sky-400 font-mono font-bold text-xs border border-sky-500/30">3</span>
+            </div>
             <input
               type="range"
               id="concurrencySlider"
               min="1"
               max="10"
               value="3"
-              class="flex-1 accent-sky-500 cursor-pointer"
+              class="w-full accent-sky-500 cursor-pointer"
               oninput="handleConcurrencyChange(this.value)"
             />
-            <span id="concurrencyValueBadge" class="px-2.5 py-0.5 bg-sky-500/20 text-sky-400 font-mono font-bold text-xs border border-sky-500/30">3</span>
           </div>
-          <p class="text-[9px] text-[var(--text-muted)]">Controls how many Drive-to-YouTube video streams process in parallel using the SQLite queue.</p>
-        </div>
 
-        <!-- Team Passcode / PIN & 1-Click Magic Access Link (Primary Collaboration) -->
-        <div class="p-3 bg-sky-500/10 border-2 border-sky-500/60 text-xs space-y-2.5">
-          <div class="flex items-center justify-between font-bold text-sky-400 uppercase text-[10px]">
-            <span>🔑 Team Editor Passcode / PIN (Instant Access)</span>
-            <span class="text-[9px] bg-sky-500/20 text-sky-300 px-1.5 py-0.5 border border-sky-500/30 font-bold font-mono" id="currentPinBadge">PIN: 1234</span>
-          </div>
-          <p class="text-[10px] text-[var(--text-muted)]">Set a 4-digit PIN for your team members. Anyone with this PIN can log in instantly and edit video titles, batches, and live YouTube thumbnails with zero friction.</p>
-
-          <div class="flex gap-2 items-center">
-            <div class="relative flex-1">
-              <input
-                type="text"
-                id="teamPinInput"
-                maxlength="10"
-                placeholder="Set 4-digit PIN (e.g. 1234)..."
-                value="1234"
-                class="w-full p-2 text-xs font-mono font-bold tracking-widest border border-sky-500/40 bg-[var(--bg-card)] text-[var(--text-main)] focus:outline-none focus:border-sky-400"
-              />
+          <!-- Advanced: Direct Bearer Token -->
+          <div class="p-3 bg-emerald-500/10 border border-emerald-500/40 text-xs space-y-1.5">
+            <div class="flex items-center justify-between font-bold text-emerald-700 dark:text-emerald-300 uppercase text-[10px]">
+              <span>Advanced: Direct Bearer Token</span>
+              <span class="bg-emerald-500/20 px-1 py-0.2 text-[9px]">Dev Only</span>
             </div>
-            <button
-              type="button"
-              id="savePinBtn"
-              onclick="saveTeamPin()"
-              class="px-3 py-2 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs uppercase tracking-wider cursor-pointer whitespace-nowrap"
-            >
-              Save PIN
-            </button>
-          </div>
-
-          <div class="pt-1 flex items-center justify-between bg-[var(--bg-card)] border border-sky-500/30 p-2 text-[10px]">
-            <span class="text-[var(--text-muted)] truncate mr-2">🚀 Share 1-Click Instant Login Link with your editor:</span>
-            <button
-              type="button"
-              onclick="copyMagicEditorLink()"
-              class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] uppercase cursor-pointer whitespace-nowrap shrink-0 shadow-sm"
-            >
-              📋 Copy 1-Click Link
-            </button>
-          </div>
-        </div>
-
-        <!-- Team & Editor Permissions (Email OTP Access) -->
-        <div class="p-3 bg-sky-500/5 border border-sky-500/30 text-xs space-y-2.5">
-          <div class="flex items-center justify-between font-bold text-sky-400 uppercase text-[10px]">
-            <span>👥 Optional: Authorized Email List</span>
-            <span class="text-[9px] bg-sky-500/20 text-sky-300 px-1.5 py-0.5 border border-sky-500/30 font-bold" id="teamEditorCount">0 members</span>
-          </div>
-          <p class="text-[10px] text-[var(--text-muted)]">Give team members/editors access to edit titles, subjects, batches, and update live YouTube thumbnails via Email OTP without needing Google login.</p>
-          
-          <div class="flex gap-2">
-            <input
-              type="email"
-              id="teamInviteEmailInput"
-              placeholder="Enter editor email (e.g. editor@physicswallah.com)..."
-              class="flex-1 p-2 text-xs border border-sky-500/40 bg-[var(--bg-card)] text-[var(--text-main)] focus:outline-none focus:border-sky-400"
-              onkeydown="if(event.key==='Enter') inviteTeamMember()"
-            />
-            <button
-              type="button"
-              onclick="inviteTeamMember()"
-              class="px-3 py-2 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs uppercase tracking-wider cursor-pointer whitespace-nowrap"
-            >
-              + Add Editor
-            </button>
-          </div>
-
-          <!-- Editors List Container -->
-          <div id="teamEditorsListContainer" class="space-y-1.5 max-h-36 overflow-y-auto border border-sky-500/30 p-2 bg-[var(--bg-card)] text-[10px]">
-            <div class="text-[var(--text-muted)] text-center py-2">Loading team members...</div>
-          </div>
-        </div>
-
-        <!-- Gmail & SMTP Email Setup for Live OTP Delivery -->
-        <div class="p-3 bg-amber-500/10 border border-amber-500/40 text-xs space-y-2.5">
-          <div class="flex items-center justify-between font-bold text-amber-600 dark:text-amber-400 uppercase text-[10px]">
-            <span>📧 Gmail &amp; SMTP Setup (For Live OTP Delivery)</span>
-            <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener noreferrer" class="text-[9px] text-amber-500 underline lowercase font-normal hover:text-amber-400">get app password ↗</a>
-          </div>
-          <p class="text-[10px] text-[var(--text-muted)]">Configure your Gmail address and 16-character App Password to automatically dispatch verification OTPs straight to editors' inboxes.</p>
-
-          <div class="space-y-1.5">
-            <input
-              type="email"
-              id="smtpUserInput"
-              placeholder="Your Gmail address (e.g. yourname@gmail.com)..."
-              class="w-full p-2 text-xs border border-amber-500/40 bg-[var(--bg-card)] text-[var(--text-main)] focus:outline-none focus:border-amber-400"
-            />
             <div class="flex gap-2">
-              <input
-                type="password"
-                id="smtpPassInput"
-                placeholder="Gmail 16-char App Password..."
-                class="flex-1 p-2 text-xs border border-amber-500/40 bg-[var(--bg-card)] text-[var(--text-main)] focus:outline-none focus:border-amber-400 font-mono"
-              />
-              <button
-                type="button"
-                id="smtpSaveBtn"
-                onclick="saveAndTestSmtp()"
-                class="px-3 py-2 bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs uppercase tracking-wider cursor-pointer whitespace-nowrap"
-              >
-                Save &amp; Test
-              </button>
+              <input type="password" id="directAccessTokenInput" placeholder="Paste Google Token (ya29...)" class="flex-1 p-1.5 text-xs border border-emerald-500/40 bg-[var(--bg-subcard)] text-[var(--text-main)] focus:outline-none" />
+              <button type="button" onclick="saveDirectToken()" class="px-2.5 py-1.5 bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs uppercase cursor-pointer whitespace-nowrap">Connect</button>
             </div>
-            <div id="smtpStatusNotice" class="text-[9px] text-[var(--text-muted)]"></div>
           </div>
-        </div>
 
-        <!-- Direct Token -->
-        <div class="p-3 bg-emerald-500/10 border border-emerald-500/40 text-xs space-y-2">
-          <div class="flex items-center justify-between font-bold text-emerald-700 dark:text-emerald-300 uppercase text-[10px]">
-            <span>Advanced: Direct Bearer Token</span>
-            <span class="bg-emerald-500/20 px-1.5 py-0.2 text-[9px]">Dev Only</span>
-          </div>
-          <div class="flex gap-2">
-            <input type="password" id="directAccessTokenInput" placeholder="Paste Google Access Token (ya29...)" class="flex-1 p-2 text-xs border border-emerald-500/40 bg-[var(--bg-subcard)] text-[var(--text-main)] focus:outline-none" />
-            <button type="button" onclick="saveDirectToken()" class="px-3 py-2 bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs uppercase tracking-wider cursor-pointer whitespace-nowrap">Connect</button>
-          </div>
         </div>
-
-        <!-- Disconnect -->
-        <div class="flex items-center justify-between pt-2 border-t border-[var(--border-main)]">
-          <button type="button" onclick="logoutGoogle()" class="text-xs text-rose-500 hover:underline font-bold uppercase cursor-pointer">Disconnect</button>
-          <button type="button" onclick="closeAuthModal()" class="px-3 py-1 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] font-bold text-xs uppercase cursor-pointer">Close</button>
-        </div>
-      </div>
 
       <!-- QUICK CONNECT VIEW (Already Has Client ID + Secret) -->
       <div id="authQuickConnect" class="p-5 space-y-3 hidden">
@@ -1853,8 +1778,16 @@
 
       </div> <!-- end authSetupWizard -->
 
+    </div> <!-- end scrollable modal body -->
+
+    <!-- Modal Footer (Fixed at Bottom) -->
+    <div class="flex items-center justify-between border-t border-[var(--border-main)] px-4 py-2.5 bg-[var(--bg-subcard)] shrink-0">
+      <button type="button" onclick="logoutGoogle()" class="text-xs text-rose-500 hover:underline font-bold uppercase cursor-pointer">Disconnect Google</button>
+      <button type="button" onclick="closeAuthModal()" class="px-4 py-1.5 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] font-bold text-xs uppercase cursor-pointer">Close</button>
     </div>
+
   </div>
+</div>
 
   <!-- 6. Manual Direct Video Upload Studio Modal -->
   <div id="manualUploadModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto">
