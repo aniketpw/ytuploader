@@ -4970,6 +4970,11 @@
     };
 
     window.startManualDirectUpload = async function() {
+      if (window.isManualUploading) {
+        showToast('Upload already in progress, please wait...', 'info');
+        return;
+      }
+
       if (!manualSelectedFile) {
         showToast('Please select a video file from your device first.', 'error');
         const fileInput = document.getElementById('manualVideoFileInput');
@@ -4982,6 +4987,8 @@
         openAuthModal();
         return;
       }
+
+      window.isManualUploading = true;
 
       const titleInput = document.getElementById('manualTitleInput');
       const batchInput = document.getElementById('manualBatchInput');
@@ -5101,9 +5108,11 @@
               uploadBtn.innerHTML = '<span>RETRY UPLOAD ➔</span>';
             }
           }
+          window.isManualUploading = false;
         };
 
         xhr.onerror = () => {
+          window.isManualUploading = false;
           showToast('Connection interrupted. Please try again.', 'error');
           if (uploadBtn) {
             uploadBtn.disabled = false;
@@ -5113,6 +5122,7 @@
 
         xhr.send(manualSelectedFile);
       } catch (err) {
+        window.isManualUploading = false;
         console.error('Manual direct upload error:', err);
         showToast(`Error: ${err.message}`, 'error');
         if (uploadBtn) {
