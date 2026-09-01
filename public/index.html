@@ -290,17 +290,6 @@
           <span>Connect Google</span>
         </button>
 
-        <!-- Team Editor PIN Login Button -->
-        <button
-          type="button"
-          id="navEditorLoginBtn"
-          onclick="openPinLoginModal()"
-          class="flex items-center gap-1.5 px-3 h-8 border border-sky-500/60 bg-sky-500/15 hover:bg-sky-500/25 text-sky-400 font-bold transition-all cursor-pointer text-[11px] uppercase tracking-wider shadow-xs"
-          title="Log in with 4-digit Team PIN / Passcode"
-        >
-          <span>🔑 Team PIN Login</span>
-        </button>
-
         <!-- Manual Upload Direct Button -->
         <button
           type="button"
@@ -1398,7 +1387,7 @@
       <div class="flex items-center justify-between border-b border-[var(--border-main)] px-6 py-3.5 bg-[var(--bg-subcard)] shrink-0">
         <div>
           <h3 class="text-sm font-bold uppercase tracking-wider text-[var(--text-main)]">Studio Settings &amp; Channel Access</h3>
-          <p class="text-[11px] text-[var(--text-muted)]">Configure Google connection, team PIN access, and upload defaults</p>
+          <p class="text-[11px] text-[var(--text-muted)]">Configure Google connection, API keys, and upload defaults</p>
         </div>
         <button type="button" onclick="closeAuthModal()" class="text-[var(--text-muted)] hover:text-[var(--text-main)] text-2xl font-bold cursor-pointer p-1">&times;</button>
       </div>
@@ -1409,77 +1398,7 @@
         <!-- LANDING VIEW: Choose Path -->
         <div id="authLanding" class="space-y-4">
 
-          <!-- 1. Team Passcode / PIN & 1-Click Magic Access Link (Primary Collaboration) -->
-          <div class="p-4 bg-sky-500/10 border-2 border-sky-500/60 space-y-3">
-            <div class="flex items-center justify-between font-bold text-sky-400 uppercase text-xs">
-              <span class="flex items-center gap-1.5">🔑 <span>Team 4-Digit PIN Access (No Google Login Needed)</span></span>
-              <span class="text-[10px] bg-sky-500/20 text-sky-300 px-2 py-0.5 border border-sky-500/30 font-bold font-mono" id="currentPinBadge">PIN: 1234</span>
-            </div>
-            <p class="text-[11px] text-[var(--text-muted)]">Team members/editors can use this PIN to log in instantly. They will have full access to edit titles, batch, subject, and update live YouTube thumbnails.</p>
-
-            <div class="flex gap-2.5 items-center">
-              <input
-                type="text"
-                id="teamPinInput"
-                maxlength="10"
-                placeholder="4-digit PIN..."
-                value="1234"
-                class="flex-1 p-2 text-sm font-mono font-bold tracking-widest border border-sky-500/40 bg-[var(--bg-card)] text-[var(--text-main)] focus:outline-none focus:border-sky-400"
-              />
-              <button
-                type="button"
-                id="savePinBtn"
-                onclick="saveTeamPin()"
-                class="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs uppercase cursor-pointer whitespace-nowrap shadow-sm"
-              >
-                Save PIN
-              </button>
-            </div>
-
-            <div class="pt-1 flex items-center justify-between bg-[var(--bg-card)] border border-sky-500/30 p-2.5 text-xs">
-              <span class="text-[var(--text-muted)] truncate mr-2">🚀 Share 1-Click Magic Link (Auto-login for editor):</span>
-              <button
-                type="button"
-                onclick="copyMagicEditorLink()"
-                class="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase cursor-pointer whitespace-nowrap shrink-0 shadow-sm"
-              >
-                📋 Copy 1-Click Link
-              </button>
-            </div>
-          </div>
-
-          <!-- 2. Team Member Email Authorization List -->
-          <div class="p-4 bg-[var(--bg-subcard)] border border-[var(--border-main)] text-xs space-y-3">
-            <div class="flex items-center justify-between font-bold text-[var(--text-main)] uppercase text-xs">
-              <span>👥 Authorized Team Members</span>
-              <span class="text-[10px] bg-sky-500/20 text-sky-400 px-2 py-0.5 border border-sky-500/30 font-bold" id="teamEditorCount">0 members</span>
-            </div>
-            <p class="text-[11px] text-[var(--text-muted)]">Optional: Add work emails for your editors to track team members.</p>
-            
-            <div class="flex gap-2">
-              <input
-                type="email"
-                id="teamInviteEmailInput"
-                placeholder="Enter editor email (e.g. editor@physicswallah.com)..."
-                class="flex-1 p-2 text-xs border border-[var(--border-main)] bg-[var(--bg-card)] text-[var(--text-main)] focus:outline-none focus:border-sky-400"
-                onkeydown="if(event.key==='Enter') inviteTeamMember()"
-              />
-              <button
-                type="button"
-                onclick="inviteTeamMember()"
-                class="px-3.5 py-2 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs uppercase tracking-wider cursor-pointer whitespace-nowrap"
-              >
-                + Add Editor
-              </button>
-            </div>
-
-            <!-- Editors List Container -->
-            <div id="teamEditorsListContainer" class="space-y-1.5 max-h-32 overflow-y-auto border border-[var(--border-main)] p-2 bg-[var(--bg-card)] text-xs">
-              <div class="text-[var(--text-muted)] text-center py-2">Loading team members...</div>
-            </div>
-          </div>
-
-          <!-- 3. Quick Connect Google OAuth -->
+          <!-- 1. Quick Connect Google OAuth -->
           <div class="p-4 bg-[var(--bg-subcard)] border-2 border-[var(--border-main)] hover:bg-[var(--btn-secondary-hover)] cursor-pointer transition-colors" onclick="showAuthQuickConnect()">
             <div class="flex items-center justify-between">
               <div>
@@ -1490,7 +1409,7 @@
             </div>
           </div>
 
-          <!-- 4. Setup From Scratch — Guided Wizard -->
+          <!-- 2. Setup From Scratch — Guided Wizard -->
           <div class="p-4 bg-amber-500/10 border-2 border-amber-500/60 hover:bg-amber-500/20 cursor-pointer transition-colors" onclick="showSetupWizard(1)">
             <div class="flex items-center justify-between">
               <div>
@@ -1501,7 +1420,7 @@
             </div>
           </div>
 
-          <!-- 5. Description & Tags Presets -->
+          <!-- 3. Description & Tags Presets -->
           <div class="p-4 bg-[var(--bg-subcard)] border border-[var(--border-main)] text-xs space-y-2.5">
             <div class="flex items-center justify-between font-bold text-[var(--text-main)] uppercase text-xs">
               <span>🏷️ Description &amp; Tags Template</span>
@@ -1525,7 +1444,7 @@
             </div>
           </div>
 
-          <!-- 6. Concurrency & Performance Settings -->
+          <!-- 4. Concurrency & Performance Settings -->
           <div class="p-4 bg-[var(--bg-subcard)] border border-[var(--border-main)] text-xs space-y-2">
             <div class="flex items-center justify-between font-bold text-[var(--text-main)] uppercase text-xs">
               <span>⚡ Concurrent Upload Streams</span>
@@ -1543,7 +1462,7 @@
             <p class="text-[10px] text-[var(--text-muted)]">Controls how many Drive-to-YouTube video streams process in parallel using the SQLite queue.</p>
           </div>
 
-          <!-- 7. Advanced: Direct Bearer Token -->
+          <!-- 5. Advanced: Direct Bearer Token -->
           <div class="p-4 bg-emerald-500/10 border border-emerald-500/40 text-xs space-y-2">
             <div class="flex items-center justify-between font-bold text-emerald-700 dark:text-emerald-300 uppercase text-xs">
               <span>Advanced: Direct Bearer Token</span>
@@ -2016,75 +1935,7 @@
     </div>
   </div>
 
-  <!-- 8. Team Editor 4-Digit PIN Authentication Modal -->
-  <div id="pinAuthModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 font-mono-code">
-    <div class="bg-[var(--bg-card)] border-2 border-sky-500/60 max-w-sm w-full shadow-2xl my-4 text-[var(--text-main)] overflow-hidden">
-      
-      <!-- Modal Header -->
-      <div class="flex items-center justify-between border-b border-[var(--border-main)] px-5 py-3.5 bg-[var(--bg-subcard)]">
-        <div class="flex items-center gap-2">
-          <span class="text-xl">🔑</span>
-          <div>
-            <h3 class="text-xs font-bold uppercase tracking-wider text-sky-400">Team Studio Access</h3>
-            <p class="text-[10px] text-[var(--text-muted)]">Enter 4-Digit Passcode / PIN</p>
-          </div>
-        </div>
-        <button type="button" onclick="closePinLoginModal()" class="text-[var(--text-muted)] hover:text-[var(--text-main)] text-xl font-bold cursor-pointer">&times;</button>
-      </div>
 
-      <!-- PIN Input Form -->
-      <div class="p-5 space-y-4">
-        <p class="text-[11px] text-[var(--text-muted)] text-center">Enter your 4-digit Team PIN to access all videos and update live YouTube thumbnails.</p>
-
-        <div class="space-y-1.5 text-center">
-          <input
-            type="password"
-            id="editorPinInput"
-            maxlength="10"
-            placeholder="••••"
-            class="w-full p-3 text-center tracking-[12px] font-mono font-bold text-2xl border-2 border-sky-500/60 bg-[var(--bg-card)] text-[var(--text-main)] focus:outline-none focus:border-sky-400"
-            onkeydown="if(event.key==='Enter') submitPinLogin()"
-            autocomplete="off"
-          />
-          <div class="flex items-center justify-between text-[10px] text-[var(--text-muted)] px-1">
-            <span>Passcode / PIN</span>
-            <button
-              type="button"
-              onclick="const el=document.getElementById('editorPinInput'); el.type = el.type === 'password' ? 'text' : 'password';"
-              class="hover:text-sky-400 underline cursor-pointer"
-            >
-              Show / Hide
-            </button>
-          </div>
-        </div>
-
-        <div class="space-y-1">
-          <label class="text-[9px] font-bold uppercase text-[var(--text-muted)] tracking-wider">Your Name (Optional)</label>
-          <input
-            type="text"
-            id="editorNameInput"
-            placeholder="e.g. Editor / Aniket"
-            class="w-full p-2 text-xs border border-[var(--border-main)] bg-[var(--bg-card)] text-[var(--text-main)] focus:outline-none focus:border-sky-400"
-            onkeydown="if(event.key==='Enter') submitPinLogin()"
-          />
-        </div>
-
-        <button
-          type="button"
-          id="pinLoginSubmitBtn"
-          onclick="submitPinLogin()"
-          class="w-full py-3 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs uppercase tracking-widest cursor-pointer transition-all shadow-md flex items-center justify-center gap-2"
-        >
-          <span>ENTER STUDIO ➔</span>
-        </button>
-
-        <div class="p-2 bg-[var(--bg-subcard)] border border-[var(--border-main)] text-center text-[10px] text-[var(--text-muted)]">
-          <span>Default PIN is <button type="button" onclick="document.getElementById('editorPinInput').value='1234'; submitPinLogin('1234');" class="text-sky-400 font-mono font-bold underline cursor-pointer">1234</button></span>
-        </div>
-      </div>
-
-    </div>
-  </div>
 
   <!-- 7. Info, Privacy & Cloud Setup Modal (Opened via Left (i) Button) -->
   <div id="infoModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto">
@@ -3639,7 +3490,7 @@
     });
 
     window.closeAllModals = function() {
-      const ids = ['scanReviewModal', 'videoModal', 'editVideoModal', 'quotaTrackerModal', 'authConfigModal', 'manualUploadModal', 'infoModal', 'pinAuthModal', 'navToolsMenu'];
+      const ids = ['scanReviewModal', 'videoModal', 'editVideoModal', 'quotaTrackerModal', 'authConfigModal', 'manualUploadModal', 'infoModal', 'navToolsMenu'];
       ids.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.classList.add('hidden');
@@ -7387,40 +7238,26 @@
       // Check for auth callback redirect first
       checkServerAuthOnLoad();
 
-      // Check for 1-Click Magic Link (?pin=1234 or ?access=1234)
-      const urlParams = new URLSearchParams(window.location.search);
-      const urlPin = urlParams.get('pin') || urlParams.get('access') || urlParams.get('key');
-      if (urlPin) {
-        console.log('[auth] 1-Click PIN detected in URL, auto-logging in...');
-        submitPinLogin(urlPin);
-        try { window.history.replaceState({}, document.title, window.location.pathname); } catch (e) {}
-      }
-
-      // Auth Priority: 1) Team Editor session (4-Digit PIN), 2) Server-side refresh token, 3) localStorage access token, 4) Silent GIS refresh
+      // Auth Priority: 1) Server-side refresh token, 2) localStorage access token, 3) Silent GIS refresh
       (async () => {
-        const isEditor = await checkEditorAuthOnLoad();
-        if (isEditor) {
-          console.log('[auth] Active Team Editor session detected.');
+        const hasServerAuth = await checkServerAuthStatus();
+        
+        if (hasServerAuth) {
+          console.log('[auth] Server-side permanent auth active (refresh token).');
         } else {
-          const hasServerAuth = await checkServerAuthStatus();
-          
-          if (hasServerAuth) {
-            console.log('[auth] Server-side permanent auth active (refresh token).');
-          } else {
-            // Fallback to localStorage token
-            const token = AppStorage.getItem('oauth_access_token');
-            const expiry = AppStorage.getItem('oauth_token_expiry');
-            const remainingSecs = expiry ? Math.floor((parseInt(expiry, 10) - Date.now()) / 1000) : 0;
+          // Fallback to localStorage token
+          const token = AppStorage.getItem('oauth_access_token');
+          const expiry = AppStorage.getItem('oauth_token_expiry');
+          const remainingSecs = expiry ? Math.floor((parseInt(expiry, 10) - Date.now()) / 1000) : 0;
 
-            if (token && remainingSecs > 60) {
-              window.gAccessToken = token;
-              window.isAuthenticated = true;
-              scheduleTokenRefresh(remainingSecs);
-              startTokenHeartbeat();
-            } else {
-              window.isAuthenticated = false;
-              silentAutoRefreshToken(false);
-            }
+          if (token && remainingSecs > 60) {
+            window.gAccessToken = token;
+            window.isAuthenticated = true;
+            scheduleTokenRefresh(remainingSecs);
+            startTokenHeartbeat();
+          } else {
+            window.isAuthenticated = false;
+            silentAutoRefreshToken(false);
           }
         }
 
