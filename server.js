@@ -430,6 +430,122 @@ function cleanEnvVal(val) {
   return String(val).trim().replace(/^["']|["']$/g, '').trim();
 }
 
+// --- Server-Side OAuth Authentication ---
+
+// 1. POST /api/auth/save-credentials
+app.post('/api/auth/save-credentials', (req, res) => {
+  try {
+    const { clientId, clientSecret } = req.body;
+    db.setSetting('oauth_client_id', clientId);
+    db.setSetting('oauth_client_secret', clientSecret);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 2. GET /api/auth/url
+app.get('/api/auth/url', (req, res) => {
+  try {
+    const clientIdRow = db.getSetting('oauth_client_id');
+    const clientSecretRow = db.getSetting('oauth_client_secret');
+    const clientId = clientIdRow?.value || '';
+    const clientSecret = clientSecretRow?.value || '';
+    
+    if (!clientId || !clientSecret) {
+      return res.status(400).json({ success: false, error: 'Client ID or Secret not configured' });
+    }
+
+    const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/callback`;
+    const oauth2Client = new google.auth.OAuth2(clientId, clientSecret, redirectUri);
+    const authUrl = oauth2Client.generateAuthUrl({
+      access_type: 'offline',
+      prompt: 'consent',
+      scope: [
+        'https://www.googleapis.com/auth/drive.readonly',
+        'https://www.googleapis.com/auth/drive',
+        'https://www.googleapis.com/auth/youtube.upload',
+        'https://www.googleapis.com/auth/youtube.force-ssl',
+        'https://www.googleapis.com/auth/youtube'
+      ]
+    });
+    res.json({ success: true, url: authUrl });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 3. GET /api/auth/callback
+app.get('/api/auth/callback', async (req, res) => {
+  try {
+    const code = req.query.code;
+    const clientIdRow = db.getSetting('oauth_client_id');
+    const clientSecretRow = db.getSetting('oauth_client_secret');
+    const clientId = clientIdRow?.value || '';
+    const clientSecret = clientSecretRow?.value || '';
+    
+    const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/callback`;
+    const oauth2Client = new google.auth.OAuth2(clientId, clientSecret, redirectUri);
+    
+    const { tokens } = await oauth2Client.getToken(code);
+    if (tokens.refresh_token) {
+      db.addCredential(clientId, clientSecret, tokens.refresh_token, 'Default');
+    }
+    
+    if (tokens.access_token) {
+      db.setSetting('oauth_access_token', tokens.access_token);
+      db.setSetting('oauth_token_expiry', String(tokens.expiry_date || (Date.now() + 3600000)));
+    }
+    
+    res.send('<html><body><script>window.opener ? window.opener.postMessage("auth_success","*") : null; window.location.href = "/?auth=success";</script><p>Authentication successful! Redirecting...</p></body></html>');
+  } catch (err) {
+    res.status(500).send(`Authentication failed: ${err.message}`);
+  }
+});
+
+// 4. GET /api/auth/status
+app.get('/api/auth/status', (req, res) => {
+  try {
+    const creds = db.getActiveCredentials();
+    const hasRefreshToken = creds && creds.length > 0;
+    res.json({ success: true, connected: hasRefreshToken, hasRefreshToken });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 5. POST /api/auth/revoke
+app.post('/api/auth/revoke', (req, res) => {
+  try {
+    const creds = db.getActiveCredentials();
+    if (creds && creds.length > 0) {
+      creds.forEach(cred => db.removeCredential(cred.id));
+    }
+    db.setSetting('oauth_client_id', '');
+    db.setSetting('oauth_client_secret', '');
+    db.setSetting('oauth_access_token', '');
+    db.setSetting('oauth_token_expiry', '');
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 7. getServerOAuth2Client()
+function getServerOAuth2Client() {
+  const creds = db.getActiveCredentials();
+  if (creds && creds.length > 0) {
+    const cred = creds[0];
+    const clientId = cred.clientId;
+    const clientSecret = cred.clientSecret;
+    const oauth2Client = new google.auth.OAuth2(clientId, clientSecret);
+    oauth2Client.setCredentials({ refresh_token: cred.refreshToken });
+    return oauth2Client;
+  }
+  return null;
+}
+
+// 6. Modified getOAuth2Client
 function getOAuth2Client(req) {
   if (!req) return null;
   let accessToken = null;
@@ -443,6 +559,13 @@ function getOAuth2Client(req) {
   }
 
   if (!accessToken) {
+    const creds = db.getActiveCredentials();
+    if (creds && creds.length > 0) {
+      const cred = creds[0];
+      const oauth2Client = new google.auth.OAuth2(cred.clientId, cred.clientSecret);
+      oauth2Client.setCredentials({ refresh_token: cred.refreshToken });
+      return oauth2Client;
+    }
     return null;
   }
 

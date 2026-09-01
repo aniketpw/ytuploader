@@ -1551,7 +1551,7 @@
         </div>
       </div>
 
-      <!-- QUICK CONNECT VIEW (Already Has Client ID) -->
+      <!-- QUICK CONNECT VIEW (Already Has Client ID + Secret) -->
       <div id="authQuickConnect" class="p-5 space-y-3 hidden">
         <button type="button" onclick="showAuthLanding()" class="text-[10px] text-[var(--text-muted)] hover:text-[var(--text-main)] font-bold uppercase cursor-pointer">← Back</button>
 
@@ -1563,17 +1563,24 @@
 
           <div class="p-2 bg-[var(--bg-card)] border border-[var(--border-main)] text-[10px] space-y-1">
             <div class="flex items-center justify-between font-bold">
-              <span>Your Authorized Origin (add this in Google Console):</span>
+              <span>Authorized Origin (add in Google Console):</span>
               <button type="button" onclick="copyOriginUrl()" class="px-1.5 py-0.5 bg-[var(--bg-subcard)] text-[var(--text-main)] border border-[var(--border-main)] text-[9px] uppercase cursor-pointer">Copy</button>
             </div>
             <div class="text-[10px] truncate font-bold text-orange-500" id="originUrlDisplay">https://...</div>
+            <div class="flex items-center justify-between font-bold mt-1">
+              <span>Authorized Redirect URI (add in Google Console):</span>
+              <button type="button" onclick="copyToClipboard(window.location.origin + '/api/auth/callback', 'Redirect URI')" class="px-1.5 py-0.5 bg-[var(--bg-subcard)] text-[var(--text-main)] border border-[var(--border-main)] text-[9px] uppercase cursor-pointer">Copy</button>
+            </div>
+            <div class="text-[10px] truncate font-bold text-emerald-600 dark:text-emerald-400" id="redirectUrlDisplay">https://.../api/auth/callback</div>
           </div>
 
           <textarea id="clientIdsList" rows="2" placeholder="Paste your OAuth Client ID here (e.g. 123456789-abc.apps.googleusercontent.com)" class="w-full p-2 text-xs border border-[var(--border-main)] bg-[var(--bg-card)] text-[var(--text-main)] focus:outline-none focus:border-[var(--btn-primary-bg)]"></textarea>
 
+          <input type="password" id="quickClientSecretInput" placeholder="Paste your Client Secret here (e.g. GOCSPX-...)" class="w-full p-2 text-xs border border-sky-500/60 bg-[var(--bg-card)] text-[var(--text-main)] focus:outline-none focus:border-sky-500" />
+
           <div class="flex items-center justify-between pt-1">
             <button type="button" onclick="saveClientIds()" class="px-3 py-1 bg-[var(--bg-subcard)] border border-[var(--border-main)] text-[var(--text-main)] text-xs font-bold uppercase cursor-pointer">Save</button>
-            <button type="button" onclick="saveAndAuthorize()" class="px-4 py-1.5 bg-[var(--btn-primary-bg)] hover:opacity-90 text-[var(--btn-primary-text)] font-bold text-xs uppercase tracking-wider cursor-pointer">Save & Sign In →</button>
+            <button type="button" onclick="saveAndAuthorize()" class="px-4 py-1.5 bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs uppercase tracking-wider cursor-pointer">✔ Connect Permanently →</button>
           </div>
         </div>
       </div>
@@ -1730,7 +1737,7 @@
             </div>
             <div class="flex items-start gap-2 p-2 bg-amber-500/10 border-2 border-amber-500/60">
               <span class="font-bold text-orange-500 shrink-0">4.</span>
-              <span>Under <b>"Authorized JavaScript origins"</b> → Click <b>"+ Add URI"</b> → Paste this exact URL:</span>
+              <span>Under <b>"Authorized JavaScript origins"</b> → Click <b>"+ Add URI"</b> → Paste this:</span>
             </div>
           </div>
 
@@ -1740,9 +1747,21 @@
           </div>
 
           <div class="space-y-2 text-[11px] text-[var(--text-main)]">
+            <div class="flex items-start gap-2 p-2 bg-emerald-500/10 border-2 border-emerald-500/60">
+              <span class="font-bold text-emerald-600 shrink-0">5.</span>
+              <span>Under <b>"Authorized redirect URIs"</b> → Click <b>"+ Add URI"</b> → Paste this:</span>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 p-2.5 bg-emerald-500/5 border border-emerald-500/40">
+            <code class="flex-1 text-xs text-emerald-600 dark:text-emerald-400 font-bold truncate" id="wizRedirectUrl">http://localhost:3000/api/auth/callback</code>
+            <button type="button" onclick="copyWizRedirectUrl()" class="px-2 py-1 bg-emerald-700 text-white text-[10px] font-bold uppercase cursor-pointer shrink-0">Copy</button>
+          </div>
+
+          <div class="space-y-2 text-[11px] text-[var(--text-main)]">
             <div class="flex items-start gap-2 p-2 bg-[var(--bg-subcard)] border border-[var(--border-main)]">
-              <span class="font-bold text-orange-500 shrink-0">5.</span>
-              <span>Click <b>"Create"</b> → A popup will show your <b>Client ID</b> — copy it!</span>
+              <span class="font-bold text-orange-500 shrink-0">6.</span>
+              <span>Click <b>"Create"</b> → A popup will show your <b>Client ID</b> and <b>Client Secret</b> — copy both!</span>
             </div>
           </div>
 
@@ -1752,15 +1771,15 @@
 
           <div class="flex justify-between pt-1">
             <button type="button" onclick="showSetupWizard(3)" class="px-4 py-1.5 bg-[var(--bg-subcard)] border border-[var(--border-main)] text-[var(--text-main)] text-xs font-bold uppercase cursor-pointer">← Back</button>
-            <button type="button" onclick="showSetupWizard(5)" class="px-5 py-1.5 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] font-bold text-xs uppercase cursor-pointer">I Copied It → Final Step</button>
+            <button type="button" onclick="showSetupWizard(5)" class="px-5 py-1.5 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] font-bold text-xs uppercase cursor-pointer">I Copied Both → Final Step</button>
           </div>
         </div>
 
-        <!-- STEP 5: Paste Client ID & Connect -->
+        <!-- STEP 5: Paste Client ID + Secret & Connect PERMANENTLY -->
         <div id="wizardStep5" class="px-5 pb-5 space-y-3 hidden">
           <div>
-            <h4 class="text-xs font-bold text-[var(--text-main)] uppercase">Step 5 — Paste Client ID & Connect! 🎉</h4>
-            <p class="text-[10px] text-[var(--text-muted)] mt-0.5">You're done! Paste the Client ID you just copied.</p>
+            <h4 class="text-xs font-bold text-[var(--text-main)] uppercase">Step 5 — Paste Credentials & Connect Forever! 🎉</h4>
+            <p class="text-[10px] text-[var(--text-muted)] mt-0.5">Paste both your Client ID and Client Secret. One-time setup, permanent connection.</p>
           </div>
 
           <div class="p-3 bg-emerald-500/10 border-2 border-emerald-500/60 space-y-2">
@@ -1768,13 +1787,19 @@
             <textarea id="wizClientIdInput" rows="2" placeholder="Paste your Client ID here (e.g. 123456789-abcdef.apps.googleusercontent.com)" class="w-full p-2.5 text-xs border-2 border-emerald-500 bg-[var(--bg-subcard)] text-[var(--text-main)] focus:outline-none font-bold"></textarea>
           </div>
 
+          <div class="p-3 bg-sky-500/10 border-2 border-sky-500/60 space-y-2">
+            <label class="block text-[10px] font-bold text-sky-700 dark:text-sky-300 uppercase">Your OAuth Client Secret</label>
+            <input type="password" id="wizClientSecretInput" placeholder="Paste your Client Secret here (e.g. GOCSPX-...)" class="w-full p-2.5 text-xs border-2 border-sky-500 bg-[var(--bg-subcard)] text-[var(--text-main)] focus:outline-none font-bold" />
+            <p class="text-[9px] text-sky-600 dark:text-sky-400">Found in the same popup where you got the Client ID. Stored securely on your server only.</p>
+          </div>
+
           <div class="p-2.5 bg-amber-500/10 border border-amber-500/60 text-[10px] text-amber-800 dark:text-amber-200">
-            <span class="font-bold">✦ What happens next:</span> Your Client ID connects to <b>your own</b> Google Cloud project. All API quota (10,000 units/day) is yours alone. No one else shares it!
+            <span class="font-bold">✦ Permanent Connection:</span> With Client Secret, your server gets a <b>Refresh Token</b> from Google — meaning you'll <b>never need to re-login</b>. The token auto-renews forever in the background!
           </div>
 
           <div class="flex justify-between pt-1">
             <button type="button" onclick="showSetupWizard(4)" class="px-4 py-1.5 bg-[var(--bg-subcard)] border border-[var(--border-main)] text-[var(--text-main)] text-xs font-bold uppercase cursor-pointer">← Back</button>
-            <button type="button" onclick="wizardFinishAndConnect()" class="px-6 py-2 bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold uppercase tracking-wider cursor-pointer">✔ Connect & Sign In</button>
+            <button type="button" onclick="wizardFinishAndConnect()" class="px-6 py-2 bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold uppercase tracking-wider cursor-pointer">✔ Connect Permanently</button>
           </div>
         </div>
 
@@ -3852,18 +3877,34 @@
 
     window.wizardFinishAndConnect = function() {
       const input = document.getElementById('wizClientIdInput');
+      const secretInput = document.getElementById('wizClientSecretInput');
       if (!input) return;
-      const val = input.value.trim();
-      if (!val) {
+      const clientId = input.value.trim();
+      const clientSecret = secretInput ? secretInput.value.trim() : '';
+      
+      if (!clientId) {
         showToast('Please paste your OAuth Client ID.', 'error');
         input.focus();
         return;
       }
-      AppStorage.setItem('yt_client_ids', val);
+
+      // Save Client ID to localStorage for GIS fallback
+      AppStorage.setItem('yt_client_ids', clientId);
       const textarea = document.getElementById('clientIdsList');
-      if (textarea) textarea.value = val;
-      showToast('✔ Client ID saved! Opening Google Sign-in...', 'success');
-      launchOAuthPopup();
+      if (textarea) textarea.value = clientId;
+
+      if (clientSecret) {
+        // Use permanent server-side auth flow
+        startServerSideAuth(clientId, clientSecret);
+      } else {
+        // Fallback to old GIS popup flow (1-hour tokens)
+        showToast('No Client Secret provided. Using temporary 1-hour token flow.', 'info');
+        launchOAuthPopup();
+      }
+    };
+
+    window.copyWizRedirectUrl = function() {
+      copyToClipboard(window.location.origin + '/api/auth/callback', 'Redirect URI');
     };
 
     window.copyOriginUrl = function() {
@@ -3902,6 +3943,8 @@
       AppStorage.removeItem('oauth_token_expiry');
       window.gAccessToken = null;
       window.isAuthenticated = false;
+      window.serverAuthActive = false;
+      fetch('/api/auth/revoke', { method: 'POST' }).catch(() => {});
       if (currentState) {
         currentState.files = [];
       }
@@ -3969,7 +4012,96 @@
         if (textarea) textarea.focus();
         return;
       }
-      launchOAuthPopup();
+
+      const clientId = getNextClientId();
+      const secretInput = document.getElementById('quickClientSecretInput');
+      const clientSecret = secretInput ? secretInput.value.trim() : '';
+
+      if (clientSecret) {
+        startServerSideAuth(clientId, clientSecret);
+      } else {
+        showToast('No Client Secret provided. Using temporary 1-hour token flow.', 'info');
+        launchOAuthPopup();
+      }
+    };
+
+    // ─── Server-Side OAuth Code Flow (Permanent Refresh Token) ──────────
+    window.startServerSideAuth = async function(clientId, clientSecret) {
+      showToast('Setting up permanent Google connection...', 'info');
+      
+      try {
+        // Step 1: Save credentials to server
+        const saveRes = await fetch('/api/auth/save-credentials', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ clientId, clientSecret })
+        });
+        const saveData = await saveRes.json();
+        if (!saveData.success) {
+          showToast('Failed to save credentials: ' + (saveData.error || 'Unknown error'), 'error');
+          return;
+        }
+
+        // Step 2: Get authorization URL from server
+        const urlRes = await fetch('/api/auth/url');
+        const urlData = await urlRes.json();
+        if (!urlData.success || !urlData.url) {
+          showToast('Failed to generate auth URL: ' + (urlData.error || 'Unknown error'), 'error');
+          return;
+        }
+
+        // Step 3: Open Google consent in same window (will redirect back)
+        showToast('Redirecting to Google for permanent authorization...', 'info');
+        window.location.href = urlData.url;
+      } catch (err) {
+        showToast('Auth setup error: ' + err.message, 'error');
+        console.error('[auth] Server-side auth error:', err);
+      }
+    };
+
+    // Listen for auth success callback (when redirected back with ?auth=success)
+    window.checkServerAuthOnLoad = async function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('auth') === 'success') {
+        // Clean URL
+        window.history.replaceState({}, '', window.location.pathname);
+        
+        // Check server auth status
+        try {
+          const res = await fetch('/api/auth/status');
+          const data = await res.json();
+          if (data.success && data.connected) {
+            window.isAuthenticated = true;
+            window.serverAuthActive = true;
+            checkAuthStatus();
+            showToast('✔ Google Account connected permanently! Refresh token stored — you will never need to re-login!', 'success');
+            closeAuthModal();
+            
+            // Load data
+            setTimeout(() => {
+              syncYouTubeUploads();
+              if (typeof fetchQuotaHealth === 'function') fetchQuotaHealth();
+            }, 600);
+          }
+        } catch (err) {
+          console.error('[auth] Status check error:', err);
+        }
+      }
+    };
+
+    // Check if server already has valid credentials on page load
+    window.checkServerAuthStatus = async function() {
+      try {
+        const res = await fetch('/api/auth/status');
+        const data = await res.json();
+        if (data.success && data.connected && data.hasRefreshToken) {
+          window.isAuthenticated = true;
+          window.serverAuthActive = true;
+          checkAuthStatus();
+          return true;
+        }
+      } catch (err) {}
+      return false;
     };
 
     // ─── Permanent Session & Ultra-Resilient Auto-Renewal Engine ───────────
@@ -6597,29 +6729,49 @@
       loadClientIds();
       loadMetadataPresets();
 
-      const token = AppStorage.getItem('oauth_access_token');
-      const expiry = AppStorage.getItem('oauth_token_expiry');
-      const remainingSecs = expiry ? Math.floor((parseInt(expiry, 10) - Date.now()) / 1000) : 0;
+      // Set redirect URL displays
+      const redirectUrlDisplay = document.getElementById('redirectUrlDisplay');
+      if (redirectUrlDisplay) redirectUrlDisplay.textContent = window.location.origin + '/api/auth/callback';
+      const wizRedirectUrl = document.getElementById('wizRedirectUrl');
+      if (wizRedirectUrl) wizRedirectUrl.textContent = window.location.origin + '/api/auth/callback';
 
-      if (token && remainingSecs > 60) {
-        window.gAccessToken = token;
-        window.isAuthenticated = true;
-        scheduleTokenRefresh(remainingSecs);
-        startTokenHeartbeat();
-      } else {
-        window.isAuthenticated = false;
-        silentAutoRefreshToken(false);
-      }
+      // Check for auth callback redirect first
+      checkServerAuthOnLoad();
 
-      checkAuthStatus();
-      connectSSE();
-      loadJobStatus();
-      if (window.isAuthenticated && window.gAccessToken) {
-        syncYouTubeUploads(true);
-      }
-      if (typeof fetchQuotaHealth === 'function') {
-        fetchQuotaHealth();
-      }
+      // Auth Priority: 1) Server-side refresh token, 2) localStorage access token, 3) Silent GIS refresh
+      (async () => {
+        const hasServerAuth = await checkServerAuthStatus();
+        
+        if (hasServerAuth) {
+          console.log('[auth] Server-side permanent auth active (refresh token).');
+        } else {
+          // Fallback to localStorage token
+          const token = AppStorage.getItem('oauth_access_token');
+          const expiry = AppStorage.getItem('oauth_token_expiry');
+          const remainingSecs = expiry ? Math.floor((parseInt(expiry, 10) - Date.now()) / 1000) : 0;
+
+          if (token && remainingSecs > 60) {
+            window.gAccessToken = token;
+            window.isAuthenticated = true;
+            scheduleTokenRefresh(remainingSecs);
+            startTokenHeartbeat();
+          } else {
+            window.isAuthenticated = false;
+            silentAutoRefreshToken(false);
+          }
+        }
+
+        checkAuthStatus();
+        connectSSE();
+        loadJobStatus();
+        if (window.isAuthenticated) {
+          syncYouTubeUploads(true);
+        }
+        if (typeof fetchQuotaHealth === 'function') {
+          fetchQuotaHealth();
+        }
+      })();
+
       updateDateFilterDisplayAndFilter();
       updateThemeControlsUI(document.documentElement.classList.contains('dark'));
       updateSoundUI();
