@@ -1488,9 +1488,11 @@ app.post('/api/edit-video', async (req, res) => {
             });
             if (thumbRes.data && thumbRes.data.items && thumbRes.data.items[0]) {
               const item = thumbRes.data.items[0];
-              newThumb = (item.maxres || item.standard || item.high || item.medium || item.default)?.url || newThumb;
-              fileObj.thumbnailUrl = newThumb;
+              newThumb = (item.maxres || item.standard || item.high || item.medium || item.default)?.url || `https://i.ytimg.com/vi/${targetVideoId}/hqdefault.jpg?t=${Date.now()}`;
+            } else {
+              newThumb = `https://i.ytimg.com/vi/${targetVideoId}/hqdefault.jpg?t=${Date.now()}`;
             }
+            fileObj.thumbnailUrl = newThumb;
             addJobLog(`✔ Instantly updated live YouTube thumbnail for video ID: ${targetVideoId}`, 'success');
           }
         } catch (err) {

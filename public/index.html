@@ -5666,6 +5666,29 @@
       }
     };
 
+    window.handleThumbError = function(imgEl, ytId) {
+      if (!imgEl) return;
+      const step = parseInt(imgEl.getAttribute('data-thumb-step') || '0', 10);
+      
+      if (ytId && ytId.length === 11) {
+        if (step === 0) {
+          imgEl.setAttribute('data-thumb-step', '1');
+          imgEl.src = `https://i.ytimg.com/vi/${ytId}/mqdefault.jpg`;
+          return;
+        } else if (step === 1) {
+          imgEl.setAttribute('data-thumb-step', '2');
+          imgEl.src = `https://i.ytimg.com/vi/${ytId}/0.jpg`;
+          return;
+        } else if (step === 2) {
+          imgEl.setAttribute('data-thumb-step', '3');
+          imgEl.src = `https://img.youtube.com/vi/${ytId}/default.jpg`;
+          return;
+        }
+      }
+      imgEl.onerror = null;
+      imgEl.src = 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 120 68\'%3E%3Crect width=\'120\' height=\'68\' fill=\'%231B1B1B\'/%3E%3Cpath d=\'M52 24v20l18-10-18-10z\' fill=\'%23EA580C\'/%3E%3Ctext x=\'60\' y=\'58\' font-family=\'monospace\' font-size=\'9\' fill=\'%23888888\' text-anchor=\'middle\'%3EHD VIDEO%3C/text%3E%3C/svg%3E';
+    };
+
     window.triggerThumbnailUpload = function(videoId) {
       window.currentThumbnailVideoId = videoId;
       const fileInput = document.getElementById('thumbnailFileInput');
@@ -5910,11 +5933,11 @@
 
         let statusHtml = '';
         if (file.status === 'completed') {
-          const thumb = file.thumbnailUrl || (isYt && ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : 'https://placehold.co/120x68/1c1917/ffffff?text=Preview');
+          const thumb = file.thumbnailUrl || (isYt && ytId ? `https://i.ytimg.com/vi/${ytId}/hqdefault.jpg` : 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 120 68\'%3E%3Crect width=\'120\' height=\'68\' fill=\'%231B1B1B\'/%3E%3Cpath d=\'M52 24v20l18-10-18-10z\' fill=\'%23EA580C\'/%3E%3Ctext x=\'60\' y=\'58\' font-family=\'monospace\' font-size=\'9\' fill=\'%23888888\' text-anchor=\'middle\'%3EHD VIDEO%3C/text%3E%3C/svg%3E');
           statusHtml = `
             <div class="flex items-center gap-2.5">
               <button onclick="openVideoModal('${file.id || ytId}')" class="relative group w-14 h-8 border border-[var(--border-main)] overflow-hidden shrink-0 bg-black cursor-pointer" title="Preview">
-                <img src="${thumb}" alt="Preview" class="w-full h-full object-cover group-hover:scale-105 transition-transform" onerror="this.src='https://placehold.co/120x68/1c1917/ffffff?text=Preview'"/>
+                <img src="${thumb}" alt="Preview" data-thumb-step="0" class="w-full h-full object-cover group-hover:scale-105 transition-transform" onerror="handleThumbError(this, '${ytId || ''}')"/>
               </button>
               <div class="space-y-0.5 font-mono-code">
                 <span class="inline-flex items-center gap-1 px-1.5 py-0.2 text-[10px] font-bold bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/40">
