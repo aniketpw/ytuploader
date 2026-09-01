@@ -1601,44 +1601,59 @@ app.post('/api/thumbnail', async (req, res) => {
  */
 app.post('/api/edit-video', async (req, res) => {
   try {
-    const { fileId, title, batch, subject, thumbnailUrl, imageBase64 } = req.body || {};
-    if (!fileId) {
-      return res.status(400).json({ success: false, error: 'File ID is required.' });
+    const { fileId, videoId, title, batch, subject, thumbnailUrl, imageBase64 } = req.body || {};
+    const targetId = fileId || videoId;
+    if (!targetId) {
+      return res.status(400).json({ success: false, error: 'File ID or Video ID is required.' });
     }
 
     const channelId = await resolveChannelId(req);
     const userId = req.headers['x-user-id'] || req.body?.userId || req.query?.userId || null;
     const userFilter = (userId || channelId) ? { userId, channelId } : null;
 
-    let fileObj = jobState.files.find(f => f.id === fileId || f.videoId === fileId);
+    let fileObj = jobState.files.find(f => (fileId && (f.id === fileId || f.videoId === fileId)) || (videoId && (f.id === videoId || f.videoId === videoId)));
     const history = loadUploadedHistory();
-    const histItem = history.find(f => f.id === fileId || f.videoId === fileId);
+    const histItem = history.find(f => (fileId && (f.id === fileId || f.videoId === fileId)) || (videoId && (f.id === videoId || f.videoId === videoId)));
 
     if (!fileObj && histItem) {
       fileObj = histItem;
     }
 
     if (!fileObj) {
-      return res.status(404).json({ success: false, error: 'Video not found.' });
+      // If not found in history/state, construct fallback fileObj if videoId exists
+      if (videoId || (fileId && fileId.length === 11)) {
+        fileObj = {
+          id: fileId || videoId,
+          videoId: videoId || fileId,
+          name: title || 'YouTube Video',
+          customTitle: title || 'YouTube Video',
+          batch: batch || '',
+          subject: subject || '',
+          status: 'completed'
+        };
+      } else {
+        return res.status(404).json({ success: false, error: 'Video not found.' });
+      }
     }
 
     const auth = getOAuth2Client(req);
+    const targetVideoId = (fileObj && fileObj.videoId && fileObj.videoId.length === 11) ? fileObj.videoId : ((videoId && videoId.length === 11) ? videoId : ((fileId && fileId.length === 11) ? fileId : null));
 
     if (title && title.trim()) {
       const trimmedTitle = sanitizeYouTubeTitle(title);
       fileObj.name = trimmedTitle;
       fileObj.customTitle = trimmedTitle;
 
-      if (fileObj.videoId && fileObj.status === 'completed' && fileObj.videoId.length === 11 && !fileObj.videoId.includes('/') && auth) {
+      if (targetVideoId && auth) {
         try {
           const youtube = google.youtube({ version: 'v3', auth });
           await youtube.videos.update({
             part: ['snippet'],
             requestBody: {
-              id: fileObj.videoId,
+              id: targetVideoId,
               snippet: {
                 title: trimmedTitle,
-                description: `Lecture Video: ${trimmedTitle}\nBatch: ${batch || fileObj.batch}\nSubject: ${subject || fileObj.subject}`,
+                description: `Lecture Video: ${trimmedTitle}\nBatch: ${batch || fileObj.batch || ''}\nSubject: ${subject || fileObj.subject || ''}`,
                 tags: ['DriveToYouTube', subject || fileObj.subject, batch || fileObj.batch].filter(Boolean),
                 categoryId: '27'
               }
@@ -1651,8 +1666,8 @@ app.post('/api/edit-video', async (req, res) => {
       }
     }
 
-    if (batch) fileObj.batch = batch.trim();
-    if (subject) fileObj.subject = subject.trim();
+    if (batch !== undefined) fileObj.batch = (batch || '').trim();
+    if (subject !== undefined) fileObj.subject = (subject || '').trim();
 
     let newThumb = imageBase64 || (thumbnailUrl ? thumbnailUrl.trim() : null);
     let ytUpdated = false;
@@ -1660,9 +1675,8 @@ app.post('/api/edit-video', async (req, res) => {
 
     if (newThumb) {
       fileObj.thumbnailUrl = newThumb;
-      const targetVideoId = fileObj.videoId;
 
-      if (targetVideoId && targetVideoId.length === 11 && !targetVideoId.includes('/') && auth) {
+      if (targetVideoId && auth) {
         try {
           let buffer = null;
           let mimeType = 'image/jpeg';
@@ -1742,13 +1756,13 @@ app.post('/api/edit-video', async (req, res) => {
     broadcastSSE({
       type: 'thumbnail_updated',
       fileId: fileObj.id,
-      videoId: fileObj.videoId,
+      videoId: fileObj.videoId || targetVideoId,
       thumbnailUrl: fileObj.thumbnailUrl
     }, userFilter);
 
     return res.json({
       success: true,
-      message: ytUpdated ? 'Video details and thumbnail updated live on YouTube!' : (ytError ? `Details saved. Notice: ${ytError}` : 'Video details updated!'),
+      message: ytUpdated ? 'Video details and thumbnail updated live on YouTube!' : (ytError ? `Saved in dashboard. YouTube Notice: ${ytError}` : 'Video details updated successfully!'),
       file: fileObj,
       ytUpdated,
       ytError

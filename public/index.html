@@ -6390,6 +6390,7 @@
 
     window.saveVideoEditModal = async function() {
       const fileId = document.getElementById('editModalFileId').value;
+      const videoId = document.getElementById('editModalVideoId')?.value || (currentActiveEditFile?.videoId) || '';
       const title = document.getElementById('editModalTitleInput').value.trim();
       const batch = document.getElementById('editModalBatchInput').value.trim();
       const subject = document.getElementById('editModalSubjectInput').value.trim();
@@ -6397,9 +6398,9 @@
       const base64Thumb = window.generatedBase64Thumbnail || null;
       const chosenThumb = base64Thumb || urlThumb;
 
-      if (!fileId) return;
+      if (!fileId && !videoId) return;
 
-      if (currentActiveEditFile && (currentActiveEditFile.id === fileId || currentActiveEditFile.videoId === fileId)) {
+      if (currentActiveEditFile && (currentActiveEditFile.id === fileId || currentActiveEditFile.videoId === fileId || currentActiveEditFile.videoId === videoId)) {
         if (chosenThumb) currentActiveEditFile.thumbnailUrl = chosenThumb;
         if (title) {
           currentActiveEditFile.name = title;
@@ -6410,7 +6411,7 @@
       }
 
       if (currentState && currentState.files) {
-        const target = currentState.files.find(f => f.id === fileId || f.videoId === fileId);
+        const target = currentState.files.find(f => (fileId && (f.id === fileId || f.videoId === fileId)) || (videoId && (f.id === videoId || f.videoId === videoId)));
         if (target) {
           if (chosenThumb) target.thumbnailUrl = chosenThumb;
           if (title) {
@@ -6425,7 +6426,7 @@
       window.generatedBase64Thumbnail = null;
       closeEditModal();
       renderFilteredTable();
-      showToast('✔ Applying live thumbnail on YouTube...', 'info');
+      showToast('✔ Updating thumbnail & details on YouTube...', 'info');
 
       try {
         const uid = getPersistentUserId();
@@ -6438,6 +6439,7 @@
           },
           body: JSON.stringify({
             fileId,
+            videoId,
             title,
             batch,
             subject,
@@ -6451,7 +6453,7 @@
         const data = await res.json();
         if (data.success) {
           if (data.file && data.file.thumbnailUrl) {
-            const target = currentState?.files?.find(f => f.id === fileId || f.videoId === fileId);
+            const target = currentState?.files?.find(f => (fileId && (f.id === fileId || f.videoId === fileId)) || (videoId && (f.id === videoId || f.videoId === videoId)));
             if (target) {
               target.thumbnailUrl = `${data.file.thumbnailUrl}${data.file.thumbnailUrl.includes('?') ? '&' : '?'}t=${Date.now()}`;
               if (data.file.name) target.name = data.file.name;
@@ -6461,9 +6463,9 @@
             }
           }
           if (data.ytUpdated) {
-            showToast('✔ Thumbnail and details updated live on YouTube!', 'success');
+            showToast('✔ Thumbnail & details updated live on YouTube!', 'success');
           } else if (data.ytError) {
-            showToast(`Notice: Saved to portal. YouTube error: ${data.ytError}`, 'warn');
+            showToast(`⚠️ Saved locally. YouTube: ${data.ytError}`, 'warn');
           } else {
             showToast(data.message || '✔ Video details updated!', 'success');
           }
@@ -6473,6 +6475,7 @@
         }
       } catch (err) {
         console.error('Background edit error:', err);
+        showToast('Update saved locally', 'info');
       }
     };
 
@@ -6559,11 +6562,32 @@
       if (!file || !currentActiveEditFile) return;
 
       const reader = new FileReader();
-      reader.onload = () => {
-        const base64 = reader.result;
-        document.getElementById('editModalThumbPreview').src = base64;
-        window.generatedBase64Thumbnail = base64;
-        showToast('✔ Image chosen! Click "Save" to apply.', 'success');
+      reader.onload = (readEvt) => {
+        const img = new Image();
+        img.onload = () => {
+          try {
+            const canvas = document.createElement('canvas');
+            canvas.width = 1280;
+            canvas.height = 720;
+            const ctx = canvas.getContext('2d');
+            
+            // Draw image covering 16:9 canvas cleanly
+            const scale = Math.max(1280 / img.width, 720 / img.height);
+            const x = (1280 / 2) - (img.width / 2) * scale;
+            const y = (720 / 2) - (img.height / 2) * scale;
+            ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+
+            const base64 = canvas.toDataURL('image/jpeg', 0.90);
+            document.getElementById('editModalThumbPreview').src = base64;
+            window.generatedBase64Thumbnail = base64;
+            showToast('✔ 16:9 HD Thumbnail ready! Click "Save" to apply.', 'success');
+          } catch (err) {
+            document.getElementById('editModalThumbPreview').src = readEvt.target.result;
+            window.generatedBase64Thumbnail = readEvt.target.result;
+            showToast('✔ Image chosen! Click "Save" to apply.', 'success');
+          }
+        };
+        img.src = readEvt.target.result;
       };
       reader.readAsDataURL(file);
     };
