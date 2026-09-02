@@ -1113,14 +1113,17 @@
               <label class="text-[11px] font-bold uppercase tracking-wider text-[var(--text-main)]">
                 Video Title / Chapter Description: <span class="text-rose-500">*</span>
               </label>
-              <span class="text-[9px] text-[var(--text-muted)]">Required</span>
+              <div class="flex items-center gap-2">
+                <button type="button" onclick="setEditTitleToSubject()" class="text-[10px] text-amber-600 dark:text-amber-400 hover:underline font-semibold cursor-pointer">Use Subject Only</button>
+                <span class="text-[9px] text-[var(--text-muted)]">Required</span>
+              </div>
             </div>
             <textarea
               id="editModalTitleInput"
-              rows="3"
+              rows="2"
               oninput="renderThumbCraftCanvas()"
               class="w-full p-2.5 om-box-input text-xs text-[var(--text-main)] font-bold resize-none leading-relaxed"
-              placeholder="e.g. Some Basic Concepts Of Chemistry - 10 : Normality And n-Factor || Stoichiometry Calculations"
+              placeholder="e.g. BOTANY or Chapter Name"
             ></textarea>
           </div>
 
@@ -6436,16 +6439,18 @@
       const teacherSelect = document.getElementById('editModalTeacherSelect');
       const searchInput = document.getElementById('teacherSearchInput');
 
-      if (titleInput) titleInput.value = file.customTitle || file.name || '';
-      if (searchInput) searchInput.value = '';
-
-      // Clean Batch Code strictly resolved
-      let rawBatch = window.resolveFileBatch(file);
-      if (rawBatch === '—') rawBatch = '';
-
       // Detect Subject strictly from title
       const matchedSubject = window.resolveFileSubject(file);
       if (subjectSelect) subjectSelect.value = matchedSubject;
+
+      if (titleInput) {
+        const rawTitle = file.customTitle || file.name || '';
+        const isRaw = rawTitle.includes('| 202') || rawTitle.includes('|') || /^(Morning|Evening|Afternoon)\s*-/i.test(rawTitle) || rawTitle.length > 25;
+        titleInput.value = isRaw ? (matchedSubject || 'BOTANY').toUpperCase() : rawTitle;
+      }
+      // Clean Batch Code strictly resolved
+      let rawBatch = window.resolveFileBatch(file);
+      if (rawBatch === '—') rawBatch = '';
 
       // Ensure Faculty & Timetable are fully loaded
       if (!window.thumbcraftTeachers || window.thumbcraftTeachers.length === 0) {
@@ -6739,8 +6744,18 @@
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
 
+          // If title is the long raw video filename or empty, show clean Subject Name (e.g. BOTANY)
+          let headlineText = (title || '').trim();
+          const isRawRecording = headlineText.includes('| 202') || 
+                                 headlineText.includes('|') || 
+                                 /^(Morning|Evening|Afternoon)\s*-/i.test(headlineText) ||
+                                 headlineText.length > 25;
+          if (!headlineText || isRawRecording) {
+            headlineText = (subject || 'Lecture').toUpperCase();
+          }
+
           const wrapWords = (rawText, fontSize, maxW) => {
-            ctx.font = `700 ${fontSize}px 'Montserrat', sans-serif`;
+            ctx.font = `800 ${fontSize}px 'Montserrat', sans-serif`;
             const raw = rawText.trim();
             if (!raw) return [];
             if (ctx.measureText(raw).width <= maxW) return [raw];
@@ -6773,12 +6788,13 @@
             return lines;
           };
 
-          let chosenFontSize = Math.round(l * 0.088);
+          // Scale font size: for short subject titles (e.g. BOTANY), use bold, prominent headline font
+          let chosenFontSize = Math.round(l * (headlineText.length <= 10 ? 0.125 : 0.09));
           let chosenLines = [];
 
           for (let sz = chosenFontSize; sz >= Math.round(l * 0.052); sz -= 2) {
-            ctx.font = `700 ${sz}px 'Montserrat', sans-serif`;
-            const lines = wrapWords(title, sz, N);
+            ctx.font = `800 ${sz}px 'Montserrat', sans-serif`;
+            const lines = wrapWords(headlineText, sz, N);
             const totalH = lines.length * (sz * 1.2);
             if (totalH <= w || sz <= Math.round(l * 0.054)) {
               chosenFontSize = sz;
@@ -6787,13 +6803,13 @@
             }
           }
 
-          if (chosenLines.length === 0 && title) chosenLines = [title];
+          if (chosenLines.length === 0 && headlineText) chosenLines = [headlineText];
 
           if (chosenLines.length > 0) {
             const lineSpacing = chosenFontSize * 1.22;
             const totalHeight = (chosenLines.length - 1) * lineSpacing;
             let startY = f + (w / 2) - (totalHeight / 2);
-            ctx.font = `700 ${chosenFontSize}px 'Montserrat', sans-serif`;
+            ctx.font = `800 ${chosenFontSize}px 'Montserrat', sans-serif`;
             chosenLines.forEach(lineText => {
               ctx.fillText(lineText, p, startY);
               startY += lineSpacing;
@@ -6903,6 +6919,50 @@
     };
 
 
+
+    window.setEditTitleToSubject = function() {
+      const subj = document.getElementById('editModalSubjectInput')?.value || 'BOTANY';
+      const titleInput = document.getElementById('editModalTitleInput');
+      if (titleInput) {
+        titleInput.value = subj.toUpperCase();
+        renderThumbCraftCanvas();
+      }
+    };
+
+    window.tableThumbnailCache = window.tableThumbnailCache || {};
+
+    window.getOrGenerateRowThumbnail = function(file, rawBatchCode, subName, teacherDriveId) {
+      if (file.thumbnailUrl && file.thumbnailUrl.startsWith('data:image')) {
+        return file.thumbnailUrl;
+      }
+      if (window.tableThumbnailCache[file.id]) {
+        return window.tableThumbnailCache[file.id];
+      }
+
+      const ytId = (typeof extractYouTubeVideoId === 'function') ? extractYouTubeVideoId(file) : (file.videoId || null);
+      const isYt = (typeof isYouTubeVideo === 'function') ? isYouTubeVideo(file) : !!ytId;
+      const fallback = (isYt && ytId) 
+        ? `https://i.ytimg.com/vi/${ytId}/hqdefault.jpg` 
+        : (file.thumbnailUrl || '/assets/thumbcraft_template.png');
+
+      // Asynchronously render official ThumbCraft thumbnail for the table row
+      setTimeout(async () => {
+        try {
+          const headline = (subName || 'LECTURE').toUpperCase();
+          const batchClean = (rawBatchCode && rawBatchCode !== '—') ? rawBatchCode : 'PW BATCH';
+          const base64 = await window.generateThumbCraftBase64(headline, batchClean, subName, teacherDriveId);
+          if (base64) {
+            window.tableThumbnailCache[file.id] = base64;
+            const imgEl = document.getElementById(`table-thumb-img-${file.id}`);
+            if (imgEl) {
+              imgEl.src = base64;
+            }
+          }
+        } catch (e) {}
+      }, 20);
+
+      return fallback;
+    };
 
     window.generateSmartThumbnail = function() {
       renderThumbCraftCanvas();
@@ -7387,6 +7447,12 @@
 
         const durationBadgeHtml = formatVideoDurationBadge(file);
 
+        const rawBatchCode = window.resolveFileBatch ? window.resolveFileBatch(file) : '—';
+        const subName = window.resolveFileSubject ? window.resolveFileSubject(file) : 'Lecture';
+
+        const tMatch = window.matchTimetableFaculty ? window.matchTimetableFaculty(rawBatchCode, subName, file.date || file.name || '') : null;
+        const facName = tMatch?.teacher?.name ? tMatch.teacher.name.split(' ')[0] : (tMatch?.facultyCode || '');
+
         const sourceBadgeHtml = `
           <div class="flex flex-col gap-1 items-center justify-center">
             <span class="inline-flex items-center px-1.5 py-0.2 text-[10px] font-bold font-mono-code ${isYt ? 'bg-rose-500/20 text-rose-600 dark:text-rose-300 border border-rose-400 dark:border-rose-800' : 'bg-[var(--bg-card)] text-[var(--text-muted)] border border-[var(--border-main)]'} uppercase">
@@ -7398,12 +7464,17 @@
 
         let statusHtml = '';
         if (file.status === 'completed') {
-          const thumb = file.thumbnailUrl || (isYt && ytId ? `https://i.ytimg.com/vi/${ytId}/hqdefault.jpg` : 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 120 68\'%3E%3Crect width=\'120\' height=\'68\' fill=\'%231B1B1B\'/%3E%3Cpath d=\'M52 24v20l18-10-18-10z\' fill=\'%23EA580C\'/%3E%3Ctext x=\'60\' y=\'58\' font-family=\'monospace\' font-size=\'9\' fill=\'%23888888\' text-anchor=\'middle\'%3EHD VIDEO%3C/text%3E%3C/svg%3E');
+          const rowThumbSrc = window.getOrGenerateRowThumbnail 
+            ? window.getOrGenerateRowThumbnail(file, rawBatchCode, subName, tMatch?.teacher?.driveId)
+            : (file.thumbnailUrl || (isYt && ytId ? `https://i.ytimg.com/vi/${ytId}/hqdefault.jpg` : ''));
           statusHtml = `
             <div class="flex items-center gap-2.5">
-              <button onclick="openVideoModal('${file.id || ytId}')" class="relative group w-14 h-8 border border-[var(--border-main)] overflow-hidden shrink-0 bg-black cursor-pointer" title="Preview">
-                <img src="${thumb}" alt="Preview" data-thumb-step="0" class="w-full h-full object-cover group-hover:scale-105 transition-transform" onerror="handleThumbError(this, '${ytId || ''}')"/>
-              </button>
+              <div onclick="openEditModal('${file.id || ytId}')" class="relative group w-20 h-11 border border-[var(--border-main)] overflow-hidden shrink-0 bg-neutral-900 rounded-xs shadow-2xs cursor-pointer" title="Click to Edit & Customize Thumbnail">
+                <img id="table-thumb-img-${file.id}" src="${rowThumbSrc}" alt="Thumbnail" data-thumb-step="0" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" onerror="handleThumbError(this, '${ytId || ''}')"/>
+                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white text-[9px] font-bold">
+                  <span>✏️ EDIT</span>
+                </div>
+              </div>
               <div class="space-y-0.5 font-mono-code">
                 <span class="inline-flex items-center gap-1 px-1.5 py-0.2 text-[10px] font-bold bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/40">
                   <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
@@ -7473,12 +7544,6 @@
         const dt = formatFileDateTime(file);
         const rawBytes = file.totalBytes || file.size || 0;
         const byteSizeBadge = rawBytes > 0 ? `<span class="text-[9px] text-[var(--text-muted)] block">${formatBytes(rawBytes)}</span>` : '';
-
-        const rawBatchCode = window.resolveFileBatch ? window.resolveFileBatch(file) : '—';
-        const subName = window.resolveFileSubject ? window.resolveFileSubject(file) : 'Lecture';
-
-        const tMatch = window.matchTimetableFaculty ? window.matchTimetableFaculty(rawBatchCode, subName, file.date || file.name || '') : null;
-        const facName = tMatch?.teacher?.name ? tMatch.teacher.name.split(' ')[0] : (tMatch?.facultyCode || '');
 
         row.innerHTML = `
           <td class="py-2 px-3 text-center font-mono-code text-[var(--text-subtle)] border-r border-[var(--border-main)] text-[11px]">${startIndex + index + 1}</td>
