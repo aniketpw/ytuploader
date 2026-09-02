@@ -30,6 +30,7 @@
   </script>
   <!-- Google Identity Services for OAuth -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="/thumbcraft_template.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500;1,6..72,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -1126,7 +1127,6 @@
             <option value="Zoology">🦁 Zoology</option>
             <option value="English">📖 English</option>
             <option value="SST">🌍 SST</option>
-            <option value="General">⚡ General</option>
           </select>
         </div>
         <div class="space-y-1">
@@ -6208,9 +6208,21 @@
       document.getElementById('editVideoModal').classList.remove('hidden');
     };
 
+    window.thumbcraftTemplateImg = null;
+
+    window.preloadThumbCraftTemplate = function() {
+      if (!window.thumbcraftTemplateImg) {
+        const img = new Image();
+        img.src = '/assets/thumbcraft_template.png';
+        img.onload = () => {
+          window.thumbcraftTemplateImg = img;
+        };
+      }
+    };
+
     window.renderThumbCraftCanvas = function() {
       const title = document.getElementById('editModalTitleInput')?.value.trim() || (currentActiveEditFile?.customTitle || currentActiveEditFile?.name || 'Lecture Video');
-      const batch = document.getElementById('editModalBatchInput')?.value.trim() || (currentActiveEditFile?.batch || 'PW SIP 2026');
+      const batch = document.getElementById('editModalBatchInput')?.value.trim() || (currentActiveEditFile?.batch || 'SIP S41-AJ31MA 2026');
       const subject = document.getElementById('editModalSubjectInput')?.value || 'Chemistry';
       const teacherDriveId = document.getElementById('editModalTeacherSelect')?.value || '';
 
@@ -6219,177 +6231,119 @@
       canvas.height = 720;
       const ctx = canvas.getContext('2d');
 
-      // 1. Background Gradient (ThumbCraft Deep Teal / Cyan / Navy Aesthetic)
-      const grad = ctx.createLinearGradient(0, 0, 1280, 720);
-      if (subject === 'Physics') {
-        grad.addColorStop(0, '#0c4a6e');
-        grad.addColorStop(0.5, '#075985');
-        grad.addColorStop(1, '#082f49');
-      } else if (subject === 'Mathematics') {
-        grad.addColorStop(0, '#1e293b');
-        grad.addColorStop(0.5, '#334155');
-        grad.addColorStop(1, '#0f172a');
-      } else if (subject === 'Biology' || subject === 'Botany' || subject === 'Zoology') {
-        grad.addColorStop(0, '#064e3b');
-        grad.addColorStop(0.5, '#047857');
-        grad.addColorStop(1, '#022c22');
-      } else {
-        // Chemistry / Default: Signature PW Cyan Teal Glow
-        grad.addColorStop(0, '#0e7490');
-        grad.addColorStop(0.5, '#0891b2');
-        grad.addColorStop(1, '#155e75');
-      }
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, 1280, 720);
-
-      // Subtle Background Geometric Grid & Radial Glow
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
-      ctx.lineWidth = 1;
-      for (let x = 0; x < 1280; x += 60) {
-        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 720); ctx.stroke();
-      }
-      for (let y = 0; y < 720; y += 60) {
-        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(1280, y); ctx.stroke();
-      }
-
-      // Left Accent Lighting Bar
-      ctx.fillStyle = '#38bdf8';
-      ctx.fillRect(40, 50, 8, 620);
-
-      // 2. White Rounded Batch Card
-      const batchX = 65, batchY = 55, batchW = 420, batchH = 50, batchR = 8;
-      ctx.save();
-      ctx.fillStyle = '#ffffff';
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
-      ctx.shadowBlur = 12;
-      ctx.shadowOffsetX = 0;
-      ctx.shadowOffsetY = 4;
-      ctx.beginPath();
-      ctx.roundRect ? ctx.roundRect(batchX, batchY, batchW, batchH, batchR) : ctx.rect(batchX, batchY, batchW, batchH);
-      ctx.fill();
-      ctx.restore();
-
-      ctx.fillStyle = '#0f172a';
-      ctx.font = '900 24px "Plus Jakarta Sans", "Montserrat", system-ui, sans-serif';
-      ctx.fillText(batch.toUpperCase(), batchX + 18, batchY + 34);
-
-      // 3. Subject Pill Badge (With Emoji Icon)
-      let subjectIcon = '🧪';
-      let subjectColor = '#06b6d4';
-      if (subject === 'Physics') { subjectIcon = '⚛️'; subjectColor = '#38bdf8'; }
-      else if (subject === 'Mathematics') { subjectIcon = '📐'; subjectColor = '#f59e0b'; }
-      else if (subject === 'Biology') { subjectIcon = '🧬'; subjectColor = '#10b981'; }
-      else if (subject === 'Botany') { subjectIcon = '🌿'; subjectColor = '#22c55e'; }
-      else if (subject === 'Zoology') { subjectIcon = '🦁'; subjectColor = '#14b8a6'; }
-      else if (subject === 'English') { subjectIcon = '📖'; subjectColor = '#a855f7'; }
-      else if (subject === 'SST') { subjectIcon = '🌍'; subjectColor = '#f97316'; }
-
-      const pillX = 65, pillY = 125, pillW = 260, pillH = 46, pillR = 23;
-      ctx.save();
-      ctx.fillStyle = '#0f172a';
-      ctx.strokeStyle = subjectColor;
-      ctx.lineWidth = 2.5;
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
-      ctx.shadowBlur = 8;
-      ctx.beginPath();
-      ctx.roundRect ? ctx.roundRect(pillX, pillY, pillW, pillH, pillR) : ctx.rect(pillX, pillY, pillW, pillH);
-      ctx.fill();
-      ctx.stroke();
-      ctx.restore();
-
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '900 22px "Plus Jakarta Sans", system-ui, sans-serif';
-      ctx.fillText(`${subjectIcon}  ${subject.toUpperCase()}`, pillX + 22, pillY + 31);
-
-      // 4. Main Lecture Title & Chapter Text (Wrapped Multiline)
-      ctx.fillStyle = '#ffffff';
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
-      ctx.shadowBlur = 10;
-      ctx.shadowOffsetX = 2;
-      ctx.shadowOffsetY = 3;
-      ctx.font = '900 52px "Plus Jakarta Sans", "Montserrat", system-ui, sans-serif';
-      
-      const maxTextWidth = teacherDriveId ? 660 : 1080;
-      const words = title.split(' ');
-      let currentLine = '';
-      let textY = 250;
-
-      for (let i = 0; i < words.length; i++) {
-        const testLine = currentLine + (currentLine ? ' ' : '') + words[i];
-        const metrics = ctx.measureText(testLine);
-        if (metrics.width > maxTextWidth && i > 0) {
-          ctx.fillText(currentLine, 65, textY);
-          currentLine = words[i];
-          textY += 68;
+      const drawContent = (bgImage) => {
+        // 1. Draw Official Background Template (or Fallback Gradient)
+        if (bgImage && bgImage.complete && bgImage.naturalWidth > 0) {
+          ctx.drawImage(bgImage, 0, 0, 1280, 720);
         } else {
-          currentLine = testLine;
+          const grad = ctx.createLinearGradient(0, 0, 1280, 720);
+          grad.addColorStop(0, '#06b6d4');
+          grad.addColorStop(0.5, '#0284c7');
+          grad.addColorStop(1, '#0f172a');
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, 0, 1280, 720);
+
+          // White card fallback
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.roundRect ? ctx.roundRect(40, 440, 620, 90, 16) : ctx.rect(40, 440, 620, 90);
+          ctx.fill();
         }
-      }
-      ctx.fillText(currentLine, 65, textY);
-      ctx.shadowColor = 'transparent';
 
-      // 5. Official PW Round Logo Badge (Top Right)
-      const pwX = 1170, pwY = 90, pwR = 42;
-      ctx.save();
-      ctx.fillStyle = '#0f172a';
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 3;
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-      ctx.shadowBlur = 12;
-      ctx.beginPath();
-      ctx.arc(pwX, pwY, pwR, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-      ctx.restore();
+        // 2. Main Lecture Title & Chapter Text (Dark Bold Navy on Cyan)
+        ctx.fillStyle = '#0f172a';
+        ctx.shadowColor = 'rgba(255, 255, 255, 0.4)';
+        ctx.shadowBlur = 6;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 1;
+        ctx.font = '900 44px "Plus Jakarta Sans", "Montserrat", system-ui, sans-serif';
 
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '900 32px "Plus Jakarta Sans", system-ui, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('PW', pwX, pwY + 11);
-      ctx.textAlign = 'left';
+        const maxTextWidth = teacherDriveId ? 640 : 1000;
+        const words = title.split(' ');
+        let currentLine = '';
+        let textY = 110;
 
-      // 6. Draw Faculty Cutout Photo (If Teacher Selected)
-      const finalizeCanvas = () => {
-        try {
-          const generatedBase64 = canvas.toDataURL('image/jpeg', 0.92);
-          const preview = document.getElementById('editModalThumbPreview');
-          if (preview) preview.src = generatedBase64;
-          window.generatedBase64Thumbnail = generatedBase64;
-        } catch (e) {
-          console.warn('Canvas export warning:', e.message);
+        for (let i = 0; i < words.length; i++) {
+          const testLine = currentLine + (currentLine ? ' ' : '') + words[i];
+          const metrics = ctx.measureText(testLine);
+          if (metrics.width > maxTextWidth && i > 0) {
+            ctx.fillText(currentLine, 55, textY);
+            currentLine = words[i];
+            textY += 58;
+          } else {
+            currentLine = testLine;
+          }
+        }
+        ctx.fillText(currentLine, 55, textY);
+        ctx.shadowColor = 'transparent';
+
+        // 3. Batch Code Text Inside the White Pill/Card
+        ctx.fillStyle = '#0f172a';
+        ctx.font = '900 34px "Plus Jakarta Sans", system-ui, sans-serif';
+        ctx.fillText(batch.toUpperCase(), 65, 502);
+
+        // 4. Subject Badge with Icon Below the White Card
+        let subjectIcon = '🧪';
+        if (subject === 'Physics') subjectIcon = '⚛️';
+        else if (subject === 'Mathematics') subjectIcon = '📐';
+        else if (subject === 'Biology') subjectIcon = '🧬';
+        else if (subject === 'Botany') subjectIcon = '🌿';
+        else if (subject === 'Zoology') subjectIcon = '🦁';
+        else if (subject === 'English') subjectIcon = '📖';
+        else if (subject === 'SST') subjectIcon = '🌍';
+
+        ctx.fillStyle = '#0f172a';
+        ctx.font = '900 32px "Plus Jakarta Sans", system-ui, sans-serif';
+        ctx.fillText(`${subjectIcon}  ${subject.toUpperCase()}`, 65, 620);
+
+        // 5. Draw Selected Teacher Cutout on the White Right Side
+        const finalizeCanvas = () => {
+          try {
+            const generatedBase64 = canvas.toDataURL('image/jpeg', 0.92);
+            const preview = document.getElementById('editModalThumbPreview');
+            if (preview) preview.src = generatedBase64;
+            window.generatedBase64Thumbnail = generatedBase64;
+          } catch (e) {
+            console.warn('Canvas export warning:', e.message);
+          }
+        };
+
+        if (teacherDriveId) {
+          const proxyUrl = `/api/thumb-proxy?id=${teacherDriveId}`;
+          if (window.thumbcraftImageCache[teacherDriveId]) {
+            const tImg = window.thumbcraftImageCache[teacherDriveId];
+            ctx.drawImage(tImg, 720, 80, 520, 640);
+            finalizeCanvas();
+          } else {
+            const tImg = new Image();
+            tImg.crossOrigin = 'anonymous';
+            tImg.onload = () => {
+              window.thumbcraftImageCache[teacherDriveId] = tImg;
+              ctx.drawImage(tImg, 720, 80, 520, 640);
+              finalizeCanvas();
+            };
+            tImg.onerror = () => finalizeCanvas();
+            tImg.src = proxyUrl;
+          }
+        } else {
+          finalizeCanvas();
         }
       };
 
-      if (teacherDriveId) {
-        const proxyUrl = `/api/thumb-proxy?id=${teacherDriveId}`;
-        
-        if (window.thumbcraftImageCache[teacherDriveId]) {
-          const img = window.thumbcraftImageCache[teacherDriveId];
-          ctx.save();
-          ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
-          ctx.shadowBlur = 24;
-          ctx.drawImage(img, 720, 100, 520, 620);
-          ctx.restore();
-          finalizeCanvas();
-        } else {
-          const img = new Image();
-          img.crossOrigin = 'anonymous';
-          img.onload = () => {
-            window.thumbcraftImageCache[teacherDriveId] = img;
-            ctx.save();
-            ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
-            ctx.shadowBlur = 24;
-            ctx.drawImage(img, 720, 100, 520, 620);
-            ctx.restore();
-            finalizeCanvas();
-          };
-          img.onerror = () => {
-            finalizeCanvas();
-          };
-          img.src = proxyUrl;
-        }
+      const templateSrc = window.THUMBCRAFT_TEMPLATE_DATA_URI || '/assets/thumbcraft_template.png';
+
+      if (!window.thumbcraftTemplateImg) {
+        const bgImg = new Image();
+        bgImg.src = templateSrc;
+        bgImg.onload = () => {
+          window.thumbcraftTemplateImg = bgImg;
+          drawContent(bgImg);
+        };
+        bgImg.onerror = () => {
+          drawContent(null);
+        };
       } else {
-        finalizeCanvas();
+        drawContent(window.thumbcraftTemplateImg);
       }
     };
 
