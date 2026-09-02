@@ -328,11 +328,10 @@ function getDefaultJobState() {
 }
 
 function loadJobState() {
-  const history = loadUploadedHistory();
   try {
     const parsed = db.loadJobStateFromDB();
     if (parsed) {
-      if (parsed.status === 'processing' || parsed.status === 'scanning') {
+      if (parsed.status === 'processing' || parsed.status === 'scanning' || parsed.status === 'uploading') {
         parsed.status = 'error';
         if (parsed.logs) {
           parsed.logs.push({
@@ -342,46 +341,13 @@ function loadJobState() {
           });
         }
       }
-
-      // Sync existing completed files into history
-      if (parsed.files && parsed.files.length > 0) {
-        parsed.files.forEach(f => {
-          if (f.status === 'completed') {
-            saveCompletedFileToHistory(f);
-          }
-        });
-      }
-
-      const mergedHistory = loadUploadedHistory();
-      if (!parsed.files || parsed.files.length === 0) {
-        parsed.files = mergedHistory;
-      } else {
-        const notInParsed = mergedHistory.filter(h => !parsed.files.some(f => f.id === h.id || (f.videoId && f.videoId === h.videoId)));
-        parsed.files = [...parsed.files, ...notInParsed];
-      }
-
-      parsed.stats = {
-        total: parsed.files.length,
-        pending: parsed.files.filter(f => f.status === 'queued' || f.status === 'uploading').length,
-        completed: parsed.files.filter(f => f.status === 'completed').length,
-        failed: parsed.files.filter(f => f.status === 'failed').length
-      };
-
       return parsed;
     }
   } catch (err) {
     console.error('Error reading job state:', err);
   }
 
-  const def = getDefaultJobState();
-  def.files = history;
-  def.stats = {
-    total: history.length,
-    pending: 0,
-    completed: history.length,
-    failed: 0
-  };
-  return def;
+  return getDefaultJobState();
 }
 
 let saveStateTimeout = null;
@@ -400,6 +366,11 @@ function broadcastSSE(data, targetFilter = null) {
           if (!matchUser && !matchChannel) {
             continue; // Skip client: not their upload/job!
           }
+        }
+      } else {
+        // Strict Privacy: Never leak personal upload state/progress across clients without a target filter!
+        if (data.type === 'state_sync' || data.type === 'file_progress' || data.type === 'file_start' || data.type === 'file_complete' || data.type === 'file_error') {
+          continue;
         }
       }
       try {
@@ -976,10 +947,7 @@ app.get('/api/events', async (req, res) => {
   if (isMyJob) {
     res.write(`data: ${JSON.stringify({ type: 'state_sync', state: jobState })}\n\n`);
   } else {
-    let userHistory = (channelId || userId) ? db.getHistoryByUserOrChannel(channelId, userId) : [];
-    if (!userHistory || userHistory.length === 0) {
-      userHistory = db.loadUploadedHistory();
-    }
+    const userHistory = (channelId || userId) ? db.getHistoryByUserOrChannel(channelId, userId) : [];
     const defaultState = getDefaultJobState();
     defaultState.files = userHistory;
     defaultState.stats = {
@@ -1017,14 +985,8 @@ app.get(['/api/status', '/api/job-status'], async (req, res) => {
     let userHistory = [];
     if (isEditor) {
       userHistory = channelId ? db.getHistoryByChannel(channelId) : [];
-      if (!userHistory || userHistory.length === 0) {
-        userHistory = db.loadUploadedHistory();
-      }
     } else {
       userHistory = (channelId || userId) ? db.getHistoryByUserOrChannel(channelId, userId) : [];
-      if (!userHistory || userHistory.length === 0) {
-        userHistory = db.loadUploadedHistory();
-      }
     }
 
     const isJobActive = jobState.status === 'processing' || jobState.status === 'scanning' || jobState.status === 'uploading';
@@ -1048,7 +1010,7 @@ app.get(['/api/status', '/api/job-status'], async (req, res) => {
     }
   } catch (err) {
     console.warn('Status endpoint error:', err.message);
-    res.json({ success: true, state: getDefaultJobState(), history: db.loadUploadedHistory() });
+    res.json({ success: true, state: getDefaultJobState(), history: [] });
   }
 });
 
@@ -1064,14 +1026,12 @@ app.get('/api/history', async (req, res) => {
     let userHistory = [];
     if (isEditor) {
       userHistory = channelId ? db.getHistoryByChannel(channelId) : [];
-      if (!userHistory || userHistory.length === 0) userHistory = db.loadUploadedHistory();
     } else {
-      userHistory = (channelId || userId) ? db.getHistoryByUserOrChannel(channelId, userId) : db.loadUploadedHistory();
-      if (!userHistory || userHistory.length === 0) userHistory = db.loadUploadedHistory();
+      userHistory = (channelId || userId) ? db.getHistoryByUserOrChannel(channelId, userId) : [];
     }
     res.json({ success: true, history: userHistory });
   } catch (err) {
-    res.json({ success: true, history: db.loadUploadedHistory() });
+    res.json({ success: true, history: [] });
   }
 });
 
@@ -2728,22 +2688,22 @@ app.post(['/api/process', '/api/process-folder'], async (req, res) => {
     });
   }
 
-  // Preserve existing uploaded history so user never loses past videos
-  const history = loadUploadedHistory();
-  const existingCompleted = history.length > 0 ? history : jobState.files.filter(f => f.status === 'completed');
-
-  const privacyStatus = req.body.privacyStatus || 'unlisted';
-  const scheduledPublishAt = req.body.scheduledPublishAt || null;
-  const descriptionFooter = req.body.descriptionFooter || '';
-  const customTags = Array.isArray(req.body.customTags) ? req.body.customTags : (req.body.customTags ? String(req.body.customTags).split(',').map(s=>s.trim()).filter(Boolean) : []);
-  const customThumbnails = (req.body.customThumbnails && typeof req.body.customThumbnails === 'object') ? req.body.customThumbnails : {};
-
   const userId = req.headers['x-user-id'] || req.body.userId || null;
   let channelId = null;
   try {
     channelId = await resolveChannelId(req);
   } catch (e) {}
   activeJobChannelId = channelId;
+
+  // Preserve existing uploaded history for THIS user/channel only
+  const userHistory = (channelId || userId) ? db.getHistoryByUserOrChannel(channelId, userId) : [];
+  const existingCompleted = userHistory.filter(f => f.status === 'completed');
+
+  const privacyStatus = req.body.privacyStatus || 'unlisted';
+  const scheduledPublishAt = req.body.scheduledPublishAt || null;
+  const descriptionFooter = req.body.descriptionFooter || '';
+  const customTags = Array.isArray(req.body.customTags) ? req.body.customTags : (req.body.customTags ? String(req.body.customTags).split(',').map(s=>s.trim()).filter(Boolean) : []);
+  const customThumbnails = (req.body.customThumbnails && typeof req.body.customThumbnails === 'object') ? req.body.customThumbnails : {};
 
   jobState = {
     id: `job_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
@@ -2933,7 +2893,7 @@ app.post(['/api/process', '/api/process-folder'], async (req, res) => {
         };
       });
 
-      const existingHistory = loadUploadedHistory();
+      const existingHistory = (channelId || userId) ? db.getHistoryByUserOrChannel(channelId, userId) : [];
       const existingNotDuplicate = existingHistory.filter(h => !newFiles.some(nf => nf.id === h.id || nf.name === h.name));
       jobState.files = [...newFiles, ...existingNotDuplicate];
 
