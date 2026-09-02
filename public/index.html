@@ -1139,8 +1139,8 @@
 
         <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
           <div class="sm:col-span-5">
-            <div class="relative aspect-video w-full border border-[var(--border-main)] overflow-hidden bg-black">
-              <img id="editModalThumbPreview" src="https://placehold.co/640x360/1c1917/ffffff?text=Preview" alt="Thumbnail Preview" class="w-full h-full object-cover" />
+            <div class="relative aspect-video w-full border border-[var(--border-main)] overflow-hidden bg-black flex items-center justify-center">
+              <img id="editModalThumbPreview" src="https://placehold.co/640x360/1c1917/ffffff?text=Preview" alt="Thumbnail Preview" class="w-full h-full object-contain" />
             </div>
           </div>
           <div class="sm:col-span-7 space-y-2 text-xs">
@@ -1860,7 +1860,7 @@
 
           <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
             <div class="md:col-span-5 aspect-video bg-black border border-[var(--border-main)] overflow-hidden flex items-center justify-center">
-              <img id="manualThumbPreview" src="https://placehold.co/1280x720/1c1917/ffffff?text=Thumbnail+Preview" alt="Thumbnail Preview" class="w-full h-full object-cover" />
+              <img id="manualThumbPreview" src="https://placehold.co/1280x720/1c1917/ffffff?text=Thumbnail+Preview" alt="Thumbnail Preview" class="w-full h-full object-contain" />
             </div>
             <div class="md:col-span-7 space-y-2 text-xs">
               <div>
@@ -6118,7 +6118,11 @@
       document.getElementById('editModalSubjectInput').value = file.subject || '';
 
       const thumbUrl = file.thumbnailUrl || (file.videoId ? `https://img.youtube.com/vi/${file.videoId}/hqdefault.jpg` : 'https://placehold.co/640x360/1c1917/ffffff?text=No+Thumbnail');
-      document.getElementById('editModalThumbPreview').src = thumbUrl;
+      const preview = document.getElementById('editModalThumbPreview');
+      if (preview) {
+        preview.src = thumbUrl;
+        preview.className = 'w-full h-full object-contain';
+      }
       document.getElementById('editModalThumbUrlInput').value = '';
 
       document.getElementById('editVideoModal').classList.remove('hidden');
@@ -6399,33 +6403,67 @@
     };
 
     window.handleThumbnailSelected = async function(e) {
-      const file = e.target.files[0];
+      const file = e.target.files && e.target.files[0];
       if (!file || !currentActiveEditFile) return;
 
+      const preview = document.getElementById('editModalThumbPreview');
+
+      // If file is under 2MB (YouTube's thumbnail limit), use the EXACT file bytes with ZERO cropping or processing
+      if (file.size <= 2 * 1024 * 1024) {
+        const reader = new FileReader();
+        reader.onload = (readEvt) => {
+          const base64 = readEvt.target.result;
+          if (preview) {
+            preview.src = base64;
+            preview.className = 'w-full h-full object-contain';
+          }
+          window.generatedBase64Thumbnail = base64;
+          showToast('✔ Original thumbnail selected (no crop)! Click "Save & Apply" to update.', 'success');
+        };
+        reader.readAsDataURL(file);
+        return;
+      }
+
+      // If file exceeds 2MB, compress it while strictly preserving 100% of original aspect ratio (NO cropping)
       const reader = new FileReader();
       reader.onload = (readEvt) => {
         const img = new Image();
         img.onload = () => {
           try {
-            const canvas = document.createElement('canvas');
-            canvas.width = 1280;
-            canvas.height = 720;
-            const ctx = canvas.getContext('2d');
-            
-            // Draw image covering 16:9 canvas cleanly
-            const scale = Math.max(1280 / img.width, 720 / img.height);
-            const x = (1280 / 2) - (img.width / 2) * scale;
-            const y = (720 / 2) - (img.height / 2) * scale;
-            ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+            const maxDim = 1920;
+            let width = img.width;
+            let height = img.height;
+            if (width > maxDim || height > maxDim) {
+              if (width > height) {
+                height = Math.round((height * maxDim) / width);
+                width = maxDim;
+              } else {
+                width = Math.round((width * maxDim) / height);
+                height = maxDim;
+              }
+            }
 
-            const base64 = canvas.toDataURL('image/jpeg', 0.90);
-            document.getElementById('editModalThumbPreview').src = base64;
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            // Draw exact full image - ZERO crop, ZERO edge cutoffs
+            ctx.drawImage(img, 0, 0, width, height);
+
+            const base64 = canvas.toDataURL('image/jpeg', 0.92);
+            if (preview) {
+              preview.src = base64;
+              preview.className = 'w-full h-full object-contain';
+            }
             window.generatedBase64Thumbnail = base64;
-            showToast('✔ 16:9 HD Thumbnail ready! Click "Save" to apply.', 'success');
+            showToast('✔ Original thumbnail loaded (no crop)! Click "Save & Apply" to update.', 'success');
           } catch (err) {
-            document.getElementById('editModalThumbPreview').src = readEvt.target.result;
+            if (preview) {
+              preview.src = readEvt.target.result;
+              preview.className = 'w-full h-full object-contain';
+            }
             window.generatedBase64Thumbnail = readEvt.target.result;
-            showToast('✔ Image chosen! Click "Save" to apply.', 'success');
+            showToast('✔ Original image selected! Click "Save & Apply" to update.', 'success');
           }
         };
         img.src = readEvt.target.result;
