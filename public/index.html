@@ -6932,20 +6932,27 @@
     window.tableThumbCache = window.tableThumbCache || {};
 
     window.getRowThumbnail = function(file, rawBatchCode, subName, teacherDriveId) {
-      if (file.thumbnailUrl && file.thumbnailUrl.startsWith('data:image')) {
+      const ytId = (typeof extractYouTubeVideoId === 'function') ? extractYouTubeVideoId(file) : (file.videoId || null);
+      const isYt = (typeof isYouTubeVideo === 'function') ? isYouTubeVideo(file) : !!ytId;
+
+      // 1. Agar pehle se thumbnail lagaya hua hai -> WAHI RAKHO! Kabhi overwrite mat karo!
+      if (file.hasCustomThumbnail || file.thumbnailApplied) {
+        return file.thumbnailUrl || (isYt && ytId ? `https://i.ytimg.com/vi/${ytId}/mqdefault.jpg` : '');
+      }
+      if (file.thumbnailUrl && (file.thumbnailUrl.startsWith('data:image') || file.thumbnailUrl.includes('maxres') || file.thumbnailUrl.includes('standard') || file.thumbnailUrl.includes('?t='))) {
         return file.thumbnailUrl;
       }
+
+      // 2. Agar memory cache me pehle se hai
       if (window.tableThumbCache[file.id]) {
         return window.tableThumbCache[file.id];
       }
 
-      const ytId = (typeof extractYouTubeVideoId === 'function') ? extractYouTubeVideoId(file) : (file.videoId || null);
-      const isYt = (typeof isYouTubeVideo === 'function') ? isYouTubeVideo(file) : !!ytId;
       const initialPlaceholder = (isYt && ytId) 
         ? `https://i.ytimg.com/vi/${ytId}/mqdefault.jpg` 
         : (file.thumbnailUrl || '/assets/thumbcraft_template.png');
 
-      // Asynchronously generate official ThumbCraft thumbnail for the table row
+      // Sirf unhi videos ke liye official ThumbCraft generate karo jinpe abhi tak koi thumbnail nahi lagaya gaya!
       setTimeout(async () => {
         try {
           const headline = (subName || 'LECTURE').toUpperCase();

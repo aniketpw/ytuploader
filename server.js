@@ -1185,6 +1185,7 @@ app.post(['/api/sync-youtube', '/api/sync-youtube-uploads', '/api/channel-videos
 
         const title = snippet.title || 'Untitled Video';
         const publishedAt = snippet.publishedAt || item.contentDetails?.videoPublishedAt || new Date().toISOString();
+        const hasCustomThumb = !!(snippet.thumbnails && (snippet.thumbnails.maxres || snippet.thumbnails.standard));
         const thumb = snippet.thumbnails && (snippet.thumbnails.maxres || snippet.thumbnails.standard || snippet.thumbnails.high || snippet.thumbnails.medium || snippet.thumbnails.default)
           ? (snippet.thumbnails.maxres || snippet.thumbnails.standard || snippet.thumbnails.high || snippet.thumbnails.medium || snippet.thumbnails.default).url
           : `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
@@ -1209,6 +1210,7 @@ app.post(['/api/sync-youtube', '/api/sync-youtube-uploads', '/api/channel-videos
           etaSeconds: 0,
           youtubeUrl: `https://youtu.be/${videoId}`,
           thumbnailUrl: thumb,
+          hasCustomThumbnail: hasCustomThumb,
           studioUrl: `https://studio.youtube.com/video/${videoId}/edit`,
           error: null
         };
@@ -1862,6 +1864,7 @@ app.post('/api/edit-video', async (req, res) => {
               newThumb = `https://i.ytimg.com/vi/${targetVideoId}/hqdefault.jpg?t=${Date.now()}`;
             }
             fileObj.thumbnailUrl = newThumb;
+            fileObj.hasCustomThumbnail = true;
             ytUpdated = true;
             addJobLog(`✔ Instantly updated live YouTube thumbnail for video ID: ${targetVideoId}`, 'success', userFilter);
           }
