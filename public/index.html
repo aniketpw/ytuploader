@@ -33,7 +33,7 @@
   <script src="/thumbcraft_template.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500;1,6..72,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,600;0,700;0,800;0,900;1,700;1,800;1,900&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500;1,6..72,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   
   <style>
     :root {
@@ -6220,6 +6220,208 @@
       }
     };
 
+    // ══════════════════════════════════════════════════════════════════
+    // EXACT OFFICIAL THUMBCRAFT VECTOR ICONS & CANVAS ENGINE (1280x614)
+    // ══════════════════════════════════════════════════════════════════
+    function drawThumbCraftSubjectIcon(ctx, subject, x, y, size) {
+      ctx.save();
+      ctx.strokeStyle = '#000000';
+      ctx.fillStyle = '#000000';
+      ctx.lineWidth = size * 0.085;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      switch (subject) {
+        case 'Chemistry': {
+          const w = size, h = size;
+          ctx.beginPath();
+          ctx.moveTo(x + w * 0.38, y);
+          ctx.lineTo(x + w * 0.62, y);
+          ctx.moveTo(x + w * 0.42, y);
+          ctx.lineTo(x + w * 0.42, y + h * 0.28);
+          ctx.lineTo(x + w * 0.08, y + h * 0.88);
+          ctx.quadraticCurveTo(x + w * 0.08, y + h, x + w * 0.22, y + h);
+          ctx.lineTo(x + w * 0.78, y + h);
+          ctx.quadraticCurveTo(x + w * 0.92, y + h, x + w * 0.92, y + h * 0.88);
+          ctx.lineTo(x + w * 0.58, y + h * 0.28);
+          ctx.lineTo(x + w * 0.58, y);
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.moveTo(x + w * 0.22, y + h * 0.66);
+          ctx.quadraticCurveTo(x + w * 0.5, y + h * 0.62, x + w * 0.78, y + h * 0.66);
+          ctx.lineTo(x + w * 0.86, y + h * 0.92);
+          ctx.lineTo(x + w * 0.14, y + h * 0.92);
+          ctx.closePath();
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.arc(x + w * 0.38, y + h * 0.5, size * 0.065, 0, Math.PI * 2);
+          ctx.arc(x + w * 0.62, y + h * 0.4, size * 0.05, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+        }
+        case 'Physics': {
+          const r = size * 0.45, cx = x + size / 2, cy = y + size / 2;
+          ctx.beginPath();
+          ctx.arc(cx, cy, size * 0.13, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.ellipse(cx, cy, r, r * 0.38, Math.PI / 4, 0, Math.PI * 2);
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.ellipse(cx, cy, r, r * 0.38, -Math.PI / 4, 0, Math.PI * 2);
+          ctx.stroke();
+          break;
+        }
+        case 'Mathematics': {
+          const cx = x + size * 0.5, cy = y + size * 0.5;
+          ctx.save();
+          ctx.lineWidth = Math.max(2, size * 0.08);
+          const px = x + size * 0.3, py = y + size * 0.12, pw = size * 0.58, ph = size * 0.74;
+          ctx.beginPath();
+          ctx.moveTo(px, py);
+          ctx.lineTo(px, py + ph);
+          ctx.lineTo(px + pw, py + ph);
+          ctx.closePath();
+          ctx.stroke();
+
+          const ow = size * 0.13, oh = size * 0.16;
+          ctx.beginPath();
+          ctx.moveTo(px + ow, py + oh * 1.7);
+          ctx.lineTo(px + ow, py + ph - oh * 0.8);
+          ctx.lineTo(px + pw - ow * 1.8, py + ph - oh * 0.8);
+          ctx.closePath();
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.moveTo(px + pw * 0.35, py + ph * 0.45);
+          ctx.lineTo(px + pw * 0.41, py + ph * 0.4);
+          ctx.moveTo(px + pw * 0.55, py + ph * 0.65);
+          ctx.lineTo(px + pw * 0.61, py + ph * 0.6);
+          ctx.stroke();
+
+          ctx.translate(cx - size * 0.05, cy + size * 0.04);
+          ctx.rotate(-Math.PI / 4.4);
+          const C = size * 0.88, M = size * 0.22;
+          ctx.strokeRect(-C * 0.42, -M / 2, C * 0.58, M);
+          ctx.beginPath();
+          ctx.moveTo(-C * 0.42, 0);
+          ctx.lineTo(C * 0.16, 0);
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.moveTo(C * 0.16, -M / 2);
+          ctx.lineTo(C * 0.44, 0);
+          ctx.lineTo(C * 0.16, M / 2);
+          ctx.closePath();
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.moveTo(C * 0.32, -M * 0.22);
+          ctx.lineTo(C * 0.44, 0);
+          ctx.lineTo(C * 0.32, M * 0.22);
+          ctx.closePath();
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.arc(-C * 0.42, 0, M / 2, Math.PI / 2, Math.PI * 1.5);
+          ctx.stroke();
+          ctx.restore();
+          break;
+        }
+        case 'Botany': {
+          const rx = x + size * 0.48, ry = y + size * 0.46;
+          ctx.save();
+          ctx.fillStyle = ctx.strokeStyle;
+          const bp = y + size * 0.86, bw = size * 0.56, bx = rx - bw / 2;
+          ctx.lineWidth = Math.max(1.5, size * 0.05);
+          ctx.beginPath();
+          ctx.moveTo(bx, bp);
+          ctx.quadraticCurveTo(rx, bp - size * 0.035, bx + bw, bp);
+          ctx.quadraticCurveTo(rx, bp + size * 0.035, bx, bp);
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.moveTo(rx, bp);
+          ctx.lineTo(rx, bp + size * 0.08);
+          ctx.moveTo(rx - size * 0.1, bp);
+          ctx.lineTo(rx - size * 0.15, bp + size * 0.06);
+          ctx.moveTo(rx + size * 0.1, bp);
+          ctx.lineTo(rx + size * 0.15, bp + size * 0.06);
+          ctx.stroke();
+
+          const ty = ry - size * 0.02;
+          ctx.lineWidth = Math.max(2, size * 0.08);
+          ctx.beginPath();
+          ctx.moveTo(rx, bp);
+          ctx.lineTo(rx, ty);
+          ctx.stroke();
+
+          ctx.lineWidth = Math.max(1.5, size * 0.055);
+          ctx.beginPath();
+          ctx.moveTo(rx, ty + size * 0.06);
+          ctx.quadraticCurveTo(rx - size * 0.08, ty - size * 0.02, rx - size * 0.14, ty - size * 0.08);
+          ctx.moveTo(rx, ty + size * 0.06);
+          ctx.quadraticCurveTo(rx + size * 0.08, ty - size * 0.02, rx + size * 0.14, ty - size * 0.08);
+          ctx.stroke();
+
+          const drawLeaf = (lx, ly, rot, len, wid) => {
+            ctx.save();
+            ctx.translate(lx, ly);
+            ctx.rotate(rot);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.quadraticCurveTo(-wid, -len * 0.5, 0, -len);
+            ctx.quadraticCurveTo(wid, -len * 0.5, 0, 0);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+          };
+          drawLeaf(rx, ty, 0, size * 0.42, size * 0.14);
+          drawLeaf(rx - size * 0.14, ty - size * 0.08, -Math.PI / 4, size * 0.36, size * 0.13);
+          drawLeaf(rx + size * 0.14, ty - size * 0.08, Math.PI / 4, size * 0.36, size * 0.13);
+          ctx.restore();
+          break;
+        }
+        case 'Zoology': {
+          ctx.save();
+          ctx.lineWidth = Math.max(2, size * 0.085);
+          const by = y + size * 0.88, bw = size * 0.68, bx = x + size * 0.08;
+          ctx.beginPath();
+          ctx.moveTo(bx, by);
+          ctx.lineTo(bx + bw, by);
+          ctx.stroke();
+
+          const cx = bx + bw * 0.38;
+          ctx.beginPath();
+          ctx.moveTo(cx, by);
+          ctx.lineTo(cx, by - size * 0.16);
+          ctx.stroke();
+
+          const sy = by - size * 0.16;
+          ctx.beginPath();
+          ctx.moveTo(cx - size * 0.18, sy);
+          ctx.lineTo(cx + size * 0.4, sy);
+          ctx.stroke();
+
+          // Microscope tube and eyepiece
+          ctx.translate(cx + size * 0.08, sy - size * 0.18);
+          ctx.rotate(-Math.PI / 4);
+          ctx.strokeRect(-size * 0.12, -size * 0.35, size * 0.24, size * 0.45);
+          ctx.strokeRect(-size * 0.16, -size * 0.48, size * 0.32, size * 0.13);
+          ctx.beginPath();
+          ctx.arc(0, size * 0.15, size * 0.18, 0, Math.PI);
+          ctx.stroke();
+          ctx.restore();
+          break;
+        }
+      }
+      ctx.restore();
+    }
+
     window.renderThumbCraftCanvas = function() {
       const title = document.getElementById('editModalTitleInput')?.value.trim() || (currentActiveEditFile?.customTitle || currentActiveEditFile?.name || 'Lecture Video');
       const batch = document.getElementById('editModalBatchInput')?.value.trim() || (currentActiveEditFile?.batch || 'SIP S41-AJ31MA 2026');
@@ -6227,106 +6429,182 @@
       const teacherDriveId = document.getElementById('editModalTeacherSelect')?.value || '';
 
       const canvas = document.createElement('canvas');
-      canvas.width = 1280;
-      canvas.height = 720;
+      const O = 1280;
+      const l = 614; // Exact 2.085:1 aspect ratio of the 784x376 template image (0% distortion)
+      canvas.width = O;
+      canvas.height = l;
       const ctx = canvas.getContext('2d');
 
       const drawContent = (bgImage) => {
-        // 1. Draw Official Background Template (or Fallback Gradient)
+        // 1. Draw Official Background Template (Pixel Perfect 1280x614)
         if (bgImage && bgImage.complete && bgImage.naturalWidth > 0) {
-          ctx.drawImage(bgImage, 0, 0, 1280, 720);
+          ctx.drawImage(bgImage, 0, 0, O, l);
         } else {
-          const grad = ctx.createLinearGradient(0, 0, 1280, 720);
-          grad.addColorStop(0, '#06b6d4');
-          grad.addColorStop(0.5, '#0284c7');
-          grad.addColorStop(1, '#0f172a');
-          ctx.fillStyle = grad;
-          ctx.fillRect(0, 0, 1280, 720);
-
-          // White card fallback
-          ctx.fillStyle = '#ffffff';
-          ctx.beginPath();
-          ctx.roundRect ? ctx.roundRect(40, 440, 620, 90, 16) : ctx.rect(40, 440, 620, 90);
-          ctx.fill();
+          ctx.fillStyle = '#06b6d4';
+          ctx.fillRect(0, 0, O, l);
         }
 
-        // 2. Main Lecture Title & Chapter Text (Dark Bold Navy on Cyan)
-        ctx.fillStyle = '#0f172a';
-        ctx.shadowColor = 'rgba(255, 255, 255, 0.4)';
-        ctx.shadowBlur = 6;
-        ctx.shadowOffsetX = 0;
-        ctx.shadowOffsetY = 1;
-        ctx.font = '900 44px "Plus Jakarta Sans", "Montserrat", system-ui, sans-serif';
+        // 2. Draw Teacher Cutout on the Right White Section
+        const drawTeacherIfAny = () => {
+          if (teacherDriveId) {
+            const proxyUrl = `/api/thumb-proxy?id=${teacherDriveId}`;
+            const drawT = (img) => {
+              const A = img.naturalWidth && img.naturalHeight ? img.naturalWidth / img.naturalHeight : 0.75;
+              let Y = l * 0.94 * 1.05;
+              let L = Y * A;
+              const maxL = O * 0.39 * 1.05;
+              if (L > maxL) { L = maxL; Y = L / A; }
+              const pe = (O * 0.81) - (L / 2);
+              const Ne = l - Y;
 
-        const maxTextWidth = teacherDriveId ? 640 : 1000;
-        const words = title.split(' ');
-        let currentLine = '';
-        let textY = 110;
+              ctx.save();
+              ctx.shadowColor = 'rgba(0, 0, 0, 0.16)';
+              ctx.shadowBlur = 14;
+              ctx.shadowOffsetY = 4;
+              ctx.drawImage(img, pe, Ne, L, Y);
+              ctx.restore();
+            };
 
-        for (let i = 0; i < words.length; i++) {
-          const testLine = currentLine + (currentLine ? ' ' : '') + words[i];
-          const metrics = ctx.measureText(testLine);
-          if (metrics.width > maxTextWidth && i > 0) {
-            ctx.fillText(currentLine, 55, textY);
-            currentLine = words[i];
-            textY += 58;
-          } else {
-            currentLine = testLine;
-          }
-        }
-        ctx.fillText(currentLine, 55, textY);
-        ctx.shadowColor = 'transparent';
-
-        // 3. Batch Code Text Inside the White Pill/Card
-        ctx.fillStyle = '#0f172a';
-        ctx.font = '900 34px "Plus Jakarta Sans", system-ui, sans-serif';
-        ctx.fillText(batch.toUpperCase(), 65, 502);
-
-        // 4. Subject Badge with Icon Below the White Card
-        let subjectIcon = '🧪';
-        if (subject === 'Physics') subjectIcon = '⚛️';
-        else if (subject === 'Mathematics') subjectIcon = '📐';
-        else if (subject === 'Biology') subjectIcon = '🧬';
-        else if (subject === 'Botany') subjectIcon = '🌿';
-        else if (subject === 'Zoology') subjectIcon = '🦁';
-        else if (subject === 'English') subjectIcon = '📖';
-        else if (subject === 'SST') subjectIcon = '🌍';
-
-        ctx.fillStyle = '#0f172a';
-        ctx.font = '900 32px "Plus Jakarta Sans", system-ui, sans-serif';
-        ctx.fillText(`${subjectIcon}  ${subject.toUpperCase()}`, 65, 620);
-
-        // 5. Draw Selected Teacher Cutout on the White Right Side
-        const finalizeCanvas = () => {
-          try {
-            const generatedBase64 = canvas.toDataURL('image/jpeg', 0.92);
-            const preview = document.getElementById('editModalThumbPreview');
-            if (preview) preview.src = generatedBase64;
-            window.generatedBase64Thumbnail = generatedBase64;
-          } catch (e) {
-            console.warn('Canvas export warning:', e.message);
+            if (window.thumbcraftImageCache[teacherDriveId]) {
+              drawT(window.thumbcraftImageCache[teacherDriveId]);
+            } else {
+              const img = new Image();
+              img.crossOrigin = 'anonymous';
+              img.onload = () => {
+                window.thumbcraftImageCache[teacherDriveId] = img;
+                window.renderThumbCraftCanvas();
+              };
+              img.src = proxyUrl;
+            }
           }
         };
+        drawTeacherIfAny();
 
-        if (teacherDriveId) {
-          const proxyUrl = `/api/thumb-proxy?id=${teacherDriveId}`;
-          if (window.thumbcraftImageCache[teacherDriveId]) {
-            const tImg = window.thumbcraftImageCache[teacherDriveId];
-            ctx.drawImage(tImg, 720, 80, 520, 640);
-            finalizeCanvas();
-          } else {
-            const tImg = new Image();
-            tImg.crossOrigin = 'anonymous';
-            tImg.onload = () => {
-              window.thumbcraftImageCache[teacherDriveId] = tImg;
-              ctx.drawImage(tImg, 720, 80, 520, 640);
-              finalizeCanvas();
-            };
-            tImg.onerror = () => finalizeCanvas();
-            tImg.src = proxyUrl;
+        // 3. Multiline Title & Topic Text in Cyan Area (Auto-Fit & Centered)
+        const p = O * 0.315; // 403.2px (Center of cyan area)
+        const N = O * 0.55;  // 704px (Max width of cyan text area)
+        const f = l * 0.055; // 33.7px
+        const w = l * 0.55 - f; // 303.9px available height
+
+        ctx.save();
+        ctx.fillStyle = '#000000';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        const wrapWords = (rawText, fontSize, maxW) => {
+          ctx.font = `700 ${fontSize}px 'Montserrat', sans-serif`;
+          const raw = rawText.trim();
+          if (!raw) return [];
+          if (ctx.measureText(raw).width <= maxW) return [raw];
+
+          const tokens = raw.split(/\s+/).filter(z => z.length > 0);
+          if (tokens.length <= 1) return [raw];
+
+          const cleanTokens = [];
+          for (let z = 0; z < tokens.length; z++) {
+            const tok = tokens[z];
+            if ((tok === ':' || tok === '-' || tok === '|') && cleanTokens.length > 0) {
+              cleanTokens[cleanTokens.length - 1] += ' ' + tok;
+            } else {
+              cleanTokens.push(tok);
+            }
           }
-        } else {
-          finalizeCanvas();
+
+          const lines = [];
+          let cur = cleanTokens[0];
+          for (let z = 1; z < cleanTokens.length; z++) {
+            const testLine = cur + ' ' + cleanTokens[z];
+            if (ctx.measureText(testLine).width <= maxW) {
+              cur = testLine;
+            } else {
+              lines.push(cur);
+              cur = cleanTokens[z];
+            }
+          }
+          if (cur) lines.push(cur);
+          return lines;
+        };
+
+        let chosenFontSize = Math.round(l * 0.088); // 54px
+        let chosenLines = [];
+
+        for (let sz = chosenFontSize; sz >= Math.round(l * 0.052); sz -= 2) {
+          ctx.font = `700 ${sz}px 'Montserrat', sans-serif`;
+          const lines = wrapWords(title, sz, N);
+          const totalH = lines.length * (sz * 1.2);
+          if (totalH <= w || sz <= Math.round(l * 0.054)) {
+            chosenFontSize = sz;
+            chosenLines = lines;
+            break;
+          }
+        }
+
+        if (chosenLines.length === 0 && title) chosenLines = [title];
+
+        if (chosenLines.length > 0) {
+          const lineSpacing = chosenFontSize * 1.22;
+          const totalHeight = (chosenLines.length - 1) * lineSpacing;
+          let startY = f + (w / 2) - (totalHeight / 2);
+          ctx.font = `700 ${chosenFontSize}px 'Montserrat', sans-serif`;
+          chosenLines.forEach(lineText => {
+            ctx.fillText(lineText, p, startY);
+            startY += lineSpacing;
+          });
+        }
+        ctx.restore();
+
+        // 4. Batch Name inside White Pill Card
+        ctx.save();
+        const batchCenterX = O * (240.25 / 784); // 392.2px
+        const batchCenterY = l * (261 / 376);    // 426.3px
+        const batchMaxW = O * ((462.5 - 18) / 784) * 0.9; // 653px
+        const batchBoxH = l * (64 / 376); // 104.5px
+        const batchText = (batch || 'SIP S41-AJ31MA 2026').toUpperCase();
+
+        let batchFontSize = Math.round(batchBoxH * 0.52); // ~54px
+        ctx.font = `800 ${batchFontSize}px 'Montserrat', 'Outfit', sans-serif`;
+        let textWidth = ctx.measureText(batchText).width;
+        while (textWidth > batchMaxW && batchFontSize > 16) {
+          batchFontSize -= 2;
+          ctx.font = `800 ${batchFontSize}px 'Montserrat', 'Outfit', sans-serif`;
+          textWidth = ctx.measureText(batchText).width;
+        }
+
+        ctx.fillStyle = '#000000';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(batchText, batchCenterX, batchCenterY);
+        ctx.restore();
+
+        // 5. Subject Line & Vector Icons Below White Card
+        ctx.save();
+        const subjY = l * 0.825; // 506.5px
+        const subjX = O * 0.035; // 44.8px
+        const iconSize = l * 0.098; // 60.1px
+        const hasIcon = subject !== 'SST' && subject !== 'English';
+
+        if (hasIcon) {
+          drawThumbCraftSubjectIcon(ctx, subject, subjX, subjY, iconSize);
+        }
+
+        const subjFontSize = Math.round(l * 0.088); // 54px
+        ctx.font = `italic 700 ${subjFontSize}px 'Montserrat', sans-serif`;
+        ctx.fillStyle = '#000000';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+
+        const textStartX = hasIcon ? subjX + iconSize + (O * 0.022) : subjX;
+        ctx.fillText(subject.toUpperCase(), textStartX, subjY + (iconSize / 2));
+        ctx.restore();
+
+        // Finalize Base64 for Preview & YouTube
+        try {
+          const generatedBase64 = canvas.toDataURL('image/jpeg', 0.95);
+          const preview = document.getElementById('editModalThumbPreview');
+          if (preview) preview.src = generatedBase64;
+          window.generatedBase64Thumbnail = generatedBase64;
+        } catch (e) {
+          console.warn('Canvas export warning:', e.message);
         }
       };
 
@@ -6339,9 +6617,7 @@
           window.thumbcraftTemplateImg = bgImg;
           drawContent(bgImg);
         };
-        bgImg.onerror = () => {
-          drawContent(null);
-        };
+        bgImg.onerror = () => drawContent(null);
       } else {
         drawContent(window.thumbcraftTemplateImg);
       }
