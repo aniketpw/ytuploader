@@ -1579,28 +1579,49 @@ app.get('/api/faculty-list', async (req, res) => {
           const jsonStr = data.substring(data.indexOf('{'), data.lastIndexOf('}') + 1);
           const json = JSON.parse(jsonStr);
           const rows = json.table.rows;
+          const emailToCode = new Map();
+          rows.forEach(r => {
+            if (!r.c) return;
+            const email = (r.c[10]?.v || '').trim().toLowerCase();
+            const code = (r.c[11]?.v || '').trim().toUpperCase();
+            if (email && code && code !== 'TEACHER CODE' && /^[A-Z]{2,4}$/.test(code)) {
+              emailToCode.set(email, code);
+            }
+          });
+
+          const IGNORED_CODE_WORDS = new Set(['SIR', 'MAM', 'MAAM', 'MA\'AM', 'MISS', 'MR', 'MRS', 'DR', 'PROF', 'LIV', 'LIVE', 'PW']);
+
           const teachers = [];
           rows.forEach((r, idx) => {
             if (idx === 0) return;
             const cells = r.c;
+            if (!cells) return;
             const center = cells[0]?.v || '';
-            const name = cells[1]?.v || '';
-            const driveId = cells[4]?.v || '';
-            let code = (cells[5]?.v || cells[11]?.v || '').trim().toUpperCase();
-            const status = cells[6]?.v || 'Active';
+            const name = (cells[1]?.v || '').trim();
+            const email = (cells[2]?.v || '').trim().toLowerCase();
+            const driveId = (cells[4]?.v || '').trim();
+            let code = (cells[5]?.v || '').trim().toUpperCase();
+            const status = (cells[6]?.v || 'Active').trim();
 
+            // Priority 1: Explicit Code in Table 1 (Col 5)
+            // Priority 2: Relational Email Lookup from Table 2 (Cols 10, 11)
+            if (!code && email && emailToCode.has(email)) {
+              code = emailToCode.get(email);
+            }
+
+            // Priority 3: Trailing token in Name (excluding common honorifics)
             if (!code && name) {
-              const parts = name.trim().split(/\s+/);
+              const parts = name.split(/\s+/);
               if (parts.length > 1) {
                 const last = parts[parts.length - 1].toUpperCase();
-                if (/^[A-Z]{2,4}$/.test(last)) {
+                if (/^[A-Z]{2,4}$/.test(last) && !IGNORED_CODE_WORDS.has(last)) {
                   code = last;
                 }
               }
             }
 
-            if (name && driveId && String(status).toLowerCase() === 'active') {
-              teachers.push({ center, name: name.trim(), driveId: driveId.trim(), code: code || '' });
+            if (name && driveId && status.toLowerCase() === 'active') {
+              teachers.push({ center, name, driveId, code: code || '' });
             }
           });
           cachedFacultyList = teachers;

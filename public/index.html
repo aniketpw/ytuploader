@@ -747,18 +747,6 @@
             <button type="button" id="sourceFilterDrive" onclick="setSourceFilter('drive')" class="px-2 py-0.5 text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer">Drive (<span id="sourceCountDrive">0</span>)</button>
           </div>
 
-          <!-- Auto-Apply All Thumbnails Button -->
-          <button
-            type="button"
-            id="autoApplyAllThumbnailsBtn"
-            onclick="autoApplyAllVisibleThumbnails()"
-            class="flex items-center gap-1.5 px-3 py-1 bg-amber-600 hover:bg-amber-500 text-white border border-amber-700 text-[10px] font-bold uppercase tracking-wider cursor-pointer transition-all select-none shadow-xs"
-            title="Auto-generate and apply official ThumbCraft thumbnails from timetable for all visible videos"
-          >
-            <span>✨</span>
-            <span id="autoApplyBtnText">AUTO-APPLY ALL THUMBNAILS</span>
-          </button>
-
           <!-- Single Unified Export & Share Dropdown (Animated Cascading Drop) -->
           <div class="relative z-50 overflow-visible" id="exportDropdownWrapper">
             <button
@@ -6914,96 +6902,7 @@
       }
     };
 
-    window.autoApplyAllVisibleThumbnails = async function() {
-      if (!currentState || !currentState.files || currentState.files.length === 0) {
-        showToast('No videos available in current queue', 'info');
-        return;
-      }
 
-      if (!window.timetableSchedule || window.timetableSchedule.length === 0) {
-        await window.loadTimetableSchedule();
-      }
-      if (!window.thumbcraftTeachers || window.thumbcraftTeachers.length === 0) {
-        await window.loadThumbCraftFaculty();
-      }
-
-      let allFiles = (typeof getDeduplicatedFiles === 'function') ? getDeduplicatedFiles(currentState.files) : currentState.files;
-      let targetFiles = allFiles;
-
-      const { start, end } = dateFilterRange;
-      if (start && end) {
-        targetFiles = targetFiles.filter(f => {
-          const fileYMD = getFileYMD(f);
-          return fileYMD >= start && fileYMD <= end;
-        });
-      } else if (start) {
-        targetFiles = targetFiles.filter(f => getFileYMD(f) === start);
-      }
-
-      if (targetFiles.length === 0) {
-        showToast('No videos found in the selected date filter to update', 'info');
-        return;
-      }
-
-      const btn = document.getElementById('autoApplyAllThumbnailsBtn');
-      const btnText = document.getElementById('autoApplyBtnText');
-      if (btn) btn.disabled = true;
-
-      showToast(`✨ Starting auto-thumbnails for ${targetFiles.length} videos...`, 'info');
-
-      let count = 0;
-      for (let i = 0; i < targetFiles.length; i++) {
-        const file = targetFiles[i];
-        if (btnText) btnText.textContent = `Applying ${i + 1}/${targetFiles.length}...`;
-
-        const title = file.customTitle || file.name || 'Lecture Video';
-        const batch = window.resolveFileBatch(file);
-        const subject = window.resolveFileSubject(file);
-        const fileDate = file.recordedDate || file.date || file.name || '';
-
-        const match = window.matchTimetableFaculty(batch, subject, fileDate);
-        const teacherDriveId = match?.teacher?.driveId || '';
-
-        try {
-          const base64Thumb = await window.generateThumbCraftBase64(title, batch !== '—' ? batch : 'PW BATCH', subject, teacherDriveId);
-          if (base64Thumb) {
-            file.thumbnailUrl = base64Thumb;
-            if (batch !== '—') file.batch = batch;
-            file.subject = subject;
-
-            const uid = getPersistentUserId();
-            await fetch('/api/edit-video', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'x-user-id': uid,
-                ...(window.gAccessToken ? { 'Authorization': `Bearer ${window.gAccessToken}` } : {})
-              },
-              body: JSON.stringify({
-                fileId: file.id,
-                videoId: file.videoId || file.id,
-                title: title,
-                batch: file.batch,
-                subject: file.subject,
-                imageBase64: base64Thumb,
-                accessToken: window.gAccessToken || null,
-                userId: uid
-              })
-            });
-            count++;
-          }
-        } catch (e) {
-          console.warn('Auto-thumbnail error for', file.id, e);
-        }
-      }
-
-      if (btn) btn.disabled = false;
-      if (btnText) btnText.textContent = 'AUTO-APPLY ALL THUMBNAILS';
-
-      renderFilteredTable();
-      showToast(`✔ Successfully auto-applied official thumbnails for ${count}/${targetFiles.length} videos!`, 'success');
-      if (typeof playSuccessChime === 'function') playSuccessChime();
-    };
 
     window.generateSmartThumbnail = function() {
       renderThumbCraftCanvas();
