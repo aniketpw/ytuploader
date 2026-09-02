@@ -1626,10 +1626,21 @@ app.get('/api/faculty-list', async (req, res) => {
             const center = cells[0]?.v || '';
             const name = cells[1]?.v || '';
             const driveId = cells[4]?.v || '';
-            const code = cells[5]?.v || '';
+            let code = (cells[5]?.v || cells[11]?.v || '').trim().toUpperCase();
             const status = cells[6]?.v || 'Active';
+
+            if (!code && name) {
+              const parts = name.trim().split(/\s+/);
+              if (parts.length > 1) {
+                const last = parts[parts.length - 1].toUpperCase();
+                if (/^[A-Z]{2,4}$/.test(last)) {
+                  code = last;
+                }
+              }
+            }
+
             if (name && driveId && String(status).toLowerCase() === 'active') {
-              teachers.push({ center, name: name.trim(), driveId: driveId.trim(), code: code ? code.trim() : '' });
+              teachers.push({ center, name: name.trim(), driveId: driveId.trim(), code: code || '' });
             }
           });
           cachedFacultyList = teachers;

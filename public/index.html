@@ -6236,11 +6236,10 @@
       if (badge) badge.textContent = `${filtered.length} Ready`;
     };
 
-    function populateFacultyDropdown(teachers) {
+    function populateFacultyDropdown(teachers, selectedVal = '') {
       const select = document.getElementById('editModalTeacherSelect');
       if (!select) return;
       
-      const currentVal = select.value;
       select.innerHTML = '<option value="">-- No Faculty Cutout (Text Only) --</option>';
       
       teachers.forEach(t => {
@@ -6252,7 +6251,7 @@
         select.appendChild(opt);
       });
 
-      if (currentVal) select.value = currentVal;
+      select.value = selectedVal || '';
       const badge = document.getElementById('facultyCountBadge');
       if (badge) badge.textContent = `${teachers.length} Ready`;
     }
@@ -6269,6 +6268,9 @@
         if (data.success && Array.isArray(data.schedule)) {
           window.timetableSchedule = data.schedule;
           console.log('✔ Timetable loaded:', data.schedule.length, 'records');
+          if (typeof renderFilteredTable === 'function') {
+            renderFilteredTable();
+          }
         }
       } catch (err) {
         console.warn('Timetable fetch warning:', err);
@@ -6283,7 +6285,7 @@
 
     window.matchTimetableFaculty = function(batch, subject, dateStr) {
       if (!window.timetableSchedule || window.timetableSchedule.length === 0) return null;
-      const bNorm = (batch || '').toLowerCase().replace(/[\s-]+/g, '');
+      let bNorm = (batch || '').toLowerCase().replace(/[\s-]+/g, '');
       if (!bNorm) return null;
 
       const sNorm = (subject || '').toLowerCase();
@@ -6294,10 +6296,14 @@
       else if (sNorm.includes('zoo')) prefix = 'Z';
       else if (sNorm.includes('chem')) prefix = 'C';
 
-      // 1. Match batch + subject prefix
+      // Extract core batch code (e.g. "27lje51mp" from "27lje51mp2026")
+      const coreMatch = bNorm.match(/27[a-z0-9]+/);
+      const coreBatch = coreMatch ? coreMatch[0].replace(/202[0-9]/, '') : bNorm;
+
+      // 1. Try matching core batch + subject prefix
       let matchedEntry = window.timetableSchedule.find(entry => {
         const eb = (entry.batchCode || '').toLowerCase().replace(/[\s-]+/g, '');
-        const matchesBatch = eb.includes(bNorm) || bNorm.includes(eb);
+        const matchesBatch = eb.includes(bNorm) || bNorm.includes(eb) || (coreBatch && eb.includes(coreBatch));
         const matchesSubject = entry.subjectPrefix === prefix;
         return matchesBatch && matchesSubject;
       });
@@ -6305,7 +6311,7 @@
       if (!matchedEntry) return null;
 
       // Find teacher in roster by faculty code
-      const fCode = matchedEntry.facultyCode;
+      const fCode = (matchedEntry.facultyCode || '').toUpperCase();
       const teacher = (window.thumbcraftTeachers || []).find(t => {
         const tc = (t.code || '').toUpperCase();
         if (tc === fCode) return true;
@@ -6328,7 +6334,7 @@
 
       let batch = batchInput?.value.trim() || '';
       if (!batch && currentActiveEditFile) {
-        batch = window.extractBatchFromTitle(currentActiveEditFile.name || '');
+        batch = window.extractBatchFromTitle(currentActiveEditFile.customTitle || currentActiveEditFile.name || '');
         if (batch && batchInput) batchInput.value = batch;
       }
       const subject = subjectSelect?.value || 'Chemistry';
@@ -6347,7 +6353,7 @@
       }
     };
 
-    window.openEditModal = function(fileId) {
+    window.openEditModal = async function(fileId) {
       let file = currentState?.files?.find(f => f.id === fileId || f.videoId === fileId);
       if (!file) return;
 
@@ -6362,57 +6368,56 @@
       const searchInput = document.getElementById('teacherSearchInput');
 
       if (titleInput) titleInput.value = file.customTitle || file.name || '';
-      
-      // Smart Batch Code parsing: Clean out any user names like "Aniket Mishra"
+      if (searchInput) searchInput.value = '';
+
+      // Clean Batch Code
       let rawBatch = (file.batch || '').trim();
       if (rawBatch.toLowerCase().includes('aniket') || rawBatch.toLowerCase().includes('mishra') || rawBatch.toLowerCase() === 'default' || rawBatch.toLowerCase() === 'batch') {
         rawBatch = '';
       }
-      if (!rawBatch && (file.customTitle || file.name)) {
-        rawBatch = window.extractBatchFromTitle(file.customTitle || file.name);
-      }
-      if (batchInput) batchInput.value = rawBatch;
-      if (searchInput) searchInput.value = '';
-      
-      let matched = 'Chemistry';
-      if (subjectSelect) {
-        const s = (file.subject || '').toLowerCase();
-        if (s.includes('phys')) matched = 'Physics';
-        else if (s.includes('chem')) matched = 'Chemistry';
-        else if (s.includes('math')) matched = 'Mathematics';
-        else if (s.includes('bio')) matched = 'Biology';
-        else if (s.includes('bot')) matched = 'Botany';
-        else if (s.includes('zoo')) matched = 'Zoology';
-        else if (s.includes('eng')) matched = 'English';
-        else if (s.includes('sst') || s.includes('soc')) matched = 'SST';
-        subjectSelect.value = matched;
+      if (!rawBatch) {
+        rawBatch = window.extractBatchFromTitle(file.customTitle || file.originalName || file.name || '');
       }
 
-      // Auto-load faculty & timetable if not loaded yet
-      const finalizeOpen = () => {
-        populateFacultyDropdown(window.thumbcraftTeachers || []);
+      // Detect Subject from all available name/title strings
+      const fullText = `${file.subject || ''} ${file.customTitle || ''} ${file.originalName || ''} ${file.name || ''}`.toLowerCase();
+      let matchedSubject = 'Chemistry';
+      if (fullText.includes('phys')) matchedSubject = 'Physics';
+      else if (fullText.includes('chem')) matchedSubject = 'Chemistry';
+      else if (fullText.includes('math')) matchedSubject = 'Mathematics';
+      else if (fullText.includes('bio')) matchedSubject = 'Biology';
+      else if (fullText.includes('bot')) matchedSubject = 'Botany';
+      else if (fullText.includes('zoo')) matchedSubject = 'Zoology';
+      else if (fullText.includes('eng')) matchedSubject = 'English';
+      else if (fullText.includes('sst') || fullText.includes('soc')) matchedSubject = 'SST';
+      if (subjectSelect) subjectSelect.value = matchedSubject;
 
-        // Auto-match teacher from timetable if not chosen yet
-        if (teacherSelect && !teacherSelect.value) {
-          const match = window.matchTimetableFaculty(rawBatch, matched, file.recordedDate || file.date || file.name || '');
-          if (match && match.teacher) {
-            teacherSelect.value = match.teacher.driveId;
-            showToast(`⚡ Auto-matched: ${match.teacher.name} (${match.facultyCode})`, 'info');
-          }
-        }
-
-        renderThumbCraftCanvas();
-      };
-
+      // Ensure Faculty & Timetable are fully loaded
       if (!window.thumbcraftTeachers || window.thumbcraftTeachers.length === 0) {
-        window.loadThumbCraftFaculty().then(finalizeOpen);
-      } else {
-        finalizeOpen();
+        await window.loadThumbCraftFaculty();
+      }
+      if (!window.timetableSchedule || window.timetableSchedule.length === 0) {
+        await window.loadTimetableSchedule();
       }
 
-      if (!window.timetableSchedule || window.timetableSchedule.length === 0) {
-        window.loadTimetableSchedule();
+      // Auto-match for THIS specific video
+      const match = window.matchTimetableFaculty(rawBatch, matchedSubject, file.recordedDate || file.date || file.name || '');
+      
+      let selectedDriveId = '';
+      if (match && match.teacher) {
+        selectedDriveId = match.teacher.driveId;
+        if (match.batch) rawBatch = match.batch;
+        showToast(`⚡ Auto-matched: ${match.teacher.name} (${match.facultyCode})`, 'success');
+      } else if (match && match.facultyCode) {
+        if (match.batch) rawBatch = match.batch;
+        showToast(`⚡ Timetable Code: ${match.facultyCode} (Photo not in roster)`, 'info');
       }
+
+      if (batchInput) batchInput.value = rawBatch;
+
+      populateFacultyDropdown(window.thumbcraftTeachers || [], selectedDriveId);
+
+      renderThumbCraftCanvas();
 
       document.getElementById('editModalThumbUrlInput').value = '';
       document.getElementById('editVideoModal').classList.remove('hidden');
@@ -7180,8 +7185,13 @@
           const t = (f.customTitle || f.name || '').toLowerCase();
           const b = (f.batch || '').toLowerCase();
           const s = (f.subject || '').toLowerCase();
-          const eb = (window.extractBatchFromTitle ? window.extractBatchFromTitle(f.customTitle || f.name || '') : '').toLowerCase();
-          return t.includes(currentSearchQuery) || b.includes(currentSearchQuery) || s.includes(currentSearchQuery) || eb.includes(currentSearchQuery);
+          const eb = (window.extractBatchFromTitle ? window.extractBatchFromTitle(f.customTitle || f.originalName || f.name || '') : '').toLowerCase();
+          let facText = '';
+          if (window.matchTimetableFaculty) {
+            const m = window.matchTimetableFaculty(eb || b, s, f.date || f.name || '');
+            if (m) facText = `${m.teacher?.name || ''} ${m.facultyCode || ''}`.toLowerCase();
+          }
+          return t.includes(currentSearchQuery) || b.includes(currentSearchQuery) || s.includes(currentSearchQuery) || eb.includes(currentSearchQuery) || facText.includes(currentSearchQuery);
         });
       }
 
@@ -7404,9 +7414,22 @@
           rawBatchCode = '';
         }
         if (!rawBatchCode) {
-          rawBatchCode = window.extractBatchFromTitle ? window.extractBatchFromTitle(file.customTitle || file.name || '') : '';
+          rawBatchCode = window.extractBatchFromTitle ? window.extractBatchFromTitle(file.customTitle || file.originalName || file.name || '') : '';
         }
-        if (!rawBatchCode) rawBatchCode = '—';
+
+        const fullSubText = `${file.subject || ''} ${file.customTitle || ''} ${file.originalName || ''} ${file.name || ''}`.toLowerCase();
+        let subName = 'Lecture';
+        if (fullSubText.includes('phys')) subName = 'Physics';
+        else if (fullSubText.includes('chem')) subName = 'Chemistry';
+        else if (fullSubText.includes('math')) subName = 'Mathematics';
+        else if (fullSubText.includes('bio')) subName = 'Biology';
+        else if (fullSubText.includes('bot')) subName = 'Botany';
+        else if (fullSubText.includes('zoo')) subName = 'Zoology';
+        else if (fullSubText.includes('eng')) subName = 'English';
+        else if (fullSubText.includes('sst')) subName = 'SST';
+
+        const tMatch = window.matchTimetableFaculty ? window.matchTimetableFaculty(rawBatchCode, subName, file.date || file.name || '') : null;
+        const facName = tMatch?.teacher?.name ? tMatch.teacher.name.split(' ')[0] : (tMatch?.facultyCode || '');
 
         row.innerHTML = `
           <td class="py-2 px-3 text-center font-mono-code text-[var(--text-subtle)] border-r border-[var(--border-main)] text-[11px]">${startIndex + index + 1}</td>
@@ -7424,9 +7447,11 @@
           </td>
           <td class="py-2 px-3 text-center border-r border-[var(--border-main)] whitespace-nowrap font-mono-code">
             <div class="inline-block px-2 py-0.5 text-[11px] font-bold bg-[var(--bg-subcard)] border border-[var(--border-main)] text-[var(--text-main)] shadow-2xs">
-              ${escapeHtml(rawBatchCode)}
+              ${escapeHtml(rawBatchCode || '—')}
             </div>
-            ${file.subject ? `<div class="text-[9px] text-[var(--text-muted)] mt-0.5">${escapeHtml(file.subject)}</div>` : ''}
+            <div class="flex items-center justify-center gap-1 mt-1 text-[10px] font-semibold ${facName ? 'text-cyan-600 dark:text-cyan-400' : 'text-[var(--text-muted)]'}">
+              ${facName ? `<span>👨‍🏫 ${escapeHtml(facName)} (${escapeHtml(tMatch.facultyCode)})</span>` : `<span>${escapeHtml(subName)}</span>`}
+            </div>
           </td>
           <td class="py-2 px-3 text-center font-mono-code border-r border-[var(--border-main)] whitespace-nowrap">
             <div class="text-[11px] font-bold text-[var(--text-main)]">${dt.date}</div>
