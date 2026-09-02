@@ -1651,6 +1651,70 @@ app.get('/api/faculty-list', async (req, res) => {
   }
 });
 
+let cachedTimetable = null;
+let cachedTimetableTime = 0;
+const TIMETABLE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1lkGSUu4sQzTmfV_oPjKSgxchMK6HP2EcnLTDkYlzQz4/gviz/tq?tqx=out:json&sheet=RawDB';
+
+app.get('/api/timetable', async (req, res) => {
+  try {
+    const now = Date.now();
+    const forceFresh = req.query.fresh === '1';
+    if (!forceFresh && cachedTimetable && (now - cachedTimetableTime) < 300000) { // 5-minute dynamic cache
+      return res.json({ success: true, schedule: cachedTimetable, cached: true });
+    }
+
+    const https = require('https');
+    https.get(TIMETABLE_SHEET_URL, (sheetRes) => {
+      let data = '';
+      sheetRes.on('data', chunk => data += chunk);
+      sheetRes.on('end', () => {
+        try {
+          const jsonStr = data.substring(data.indexOf('{'), data.lastIndexOf('}') + 1);
+          const json = JSON.parse(jsonStr);
+          const rows = json.table.rows;
+          const schedule = [];
+
+          rows.forEach((r, idx) => {
+            if (!r.c) return;
+            const day = r.c[0]?.v || '';
+            const rawDate = r.c[1]?.f || r.c[1]?.v || '';
+            const startTime = r.c[2]?.f || r.c[2]?.v || '';
+            const endTime = r.c[3]?.f || r.c[3]?.v || '';
+            const batchCode = (r.c[8]?.f || r.c[8]?.v || '').trim();
+            const facultyCode = (r.c[9]?.f || r.c[9]?.v || '').trim().toUpperCase();
+
+            if (batchCode && facultyCode && facultyCode !== 'CLASS_TEST') {
+              schedule.push({
+                day: String(day).trim(),
+                date: String(rawDate).trim(),
+                startTime: String(startTime).trim(),
+                endTime: String(endTime).trim(),
+                batchCode,
+                facultyCode,
+                subjectPrefix: facultyCode.charAt(0)
+              });
+            }
+          });
+
+          cachedTimetable = schedule;
+          cachedTimetableTime = now;
+          return res.json({ success: true, schedule: cachedTimetable, count: schedule.length });
+        } catch (parseErr) {
+          console.error('Failed to parse timetable sheet JSON:', parseErr.message);
+          if (cachedTimetable) return res.json({ success: true, schedule: cachedTimetable, fallback: true });
+          return res.status(500).json({ success: false, error: 'Failed to parse timetable sheet.' });
+        }
+      });
+    }).on('error', (err) => {
+      console.error('Timetable sheet fetch error:', err.message);
+      if (cachedTimetable) return res.json({ success: true, schedule: cachedTimetable, fallback: true });
+      return res.status(500).json({ success: false, error: err.message });
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 app.get('/api/thumb-proxy', async (req, res) => {
   const driveId = req.query.id;
   if (!driveId) return res.status(400).send('Missing id');

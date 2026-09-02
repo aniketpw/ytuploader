@@ -872,9 +872,9 @@
           <thead>
             <tr class="border-b border-[var(--border-main)] bg-[var(--bg-subcard)] font-mono-code text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
               <th class="py-2.5 px-3 w-10 text-center border-r border-[var(--border-main)]">#</th>
-              <th class="py-2.5 px-4 border-r border-[var(--border-main)]">TITLE &amp; BATCH</th>
+              <th class="py-2.5 px-4 border-r border-[var(--border-main)]">TITLE &amp; CHAPTER</th>
+              <th class="py-2.5 px-3 w-44 text-center border-r border-[var(--border-main)]">BATCH CODE</th>
               <th class="py-2.5 px-3 w-28 text-center border-r border-[var(--border-main)]">DATE</th>
-              <th class="py-2.5 px-3 w-24 text-center border-r border-[var(--border-main)]">FORMAT</th>
               <th class="py-2.5 px-4 w-72 border-r border-[var(--border-main)]">STATUS</th>
               <th class="py-2.5 px-4 w-44 text-center">ACTIONS</th>
             </tr>
@@ -1164,7 +1164,17 @@
                 <span>👤</span>
                 <span>Select Faculty / Teacher Cutout:</span>
               </label>
-              <span id="facultyCountBadge" class="text-[9px] px-1.5 py-0.2 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 font-bold border border-cyan-500/30">50+ Ready</span>
+              <div class="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onclick="autoMatchCurrentModalFromTimetable()"
+                  class="px-2 py-0.5 bg-amber-600 hover:bg-amber-500 text-white text-[9px] font-bold uppercase tracking-wider cursor-pointer shadow-xs"
+                  title="Auto-match teacher photo and batch code from weekly timetable"
+                >
+                  ⚡ Auto-Match
+                </button>
+                <span id="facultyCountBadge" class="text-[9px] px-1.5 py-0.2 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 font-bold border border-cyan-500/30">50+ Ready</span>
+              </div>
             </div>
             
             <!-- Live Search Bar for Faculty -->
@@ -2487,12 +2497,12 @@
       return formatDateToYMD(d);
     }
 
-    // Date Range Picker State (Defaults to All Time so all library videos are immediately visible)
+    // Date Range Picker State (Defaults to Today so you only see today's videos by default)
     const initialTodayYMD = getTodayYMD();
     let dateFilterRange = {
-      start: null,
-      end: null,
-      preset: 'all'
+      start: initialTodayYMD,
+      end: initialTodayYMD,
+      preset: 'today'
     };
     let calendarDisplayYear = new Date().getFullYear();
     let calendarDisplayMonth = new Date().getMonth();
@@ -6247,6 +6257,96 @@
       if (badge) badge.textContent = `${teachers.length} Ready`;
     }
 
+    // ══════════════════════════════════════════════════════════════════
+    // DYNAMIC LIVE TIMETABLE SCHEDULE ENGINE
+    // ══════════════════════════════════════════════════════════════════
+    window.timetableSchedule = [];
+
+    window.loadTimetableSchedule = async function() {
+      try {
+        const res = await fetch('/api/timetable');
+        const data = await res.json();
+        if (data.success && Array.isArray(data.schedule)) {
+          window.timetableSchedule = data.schedule;
+          console.log('✔ Timetable loaded:', data.schedule.length, 'records');
+        }
+      } catch (err) {
+        console.warn('Timetable fetch warning:', err);
+      }
+    };
+
+    window.extractBatchFromTitle = function(text) {
+      if (!text) return '';
+      const match = text.match(/([0-9]{2}-[A-Z0-9]+(?:\s*[0-9]{4})?|SIP\s+[A-Z0-9-]+(?:\s*[0-9]{4})?)/i);
+      return match ? match[1].trim() : '';
+    };
+
+    window.matchTimetableFaculty = function(batch, subject, dateStr) {
+      if (!window.timetableSchedule || window.timetableSchedule.length === 0) return null;
+      const bNorm = (batch || '').toLowerCase().replace(/[\s-]+/g, '');
+      if (!bNorm) return null;
+
+      const sNorm = (subject || '').toLowerCase();
+      let prefix = 'C';
+      if (sNorm.includes('phys')) prefix = 'P';
+      else if (sNorm.includes('math')) prefix = 'M';
+      else if (sNorm.includes('bot') || sNorm.includes('bio')) prefix = 'B';
+      else if (sNorm.includes('zoo')) prefix = 'Z';
+      else if (sNorm.includes('chem')) prefix = 'C';
+
+      // 1. Match batch + subject prefix
+      let matchedEntry = window.timetableSchedule.find(entry => {
+        const eb = (entry.batchCode || '').toLowerCase().replace(/[\s-]+/g, '');
+        const matchesBatch = eb.includes(bNorm) || bNorm.includes(eb);
+        const matchesSubject = entry.subjectPrefix === prefix;
+        return matchesBatch && matchesSubject;
+      });
+
+      if (!matchedEntry) return null;
+
+      // Find teacher in roster by faculty code
+      const fCode = matchedEntry.facultyCode;
+      const teacher = (window.thumbcraftTeachers || []).find(t => {
+        const tc = (t.code || '').toUpperCase();
+        if (tc === fCode) return true;
+        const nameParts = (t.name || '').trim().split(/\s+/);
+        return nameParts[nameParts.length - 1].toUpperCase() === fCode;
+      });
+
+      return {
+        entry: matchedEntry,
+        facultyCode: fCode,
+        teacher: teacher || null,
+        batch: matchedEntry.batchCode
+      };
+    };
+
+    window.autoMatchCurrentModalFromTimetable = function() {
+      const batchInput = document.getElementById('editModalBatchInput');
+      const subjectSelect = document.getElementById('editModalSubjectInput');
+      const teacherSelect = document.getElementById('editModalTeacherSelect');
+
+      let batch = batchInput?.value.trim() || '';
+      if (!batch && currentActiveEditFile) {
+        batch = window.extractBatchFromTitle(currentActiveEditFile.name || '');
+        if (batch && batchInput) batchInput.value = batch;
+      }
+      const subject = subjectSelect?.value || 'Chemistry';
+      const fileDate = currentActiveEditFile ? (currentActiveEditFile.recordedDate || currentActiveEditFile.date || currentActiveEditFile.name || '') : '';
+
+      const match = window.matchTimetableFaculty(batch, subject, fileDate);
+      if (match && match.teacher) {
+        if (teacherSelect) teacherSelect.value = match.teacher.driveId;
+        if (match.batch && batchInput && !batchInput.value) batchInput.value = match.batch;
+        renderThumbCraftCanvas();
+        showToast(`⚡ Matched Timetable: ${match.teacher.name} (${match.facultyCode})`, 'success');
+      } else if (match && match.facultyCode) {
+        showToast(`⚡ Matched Code ${match.facultyCode}, but teacher photo not in roster`, 'warn');
+      } else {
+        showToast('⚠️ No timetable match found for this Batch & Subject', 'info');
+      }
+    };
+
     window.openEditModal = function(fileId) {
       let file = currentState?.files?.find(f => f.id === fileId || f.videoId === fileId);
       if (!file) return;
@@ -6258,6 +6358,7 @@
       const titleInput = document.getElementById('editModalTitleInput');
       const batchInput = document.getElementById('editModalBatchInput');
       const subjectSelect = document.getElementById('editModalSubjectInput');
+      const teacherSelect = document.getElementById('editModalTeacherSelect');
       const searchInput = document.getElementById('teacherSearchInput');
 
       if (titleInput) titleInput.value = file.customTitle || file.name || '';
@@ -6268,16 +6369,14 @@
         rawBatch = '';
       }
       if (!rawBatch && (file.customTitle || file.name)) {
-        const raw = file.customTitle || file.name;
-        const match = raw.match(/([0-9]{2}-[A-Z0-9]+(?:\s*[0-9]{4})?|SIP\s+[A-Z0-9-]+(?:\s*[0-9]{4})?)/i);
-        if (match) rawBatch = match[1].trim();
+        rawBatch = window.extractBatchFromTitle(file.customTitle || file.name);
       }
       if (batchInput) batchInput.value = rawBatch;
       if (searchInput) searchInput.value = '';
       
+      let matched = 'Chemistry';
       if (subjectSelect) {
         const s = (file.subject || '').toLowerCase();
-        let matched = 'Chemistry';
         if (s.includes('phys')) matched = 'Physics';
         else if (s.includes('chem')) matched = 'Chemistry';
         else if (s.includes('math')) matched = 'Mathematics';
@@ -6289,15 +6388,30 @@
         subjectSelect.value = matched;
       }
 
-      // Auto-load faculty if not loaded yet
-      if (!window.thumbcraftTeachers || window.thumbcraftTeachers.length === 0) {
-        window.loadThumbCraftFaculty().then(() => {
-          populateFacultyDropdown(window.thumbcraftTeachers || []);
-          renderThumbCraftCanvas();
-        });
-      } else {
+      // Auto-load faculty & timetable if not loaded yet
+      const finalizeOpen = () => {
         populateFacultyDropdown(window.thumbcraftTeachers || []);
+
+        // Auto-match teacher from timetable if not chosen yet
+        if (teacherSelect && !teacherSelect.value) {
+          const match = window.matchTimetableFaculty(rawBatch, matched, file.recordedDate || file.date || file.name || '');
+          if (match && match.teacher) {
+            teacherSelect.value = match.teacher.driveId;
+            showToast(`⚡ Auto-matched: ${match.teacher.name} (${match.facultyCode})`, 'info');
+          }
+        }
+
         renderThumbCraftCanvas();
+      };
+
+      if (!window.thumbcraftTeachers || window.thumbcraftTeachers.length === 0) {
+        window.loadThumbCraftFaculty().then(finalizeOpen);
+      } else {
+        finalizeOpen();
+      }
+
+      if (!window.timetableSchedule || window.timetableSchedule.length === 0) {
+        window.loadTimetableSchedule();
       }
 
       document.getElementById('editModalThumbUrlInput').value = '';
@@ -7066,7 +7180,8 @@
           const t = (f.customTitle || f.name || '').toLowerCase();
           const b = (f.batch || '').toLowerCase();
           const s = (f.subject || '').toLowerCase();
-          return t.includes(currentSearchQuery) || b.includes(currentSearchQuery) || s.includes(currentSearchQuery);
+          const eb = (window.extractBatchFromTitle ? window.extractBatchFromTitle(f.customTitle || f.name || '') : '').toLowerCase();
+          return t.includes(currentSearchQuery) || b.includes(currentSearchQuery) || s.includes(currentSearchQuery) || eb.includes(currentSearchQuery);
         });
       }
 
@@ -7284,6 +7399,15 @@
         const rawBytes = file.totalBytes || file.size || 0;
         const byteSizeBadge = rawBytes > 0 ? `<span class="text-[9px] text-[var(--text-muted)] block">${formatBytes(rawBytes)}</span>` : '';
 
+        let rawBatchCode = (file.batch || '').trim();
+        if (rawBatchCode.toLowerCase().includes('aniket') || rawBatchCode.toLowerCase().includes('mishra') || rawBatchCode.toLowerCase() === 'batch' || rawBatchCode.toLowerCase() === 'default') {
+          rawBatchCode = '';
+        }
+        if (!rawBatchCode) {
+          rawBatchCode = window.extractBatchFromTitle ? window.extractBatchFromTitle(file.customTitle || file.name || '') : '';
+        }
+        if (!rawBatchCode) rawBatchCode = '—';
+
         row.innerHTML = `
           <td class="py-2 px-3 text-center font-mono-code text-[var(--text-subtle)] border-r border-[var(--border-main)] text-[11px]">${startIndex + index + 1}</td>
           <td class="py-2 px-4 border-r border-[var(--border-main)]">
@@ -7294,19 +7418,19 @@
               <div class="flex items-center gap-1.5 font-mono-code text-[9px] text-[var(--text-muted)]">
                 <button onclick="copyToClipboard('${escapeHtml(displayTitle)}', 'Title')" class="underline hover:text-[var(--text-main)] cursor-pointer">copy title</button>
                 <span>•</span>
-                <span class="uppercase">${escapeHtml(file.batch || 'Batch')}</span>
-                <span>•</span>
                 <span>${escapeHtml(file.subject || 'Lecture')}</span>
               </div>
             </div>
           </td>
+          <td class="py-2 px-3 text-center border-r border-[var(--border-main)] whitespace-nowrap font-mono-code">
+            <div class="inline-block px-2 py-0.5 text-[11px] font-bold bg-[var(--bg-subcard)] border border-[var(--border-main)] text-[var(--text-main)] shadow-2xs">
+              ${escapeHtml(rawBatchCode)}
+            </div>
+            ${file.subject ? `<div class="text-[9px] text-[var(--text-muted)] mt-0.5">${escapeHtml(file.subject)}</div>` : ''}
+          </td>
           <td class="py-2 px-3 text-center font-mono-code border-r border-[var(--border-main)] whitespace-nowrap">
             <div class="text-[11px] font-bold text-[var(--text-main)]">${dt.date}</div>
             ${dt.time ? `<div class="text-[9px] text-[var(--text-muted)] mt-0.5 font-normal tracking-tight">⏱ ${dt.time}</div>` : ''}
-          </td>
-          <td class="py-2 px-3 text-center border-r border-[var(--border-main)] whitespace-nowrap">
-            <div>${sourceBadgeHtml}</div>
-            ${byteSizeBadge}
           </td>
           <td class="py-2 px-4 border-r border-[var(--border-main)]" id="status-cell-${file.id}">
             ${statusHtml}
@@ -7773,6 +7897,7 @@
       loadClientIds();
       loadMetadataPresets();
       if (typeof loadThumbCraftFaculty === 'function') loadThumbCraftFaculty();
+      if (typeof loadTimetableSchedule === 'function') loadTimetableSchedule();
 
       // Set redirect URL displays
       const redirectUrlDisplay = document.getElementById('redirectUrlDisplay');
