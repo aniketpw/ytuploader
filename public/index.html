@@ -6929,40 +6929,7 @@
       }
     };
 
-    window.tableThumbnailCache = window.tableThumbnailCache || {};
 
-    window.getOrGenerateRowThumbnail = function(file, rawBatchCode, subName, teacherDriveId) {
-      if (file.thumbnailUrl && file.thumbnailUrl.startsWith('data:image')) {
-        return file.thumbnailUrl;
-      }
-      if (window.tableThumbnailCache[file.id]) {
-        return window.tableThumbnailCache[file.id];
-      }
-
-      const ytId = (typeof extractYouTubeVideoId === 'function') ? extractYouTubeVideoId(file) : (file.videoId || null);
-      const isYt = (typeof isYouTubeVideo === 'function') ? isYouTubeVideo(file) : !!ytId;
-      const fallback = (isYt && ytId) 
-        ? `https://i.ytimg.com/vi/${ytId}/hqdefault.jpg` 
-        : (file.thumbnailUrl || '/assets/thumbcraft_template.png');
-
-      // Asynchronously render official ThumbCraft thumbnail for the table row
-      setTimeout(async () => {
-        try {
-          const headline = (subName || 'LECTURE').toUpperCase();
-          const batchClean = (rawBatchCode && rawBatchCode !== '—') ? rawBatchCode : 'PW BATCH';
-          const base64 = await window.generateThumbCraftBase64(headline, batchClean, subName, teacherDriveId);
-          if (base64) {
-            window.tableThumbnailCache[file.id] = base64;
-            const imgEl = document.getElementById(`table-thumb-img-${file.id}`);
-            if (imgEl) {
-              imgEl.src = base64;
-            }
-          }
-        } catch (e) {}
-      }, 20);
-
-      return fallback;
-    };
 
     window.generateSmartThumbnail = function() {
       renderThumbCraftCanvas();
@@ -7138,7 +7105,7 @@
       if (ytId && ytId.length === 11) {
         if (step === 0) {
           imgEl.setAttribute('data-thumb-step', '1');
-          imgEl.src = `https://i.ytimg.com/vi/${ytId}/mqdefault.jpg`;
+          imgEl.src = `https://i.ytimg.com/vi/${ytId}/hqdefault.jpg`;
           return;
         } else if (step === 1) {
           imgEl.setAttribute('data-thumb-step', '2');
@@ -7151,7 +7118,7 @@
         }
       }
       imgEl.onerror = null;
-      imgEl.src = 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 120 68\'%3E%3Crect width=\'120\' height=\'68\' fill=\'%231B1B1B\'/%3E%3Cpath d=\'M52 24v20l18-10-18-10z\' fill=\'%23EA580C\'/%3E%3Ctext x=\'60\' y=\'58\' font-family=\'monospace\' font-size=\'9\' fill=\'%23888888\' text-anchor=\'middle\'%3EHD VIDEO%3C/text%3E%3C/svg%3E';
+      imgEl.src = 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 160 90\'%3E%3Crect width=\'160\' height=\'90\' fill=\'%2318181B\'/%3E%3Cpath d=\'M70 35v20l18-10-18-10z\' fill=\'%23F97316\'/%3E%3Ctext x=\'80\' y=\'72\' font-family=\'sans-serif\' font-size=\'10\' font-weight=\'bold\' fill=\'%2371717A\' text-anchor=\'middle\'%3EVIDEO%3C/text%3E%3C/svg%3E';
     };
 
     window.triggerThumbnailUpload = function(videoId) {
@@ -7464,14 +7431,25 @@
 
         let statusHtml = '';
         if (file.status === 'completed') {
-          const rowThumbSrc = window.getOrGenerateRowThumbnail 
-            ? window.getOrGenerateRowThumbnail(file, rawBatchCode, subName, tMatch?.teacher?.driveId)
-            : (file.thumbnailUrl || (isYt && ytId ? `https://i.ytimg.com/vi/${ytId}/hqdefault.jpg` : ''));
+          // Priority 1: User-applied custom thumbnail if saved locally or uploaded
+          // Priority 2: Real Original YouTube 16:9 thumbnail (mqdefault.jpg - 320x180, pure 16:9, 0% bars, 0% distortion)
+          // Priority 3: Custom file thumbnail or Drive preview
+          let thumbSrc = '';
+          if (file.thumbnailUrl && (file.thumbnailUrl.startsWith('data:image') || !file.thumbnailUrl.includes('ytimg.com'))) {
+            thumbSrc = file.thumbnailUrl;
+          } else if (isYt && ytId) {
+            thumbSrc = `https://i.ytimg.com/vi/${ytId}/mqdefault.jpg`;
+          } else if (file.thumbnailUrl) {
+            thumbSrc = file.thumbnailUrl;
+          } else {
+            thumbSrc = `https://drive.google.com/thumbnail?id=${file.id}&sz=w320`;
+          }
+
           statusHtml = `
             <div class="flex items-center gap-2.5">
-              <div onclick="openEditModal('${file.id || ytId}')" class="relative group w-20 h-11 border border-[var(--border-main)] overflow-hidden shrink-0 bg-neutral-900 rounded-xs shadow-2xs cursor-pointer" title="Click to Edit & Customize Thumbnail">
-                <img id="table-thumb-img-${file.id}" src="${rowThumbSrc}" alt="Thumbnail" data-thumb-step="0" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" onerror="handleThumbError(this, '${ytId || ''}')"/>
-                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white text-[9px] font-bold">
+              <div onclick="openEditModal('${file.id || ytId}')" class="relative group w-[76px] h-[43px] aspect-video border border-[var(--border-main)] overflow-hidden shrink-0 bg-neutral-900 rounded-xs shadow-2xs cursor-pointer" title="Click to Edit &amp; Customize Thumbnail">
+                <img id="table-thumb-img-${file.id}" src="${thumbSrc}" alt="Thumbnail" data-thumb-step="0" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" onerror="handleThumbError(this, '${ytId || ''}')"/>
+                <div class="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white text-[9px] font-bold">
                   <span>✏️ EDIT</span>
                 </div>
               </div>
