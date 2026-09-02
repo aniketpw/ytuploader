@@ -1093,76 +1093,97 @@
 
       <!-- Video Title Input -->
       <div class="space-y-1 font-mono-code">
-        <label class="block text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Video Title:</label>
+        <label class="block text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Video Title / Chapter Description:</label>
         <input
           type="text"
           id="editModalTitleInput"
-          class="w-full h-8 px-2.5 om-box-input text-xs text-[var(--text-main)]"
-          placeholder="Enter video title..."
+          oninput="renderThumbCraftCanvas()"
+          class="w-full h-8.5 px-2.5 om-box-input text-xs text-[var(--text-main)] font-bold"
+          placeholder="e.g. Chemical Bonding and Molecular Structure - 11 : Reason for Hybridisation"
         />
       </div>
 
-      <!-- Batch & Subject Row -->
-      <div class="grid grid-cols-2 gap-3 font-mono-code">
+      <!-- Batch, Subject & Teacher Row (ThumbCraft Integration) -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 font-mono-code">
         <div class="space-y-1">
-          <label class="block text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Batch Name:</label>
+          <label class="block text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Batch Code:</label>
           <input
             type="text"
             id="editModalBatchInput"
-            class="w-full h-8 px-2.5 om-box-input text-xs text-[var(--text-main)]"
-            placeholder="e.g. 27-LNE51MP"
+            oninput="renderThumbCraftCanvas()"
+            class="w-full h-8 px-2 om-box-input text-xs text-[var(--text-main)] font-bold"
+            placeholder="e.g. SIP S41-AJ31MA 2026"
           />
         </div>
         <div class="space-y-1">
           <label class="block text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">Subject:</label>
-          <input
-            type="text"
-            id="editModalSubjectInput"
-            class="w-full h-8 px-2.5 om-box-input text-xs text-[var(--text-main)]"
-            placeholder="e.g. Physics"
-          />
+          <select id="editModalSubjectInput" onchange="renderThumbCraftCanvas()" class="w-full h-8 px-2 om-box-input text-xs text-[var(--text-main)] font-bold">
+            <option value="Chemistry">🧪 Chemistry</option>
+            <option value="Physics">⚛️ Physics</option>
+            <option value="Mathematics">📐 Mathematics</option>
+            <option value="Biology">🧬 Biology</option>
+            <option value="Botany">🌿 Botany</option>
+            <option value="Zoology">🦁 Zoology</option>
+            <option value="English">📖 English</option>
+            <option value="SST">🌍 SST</option>
+            <option value="General">⚡ General</option>
+          </select>
+        </div>
+        <div class="space-y-1">
+          <label class="block text-[10px] font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400">Faculty / Teacher Photo:</label>
+          <select id="editModalTeacherSelect" onchange="renderThumbCraftCanvas()" class="w-full h-8 px-2 om-box-input text-xs text-[var(--text-main)] font-bold bg-cyan-500/10 border-cyan-500/50">
+            <option value="">-- Select Faculty (111 Ready) --</option>
+          </select>
         </div>
       </div>
 
-      <!-- Thumbnail Studio Box -->
-      <div class="p-3 bg-[var(--bg-subcard)] border border-[var(--border-main)] space-y-2.5 font-mono-code">
+      <!-- Thumbnail Studio Box with ThumbCraft 1280x720 HD Live Canvas -->
+      <div class="p-3 bg-[var(--bg-subcard)] border-2 border-cyan-500/40 space-y-2.5 font-mono-code">
         <div class="flex items-center justify-between">
-          <label class="text-[11px] font-bold uppercase tracking-wider text-[var(--text-main)]">16:9 Thumbnail</label>
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 bg-cyan-600 text-white text-[9px] font-bold uppercase tracking-wider">Official ThumbCraft 16:9</span>
+            <span class="text-[10px] text-[var(--text-muted)]">Live 1280×720 HD Generator</span>
+          </div>
           <button
             type="button"
-            onclick="generateSmartThumbnail()"
-            class="px-2 py-0.5 bg-[var(--btn-primary-bg)] hover:opacity-90 text-[var(--btn-primary-text)] text-[10px] font-bold uppercase tracking-wider cursor-pointer"
+            onclick="renderThumbCraftCanvas()"
+            class="px-2.5 py-1 bg-cyan-700 hover:bg-cyan-600 text-white text-[10px] font-bold uppercase tracking-wider cursor-pointer shadow-xs"
           >
-            ⚡ Auto Thumbnail
+            🎨 Refresh Canvas
           </button>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
-          <div class="sm:col-span-5">
-            <div class="relative aspect-video w-full border border-[var(--border-main)] overflow-hidden bg-black flex items-center justify-center">
-              <img id="editModalThumbPreview" src="https://placehold.co/640x360/1c1917/ffffff?text=Preview" alt="Thumbnail Preview" class="w-full h-full object-contain" />
+          <div class="sm:col-span-7">
+            <div class="relative aspect-video w-full border-2 border-cyan-500/60 overflow-hidden bg-slate-900 flex items-center justify-center shadow-lg">
+              <img id="editModalThumbPreview" src="https://placehold.co/1280x720/082f49/38bdf8?text=ThumbCraft+Preview" alt="Thumbnail Preview" class="w-full h-full object-contain" />
             </div>
           </div>
-          <div class="sm:col-span-7 space-y-2 text-xs">
-            <div>
-              <span class="text-[10px] font-bold text-[var(--text-muted)] uppercase block mb-1">Option A: Upload Image</span>
-              <button
-                type="button"
-                onclick="document.getElementById('thumbnailFileInput').click()"
-                class="w-full h-7.5 px-2 bg-[var(--bg-card)] hover:bg-[var(--btn-secondary-hover)] text-[var(--text-main)] border border-[var(--border-main)] text-[11px] font-semibold flex items-center justify-center gap-1 cursor-pointer"
-              >
-                Choose Image File (PNG/JPG)
-              </button>
+          <div class="sm:col-span-5 space-y-2 text-xs">
+            <div class="p-2 bg-[var(--bg-card)] border border-[var(--border-main)] space-y-1">
+              <span class="text-[9px] font-bold text-cyan-600 dark:text-cyan-400 uppercase block">✨ Official PW Layout:</span>
+              <p class="text-[9px] text-[var(--text-muted)] leading-tight">
+                Selecting Title, Batch &amp; Teacher auto-generates official high-CTR thumbnail with teacher cutout, PW badge &amp; subject pill!
+              </p>
             </div>
             <div>
-              <span class="text-[10px] font-bold text-[var(--text-muted)] uppercase block mb-1">Option B: Image URL</span>
-              <input
-                type="text"
-                id="editModalThumbUrlInput"
-                oninput="handleCustomThumbUrlInput()"
-                placeholder="https://..."
-                class="w-full h-7.5 px-2 text-xs om-box-input text-[var(--text-main)]"
-              />
+              <span class="text-[9px] font-bold text-[var(--text-muted)] uppercase block mb-1">Custom File or Image Link:</span>
+              <div class="flex gap-1">
+                <button
+                  type="button"
+                  onclick="document.getElementById('thumbnailFileInput').click()"
+                  class="flex-1 h-7 px-1.5 bg-[var(--bg-card)] hover:bg-[var(--btn-secondary-hover)] text-[var(--text-main)] border border-[var(--border-main)] text-[10px] font-semibold flex items-center justify-center cursor-pointer truncate"
+                >
+                  📁 Upload File
+                </button>
+                <input
+                  type="text"
+                  id="editModalThumbUrlInput"
+                  oninput="handleCustomThumbUrlInput()"
+                  placeholder="https://..."
+                  class="flex-1 h-7 px-1.5 text-[10px] om-box-input text-[var(--text-main)]"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -6106,6 +6127,44 @@
       }
     };
 
+    // ══════════════════════════════════════════════════════════════════
+    // THUMBCRAFT OFFICIAL THUMBNAIL STUDIO & FACULTY ENGINE
+    // ══════════════════════════════════════════════════════════════════
+    window.thumbcraftTeachers = [];
+    window.thumbcraftImageCache = {};
+
+    window.loadThumbCraftFaculty = async function() {
+      try {
+        const res = await fetch('/api/faculty-list');
+        const data = await res.json();
+        if (data.success && Array.isArray(data.teachers)) {
+          window.thumbcraftTeachers = data.teachers;
+          populateFacultyDropdown(data.teachers);
+        }
+      } catch (err) {
+        console.warn('Faculty list fetch error, using local fallback:', err);
+      }
+    };
+
+    function populateFacultyDropdown(teachers) {
+      const select = document.getElementById('editModalTeacherSelect');
+      if (!select) return;
+      
+      const currentVal = select.value;
+      select.innerHTML = '<option value="">-- No Faculty Cutout (Text Only) --</option>';
+      
+      teachers.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t.driveId;
+        const centerStr = t.center ? ` [${t.center.replace('Pune - ', '').replace(' Vidyapeeth', '')}]` : '';
+        const codeStr = t.code ? ` (${t.code})` : '';
+        opt.textContent = `${t.name}${codeStr}${centerStr}`;
+        select.appendChild(opt);
+      });
+
+      if (currentVal) select.value = currentVal;
+    }
+
     window.openEditModal = function(fileId) {
       let file = currentState?.files?.find(f => f.id === fileId || f.videoId === fileId);
       if (!file) return;
@@ -6113,124 +6172,230 @@
       currentActiveEditFile = file;
       document.getElementById('editModalFileId').value = file.id;
       document.getElementById('editModalVideoId').value = file.videoId || '';
-      document.getElementById('editModalTitleInput').value = file.customTitle || file.name || '';
-      document.getElementById('editModalBatchInput').value = file.batch || '';
-      document.getElementById('editModalSubjectInput').value = file.subject || '';
+      
+      const titleInput = document.getElementById('editModalTitleInput');
+      const batchInput = document.getElementById('editModalBatchInput');
+      const subjectSelect = document.getElementById('editModalSubjectInput');
+      const teacherSelect = document.getElementById('editModalTeacherSelect');
 
-      const thumbUrl = file.thumbnailUrl || (file.videoId ? `https://img.youtube.com/vi/${file.videoId}/hqdefault.jpg` : 'https://placehold.co/640x360/1c1917/ffffff?text=No+Thumbnail');
-      const preview = document.getElementById('editModalThumbPreview');
-      if (preview) {
-        preview.src = thumbUrl;
-        preview.className = 'w-full h-full object-contain';
+      if (titleInput) titleInput.value = file.customTitle || file.name || '';
+      if (batchInput) batchInput.value = file.batch || '';
+      
+      if (subjectSelect) {
+        const s = (file.subject || '').toLowerCase();
+        let matched = 'Chemistry';
+        if (s.includes('phys')) matched = 'Physics';
+        else if (s.includes('chem')) matched = 'Chemistry';
+        else if (s.includes('math')) matched = 'Mathematics';
+        else if (s.includes('bio')) matched = 'Biology';
+        else if (s.includes('bot')) matched = 'Botany';
+        else if (s.includes('zoo')) matched = 'Zoology';
+        else if (s.includes('eng')) matched = 'English';
+        else if (s.includes('sst') || s.includes('soc')) matched = 'SST';
+        subjectSelect.value = matched;
       }
-      document.getElementById('editModalThumbUrlInput').value = '';
 
+      // Auto-load faculty if not loaded yet
+      if (!window.thumbcraftTeachers || window.thumbcraftTeachers.length === 0) {
+        window.loadThumbCraftFaculty().then(() => {
+          renderThumbCraftCanvas();
+        });
+      } else {
+        renderThumbCraftCanvas();
+      }
+
+      document.getElementById('editModalThumbUrlInput').value = '';
       document.getElementById('editVideoModal').classList.remove('hidden');
     };
 
-    window.closeEditModal = function() {
-      document.getElementById('editVideoModal').classList.add('hidden');
-    };
-
-    window.handleCustomThumbUrlInput = function() {
-      const input = document.getElementById('editModalThumbUrlInput');
-      const url = input ? input.value.trim() : '';
-      const preview = document.getElementById('editModalThumbPreview');
-      if (!url || !preview) return;
-
-      const driveId = extractGoogleDriveFileId(url);
-      if (driveId) {
-        preview.src = `/api/drive-image-proxy?id=${driveId}&t=${Date.now()}`;
-        preview.onerror = () => {
-          preview.src = `https://lh3.googleusercontent.com/d/${driveId}=w1280`;
-        };
-        showToast('✔ Google Drive image link detected!', 'success');
-      } else {
-        preview.src = url;
-      }
-    };
-
-    window.generateSmartThumbnail = function() {
-      const title = document.getElementById('editModalTitleInput').value.trim() || (currentActiveEditFile?.customTitle || currentActiveEditFile?.name || 'Lecture Video');
-      const batch = document.getElementById('editModalBatchInput').value.trim() || (currentActiveEditFile?.batch || 'Batch');
-      const subject = document.getElementById('editModalSubjectInput').value.trim() || (currentActiveEditFile?.subject || 'Lecture');
+    window.renderThumbCraftCanvas = function() {
+      const title = document.getElementById('editModalTitleInput')?.value.trim() || (currentActiveEditFile?.customTitle || currentActiveEditFile?.name || 'Lecture Video');
+      const batch = document.getElementById('editModalBatchInput')?.value.trim() || (currentActiveEditFile?.batch || 'PW SIP 2026');
+      const subject = document.getElementById('editModalSubjectInput')?.value || 'Chemistry';
+      const teacherDriveId = document.getElementById('editModalTeacherSelect')?.value || '';
 
       const canvas = document.createElement('canvas');
       canvas.width = 1280;
       canvas.height = 720;
       const ctx = canvas.getContext('2d');
 
+      // 1. Background Gradient (ThumbCraft Deep Teal / Cyan / Navy Aesthetic)
       const grad = ctx.createLinearGradient(0, 0, 1280, 720);
-      grad.addColorStop(0, '#0f172a');
-      grad.addColorStop(0.5, '#1e1b4b');
-      grad.addColorStop(1, '#312e81');
+      if (subject === 'Physics') {
+        grad.addColorStop(0, '#0c4a6e');
+        grad.addColorStop(0.5, '#075985');
+        grad.addColorStop(1, '#082f49');
+      } else if (subject === 'Mathematics') {
+        grad.addColorStop(0, '#1e293b');
+        grad.addColorStop(0.5, '#334155');
+        grad.addColorStop(1, '#0f172a');
+      } else if (subject === 'Biology' || subject === 'Botany' || subject === 'Zoology') {
+        grad.addColorStop(0, '#064e3b');
+        grad.addColorStop(0.5, '#047857');
+        grad.addColorStop(1, '#022c22');
+      } else {
+        // Chemistry / Default: Signature PW Cyan Teal Glow
+        grad.addColorStop(0, '#0e7490');
+        grad.addColorStop(0.5, '#0891b2');
+        grad.addColorStop(1, '#155e75');
+      }
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, 1280, 720);
 
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+      // Subtle Background Geometric Grid & Radial Glow
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
       ctx.lineWidth = 1;
       for (let x = 0; x < 1280; x += 60) {
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, 720);
-        ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 720); ctx.stroke();
       }
       for (let y = 0; y < 720; y += 60) {
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(1280, y);
-        ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(1280, y); ctx.stroke();
       }
 
-      ctx.fillStyle = '#ea580c';
-      ctx.fillRect(60, 80, 16, 560);
+      // Left Accent Lighting Bar
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillRect(40, 50, 8, 620);
 
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
-      ctx.strokeStyle = '#ea580c';
-      ctx.lineWidth = 2;
-      ctx.fillRect(100, 80, 380, 52);
-      ctx.strokeRect(100, 80, 380, 52);
+      // 2. White Rounded Batch Card
+      const batchX = 65, batchY = 55, batchW = 420, batchH = 50, batchR = 8;
+      ctx.save();
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
+      ctx.shadowBlur = 12;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 4;
+      ctx.beginPath();
+      ctx.roundRect ? ctx.roundRect(batchX, batchY, batchW, batchH, batchR) : ctx.rect(batchX, batchY, batchW, batchH);
+      ctx.fill();
+      ctx.restore();
+
+      ctx.fillStyle = '#0f172a';
+      ctx.font = '900 24px "Plus Jakarta Sans", "Montserrat", system-ui, sans-serif';
+      ctx.fillText(batch.toUpperCase(), batchX + 18, batchY + 34);
+
+      // 3. Subject Pill Badge (With Emoji Icon)
+      let subjectIcon = '🧪';
+      let subjectColor = '#06b6d4';
+      if (subject === 'Physics') { subjectIcon = '⚛️'; subjectColor = '#38bdf8'; }
+      else if (subject === 'Mathematics') { subjectIcon = '📐'; subjectColor = '#f59e0b'; }
+      else if (subject === 'Biology') { subjectIcon = '🧬'; subjectColor = '#10b981'; }
+      else if (subject === 'Botany') { subjectIcon = '🌿'; subjectColor = '#22c55e'; }
+      else if (subject === 'Zoology') { subjectIcon = '🦁'; subjectColor = '#14b8a6'; }
+      else if (subject === 'English') { subjectIcon = '📖'; subjectColor = '#a855f7'; }
+      else if (subject === 'SST') { subjectIcon = '🌍'; subjectColor = '#f97316'; }
+
+      const pillX = 65, pillY = 125, pillW = 260, pillH = 46, pillR = 23;
+      ctx.save();
+      ctx.fillStyle = '#0f172a';
+      ctx.strokeStyle = subjectColor;
+      ctx.lineWidth = 2.5;
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+      ctx.shadowBlur = 8;
+      ctx.beginPath();
+      ctx.roundRect ? ctx.roundRect(pillX, pillY, pillW, pillH, pillR) : ctx.rect(pillX, pillY, pillW, pillH);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
 
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 24px system-ui, -apple-system, sans-serif';
-      ctx.fillText(batch.toUpperCase(), 120, 115);
+      ctx.font = '900 22px "Plus Jakarta Sans", system-ui, sans-serif';
+      ctx.fillText(`${subjectIcon}  ${subject.toUpperCase()}`, pillX + 22, pillY + 31);
 
-      ctx.fillStyle = '#f59e0b';
-      ctx.font = '900 32px system-ui, -apple-system, sans-serif';
-      ctx.fillText(subject.toUpperCase(), 100, 200);
-
+      // 4. Main Lecture Title & Chapter Text (Wrapped Multiline)
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 56px system-ui, -apple-system, sans-serif';
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+      ctx.shadowBlur = 10;
+      ctx.shadowOffsetX = 2;
+      ctx.shadowOffsetY = 3;
+      ctx.font = '900 52px "Plus Jakarta Sans", "Montserrat", system-ui, sans-serif';
+      
+      const maxTextWidth = teacherDriveId ? 660 : 1080;
       const words = title.split(' ');
-      let line = '';
-      let y = 290;
+      let currentLine = '';
+      let textY = 250;
+
       for (let i = 0; i < words.length; i++) {
-        const testLine = line + words[i] + ' ';
+        const testLine = currentLine + (currentLine ? ' ' : '') + words[i];
         const metrics = ctx.measureText(testLine);
-        if (metrics.width > 1050 && i > 0) {
-          ctx.fillText(line, 100, y);
-          line = words[i] + ' ';
-          y += 75;
+        if (metrics.width > maxTextWidth && i > 0) {
+          ctx.fillText(currentLine, 65, textY);
+          currentLine = words[i];
+          textY += 68;
         } else {
-          line = testLine;
+          currentLine = testLine;
         }
       }
-      ctx.fillText(line, 100, y);
+      ctx.fillText(currentLine, 65, textY);
+      ctx.shadowColor = 'transparent';
 
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-      ctx.strokeStyle = '#ea580c';
-      ctx.lineWidth = 2;
-      ctx.fillRect(960, 580, 240, 60);
-      ctx.strokeRect(960, 580, 240, 60);
+      // 5. Official PW Round Logo Badge (Top Right)
+      const pwX = 1170, pwY = 90, pwR = 42;
+      ctx.save();
+      ctx.fillStyle = '#0f172a';
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 3;
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+      ctx.shadowBlur = 12;
+      ctx.beginPath();
+      ctx.arc(pwX, pwY, pwR, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
 
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 20px system-ui, -apple-system, sans-serif';
-      ctx.fillText('PW PORTAL HD', 995, 618);
+      ctx.font = '900 32px "Plus Jakarta Sans", system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('PW', pwX, pwY + 11);
+      ctx.textAlign = 'left';
 
-      const generatedBase64 = canvas.toDataURL('image/jpeg', 0.92);
-      document.getElementById('editModalThumbPreview').src = generatedBase64;
-      window.generatedBase64Thumbnail = generatedBase64;
-      showToast('✔ Thumbnail generated! Click "Save" to apply.', 'success');
+      // 6. Draw Faculty Cutout Photo (If Teacher Selected)
+      const finalizeCanvas = () => {
+        try {
+          const generatedBase64 = canvas.toDataURL('image/jpeg', 0.92);
+          const preview = document.getElementById('editModalThumbPreview');
+          if (preview) preview.src = generatedBase64;
+          window.generatedBase64Thumbnail = generatedBase64;
+        } catch (e) {
+          console.warn('Canvas export warning:', e.message);
+        }
+      };
+
+      if (teacherDriveId) {
+        const proxyUrl = `/api/thumb-proxy?id=${teacherDriveId}`;
+        
+        if (window.thumbcraftImageCache[teacherDriveId]) {
+          const img = window.thumbcraftImageCache[teacherDriveId];
+          ctx.save();
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+          ctx.shadowBlur = 24;
+          ctx.drawImage(img, 720, 100, 520, 620);
+          ctx.restore();
+          finalizeCanvas();
+        } else {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = () => {
+            window.thumbcraftImageCache[teacherDriveId] = img;
+            ctx.save();
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+            ctx.shadowBlur = 24;
+            ctx.drawImage(img, 720, 100, 520, 620);
+            ctx.restore();
+            finalizeCanvas();
+          };
+          img.onerror = () => {
+            finalizeCanvas();
+          };
+          img.src = proxyUrl;
+        }
+      } else {
+        finalizeCanvas();
+      }
+    };
+
+    window.generateSmartThumbnail = function() {
+      renderThumbCraftCanvas();
+      showToast('✔ Official ThumbCraft Thumbnail generated!', 'success');
     };
 
     window.saveVideoEditModal = async function() {
@@ -7256,6 +7421,7 @@
 
       loadClientIds();
       loadMetadataPresets();
+      if (typeof loadThumbCraftFaculty === 'function') loadThumbCraftFaculty();
 
       // Set redirect URL displays
       const redirectUrlDisplay = document.getElementById('redirectUrlDisplay');

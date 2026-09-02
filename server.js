@@ -1596,6 +1596,88 @@ app.post('/api/thumbnail', async (req, res) => {
   }
 });
 
+// ══════════════════════════════════════════════════════════════════
+// THUMBCRAFT FACULTY & THUMBNAIL PROXY ENGINE
+// ══════════════════════════════════════════════════════════════════
+let cachedFacultyList = null;
+let cachedFacultyTime = 0;
+const FACULTY_SHEET_URL = 'https://docs.google.com/spreadsheets/d/10TOZqECN2LW0dJj8JuWDdeE28sV4p19KDpAGkltlvwE/gviz/tq?tqx=out:json';
+
+app.get('/api/faculty-list', async (req, res) => {
+  try {
+    const now = Date.now();
+    if (cachedFacultyList && (now - cachedFacultyTime) < 3600000) {
+      return res.json({ success: true, teachers: cachedFacultyList, cached: true });
+    }
+
+    const https = require('https');
+    https.get(FACULTY_SHEET_URL, (sheetRes) => {
+      let data = '';
+      sheetRes.on('data', chunk => data += chunk);
+      sheetRes.on('end', () => {
+        try {
+          const jsonStr = data.substring(data.indexOf('{'), data.lastIndexOf('}') + 1);
+          const json = JSON.parse(jsonStr);
+          const rows = json.table.rows;
+          const teachers = [];
+          rows.forEach((r, idx) => {
+            if (idx === 0) return;
+            const cells = r.c;
+            const center = cells[0]?.v || '';
+            const name = cells[1]?.v || '';
+            const driveId = cells[4]?.v || '';
+            const code = cells[5]?.v || '';
+            const status = cells[6]?.v || 'Active';
+            if (name && driveId && String(status).toLowerCase() === 'active') {
+              teachers.push({ center, name: name.trim(), driveId: driveId.trim(), code: code ? code.trim() : '' });
+            }
+          });
+          cachedFacultyList = teachers;
+          cachedFacultyTime = now;
+          return res.json({ success: true, teachers: cachedFacultyList });
+        } catch (parseErr) {
+          console.error('Failed to parse faculty sheet JSON:', parseErr.message);
+          if (cachedFacultyList) return res.json({ success: true, teachers: cachedFacultyList, fallback: true });
+          return res.status(500).json({ success: false, error: 'Failed to parse faculty sheet.' });
+        }
+      });
+    }).on('error', (err) => {
+      console.error('Faculty sheet fetch error:', err.message);
+      if (cachedFacultyList) return res.json({ success: true, teachers: cachedFacultyList, fallback: true });
+      return res.status(500).json({ success: false, error: err.message });
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/thumb-proxy', async (req, res) => {
+  const driveId = req.query.id;
+  if (!driveId) return res.status(400).send('Missing id');
+
+  try {
+    const https = require('https');
+    const imgUrl = `https://lh3.googleusercontent.com/d/${driveId}`;
+
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+
+    https.get(imgUrl, (proxyRes) => {
+      if (proxyRes.statusCode >= 300 && proxyRes.statusCode < 400 && proxyRes.headers.location) {
+        https.get(proxyRes.headers.location, (redirectRes) => {
+          res.setHeader('Content-Type', redirectRes.headers['content-type'] || 'image/png');
+          redirectRes.pipe(res);
+        }).on('error', () => res.status(500).send('Proxy Error'));
+        return;
+      }
+      res.setHeader('Content-Type', proxyRes.headers['content-type'] || 'image/png');
+      proxyRes.pipe(res);
+    }).on('error', () => res.status(500).send('Proxy Error'));
+  } catch (err) {
+    res.status(500).send('Proxy failure: ' + err.message);
+  }
+});
+
 /**
  * Edit Full Video Details (Title, Batch, Subject, Thumbnail)
  */
