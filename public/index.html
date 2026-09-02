@@ -6929,6 +6929,41 @@
       }
     };
 
+    window.tableThumbCache = window.tableThumbCache || {};
+
+    window.getRowThumbnail = function(file, rawBatchCode, subName, teacherDriveId) {
+      if (file.thumbnailUrl && file.thumbnailUrl.startsWith('data:image')) {
+        return file.thumbnailUrl;
+      }
+      if (window.tableThumbCache[file.id]) {
+        return window.tableThumbCache[file.id];
+      }
+
+      const ytId = (typeof extractYouTubeVideoId === 'function') ? extractYouTubeVideoId(file) : (file.videoId || null);
+      const isYt = (typeof isYouTubeVideo === 'function') ? isYouTubeVideo(file) : !!ytId;
+      const initialPlaceholder = (isYt && ytId) 
+        ? `https://i.ytimg.com/vi/${ytId}/mqdefault.jpg` 
+        : (file.thumbnailUrl || '/assets/thumbcraft_template.png');
+
+      // Asynchronously generate official ThumbCraft thumbnail for the table row
+      setTimeout(async () => {
+        try {
+          const headline = (subName || 'LECTURE').toUpperCase();
+          const batchClean = (rawBatchCode && rawBatchCode !== '—') ? rawBatchCode : 'PW BATCH';
+          const base64 = await window.generateThumbCraftBase64(headline, batchClean, subName, teacherDriveId);
+          if (base64) {
+            window.tableThumbCache[file.id] = base64;
+            const imgEl = document.getElementById(`table-thumb-img-${file.id}`);
+            if (imgEl) {
+              imgEl.src = base64;
+            }
+          }
+        } catch (e) {}
+      }, 15);
+
+      return initialPlaceholder;
+    };
+
 
 
     window.generateSmartThumbnail = function() {
@@ -6965,6 +7000,11 @@
       if (saveBtn) {
         saveBtn.disabled = true;
         saveBtn.textContent = 'SAVING...';
+      }
+
+      if (chosenThumb) {
+        if (fileId) window.tableThumbCache[fileId] = chosenThumb;
+        if (videoId) window.tableThumbCache[videoId] = chosenThumb;
       }
 
       if (currentActiveEditFile && (currentActiveEditFile.id === fileId || currentActiveEditFile.videoId === fileId || currentActiveEditFile.videoId === videoId)) {
@@ -7431,24 +7471,14 @@
 
         let statusHtml = '';
         if (file.status === 'completed') {
-          // Priority 1: User-applied custom thumbnail if saved locally or uploaded
-          // Priority 2: Real Original YouTube 16:9 thumbnail (mqdefault.jpg - 320x180, pure 16:9, 0% bars, 0% distortion)
-          // Priority 3: Custom file thumbnail or Drive preview
-          let thumbSrc = '';
-          if (file.thumbnailUrl && (file.thumbnailUrl.startsWith('data:image') || !file.thumbnailUrl.includes('ytimg.com'))) {
-            thumbSrc = file.thumbnailUrl;
-          } else if (isYt && ytId) {
-            thumbSrc = `https://i.ytimg.com/vi/${ytId}/mqdefault.jpg`;
-          } else if (file.thumbnailUrl) {
-            thumbSrc = file.thumbnailUrl;
-          } else {
-            thumbSrc = `https://drive.google.com/thumbnail?id=${file.id}&sz=w320`;
-          }
+          const thumbSrc = window.getRowThumbnail 
+            ? window.getRowThumbnail(file, rawBatchCode, subName, tMatch?.teacher?.driveId)
+            : (file.thumbnailUrl || (isYt && ytId ? `https://i.ytimg.com/vi/${ytId}/mqdefault.jpg` : ''));
 
           statusHtml = `
             <div class="flex items-center gap-2.5">
-              <div onclick="openEditModal('${file.id || ytId}')" class="relative group w-[76px] h-[43px] aspect-video border border-[var(--border-main)] overflow-hidden shrink-0 bg-neutral-900 rounded-xs shadow-2xs cursor-pointer" title="Click to Edit &amp; Customize Thumbnail">
-                <img id="table-thumb-img-${file.id}" src="${thumbSrc}" alt="Thumbnail" data-thumb-step="0" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" onerror="handleThumbError(this, '${ytId || ''}')"/>
+              <div onclick="openEditModal('${file.id || ytId}')" class="relative group w-[88px] h-[42px] aspect-[1280/614] border border-[var(--border-main)] overflow-hidden shrink-0 bg-neutral-900 rounded-xs shadow-2xs cursor-pointer" title="Click to Edit &amp; Customize Thumbnail">
+                <img id="table-thumb-img-${file.id}" src="${thumbSrc}" alt="Thumbnail" data-thumb-step="0" class="w-full h-full object-fill group-hover:scale-105 transition-transform duration-200" onerror="handleThumbError(this, '${ytId || ''}')"/>
                 <div class="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white text-[9px] font-bold">
                   <span>✏️ EDIT</span>
                 </div>
