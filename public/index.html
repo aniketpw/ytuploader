@@ -6279,28 +6279,92 @@
 
     window.extractBatchFromTitle = function(text) {
       if (!text) return '';
-      const match = text.match(/([0-9]{2}-[A-Z0-9]+(?:\s*[0-9]{4})?|SIP\s+[A-Z0-9-]+(?:\s*[0-9]{4})?)/i);
-      return match ? match[1].trim() : '';
+      // 1. Clean off pipe and dates/timestamps so timestamps like "| 2026-09-02" are NEVER mistaken for batch codes!
+      const cleaned = text.split('|')[0].trim();
+
+      // 2. Priority 1: PW 27-series batches (e.g. 27-LN151MA 2026, 27-LN153MA 2026, 27-LJE51MP 2026, 27-PJ451NA 2026)
+      const m1 = cleaned.match(/\b(27-[A-Z0-9]+(?:\s+202[0-9])?)\b/i);
+      if (m1) return m1[1].trim();
+
+      // 3. Priority 2: S-series / SIP batches (e.g. S41-UP32NA, S41-UP31EA, S41-UF31EA, SIP S41-AJ31MA 2026)
+      const m2 = cleaned.match(/\b(SIP\s+[A-Z0-9-]+(?:\s+202[0-9])?|[A-Z][0-9]{2}-[A-Z0-9]+(?:\s+202[0-9])?)\b/i);
+      if (m2) return m2[1].trim();
+
+      // 4. Priority 3: General batch patterns with hyphen (excluding pure dates like "26-09" or "02-09")
+      const m3 = cleaned.match(/\b([A-Z0-9]{2,8}-[A-Z0-9]{2,8}(?:\s+202[0-9])?)\b/i);
+      if (m3 && !/^[0-9]{2}-[0-9]{2}$/.test(m3[1])) return m3[1].trim();
+
+      return '';
+    };
+
+    window.extractSubjectFromTitle = function(text) {
+      if (!text) return 'Chemistry';
+      const cleaned = text.split('|')[0].toLowerCase();
+      
+      if (/\b(physics|phys|phy)\b/i.test(cleaned)) return 'Physics';
+      if (/\b(zoology|zoo)\b/i.test(cleaned)) return 'Zoology';
+      if (/\b(botany|bot)\b/i.test(cleaned)) return 'Botany';
+      if (/\b(biology|bio)\b/i.test(cleaned)) return 'Biology';
+      if (/\b(mathematics|maths|math|mat)\b/i.test(cleaned)) return 'Mathematics';
+      if (/\b(chemistry|chem|chm)\b/i.test(cleaned)) return 'Chemistry';
+      if (/\b(english|eng)\b/i.test(cleaned)) return 'English';
+      if (/\b(sst|social)\b/i.test(cleaned)) return 'SST';
+
+      return 'Chemistry';
+    };
+
+    window.resolveFileBatch = function(file) {
+      if (!file) return '—';
+      let b = window.extractBatchFromTitle(file.customTitle || '') ||
+              window.extractBatchFromTitle(file.originalName || '') ||
+              window.extractBatchFromTitle(file.name || '');
+      if (b) return b;
+
+      let raw = (file.batch || '').trim();
+      const lower = raw.toLowerCase();
+      if (lower && !lower.includes('aniket') && !lower.includes('mishra') && !lower.includes('lavish') && !lower.includes('dhingra') && !lower.includes('default') && !lower.includes('batch') && !/^[0-9]{2}-[0-9]{2}$/.test(raw)) {
+        return raw;
+      }
+      return '—';
+    };
+
+    window.resolveFileSubject = function(file) {
+      if (!file) return 'Chemistry';
+      const fromTitle = window.extractSubjectFromTitle(file.customTitle || file.originalName || file.name || '');
+      if (fromTitle && fromTitle !== 'Chemistry') return fromTitle;
+
+      if (file.subject && file.subject !== 'Lecture' && file.subject !== 'General') {
+        const s = file.subject.toLowerCase();
+        if (s.includes('phys')) return 'Physics';
+        if (s.includes('zoo')) return 'Zoology';
+        if (s.includes('bot')) return 'Botany';
+        if (s.includes('bio')) return 'Biology';
+        if (s.includes('math')) return 'Mathematics';
+        if (s.includes('chem')) return 'Chemistry';
+        if (s.includes('eng')) return 'English';
+        if (s.includes('sst')) return 'SST';
+      }
+      return fromTitle || 'Chemistry';
     };
 
     window.matchTimetableFaculty = function(batch, subject, dateStr) {
       if (!window.timetableSchedule || window.timetableSchedule.length === 0) return null;
       let bNorm = (batch || '').toLowerCase().replace(/[\s-]+/g, '');
-      if (!bNorm) return null;
+      if (!bNorm || bNorm === '—') return null;
 
       const sNorm = (subject || '').toLowerCase();
       let prefix = 'C';
       if (sNorm.includes('phys')) prefix = 'P';
-      else if (sNorm.includes('math')) prefix = 'M';
-      else if (sNorm.includes('bot') || sNorm.includes('bio')) prefix = 'B';
       else if (sNorm.includes('zoo')) prefix = 'Z';
+      else if (sNorm.includes('bot') || sNorm.includes('bio')) prefix = 'B';
+      else if (sNorm.includes('math')) prefix = 'M';
       else if (sNorm.includes('chem')) prefix = 'C';
 
       // Extract core batch code (e.g. "27lje51mp" from "27lje51mp2026")
       const coreMatch = bNorm.match(/27[a-z0-9]+/);
       const coreBatch = coreMatch ? coreMatch[0].replace(/202[0-9]/, '') : bNorm;
 
-      // 1. Try matching core batch + subject prefix
+      // 1. Match batch + subject prefix
       let matchedEntry = window.timetableSchedule.find(entry => {
         const eb = (entry.batchCode || '').toLowerCase().replace(/[\s-]+/g, '');
         const matchesBatch = eb.includes(bNorm) || bNorm.includes(eb) || (coreBatch && eb.includes(coreBatch));
@@ -6334,16 +6398,16 @@
 
       let batch = batchInput?.value.trim() || '';
       if (!batch && currentActiveEditFile) {
-        batch = window.extractBatchFromTitle(currentActiveEditFile.customTitle || currentActiveEditFile.name || '');
-        if (batch && batchInput) batchInput.value = batch;
+        batch = window.resolveFileBatch(currentActiveEditFile);
+        if (batch && batch !== '—' && batchInput) batchInput.value = batch;
       }
-      const subject = subjectSelect?.value || 'Chemistry';
+      const subject = subjectSelect?.value || (currentActiveEditFile ? window.resolveFileSubject(currentActiveEditFile) : 'Chemistry');
       const fileDate = currentActiveEditFile ? (currentActiveEditFile.recordedDate || currentActiveEditFile.date || currentActiveEditFile.name || '') : '';
 
       const match = window.matchTimetableFaculty(batch, subject, fileDate);
       if (match && match.teacher) {
         if (teacherSelect) teacherSelect.value = match.teacher.driveId;
-        if (match.batch && batchInput && !batchInput.value) batchInput.value = match.batch;
+        if (match.batch && batchInput && (!batchInput.value || batchInput.value === '—')) batchInput.value = match.batch;
         renderThumbCraftCanvas();
         showToast(`⚡ Matched Timetable: ${match.teacher.name} (${match.facultyCode})`, 'success');
       } else if (match && match.facultyCode) {
@@ -6370,26 +6434,12 @@
       if (titleInput) titleInput.value = file.customTitle || file.name || '';
       if (searchInput) searchInput.value = '';
 
-      // Clean Batch Code
-      let rawBatch = (file.batch || '').trim();
-      if (rawBatch.toLowerCase().includes('aniket') || rawBatch.toLowerCase().includes('mishra') || rawBatch.toLowerCase() === 'default' || rawBatch.toLowerCase() === 'batch') {
-        rawBatch = '';
-      }
-      if (!rawBatch) {
-        rawBatch = window.extractBatchFromTitle(file.customTitle || file.originalName || file.name || '');
-      }
+      // Clean Batch Code strictly resolved
+      let rawBatch = window.resolveFileBatch(file);
+      if (rawBatch === '—') rawBatch = '';
 
-      // Detect Subject from all available name/title strings
-      const fullText = `${file.subject || ''} ${file.customTitle || ''} ${file.originalName || ''} ${file.name || ''}`.toLowerCase();
-      let matchedSubject = 'Chemistry';
-      if (fullText.includes('phys')) matchedSubject = 'Physics';
-      else if (fullText.includes('chem')) matchedSubject = 'Chemistry';
-      else if (fullText.includes('math')) matchedSubject = 'Mathematics';
-      else if (fullText.includes('bio')) matchedSubject = 'Biology';
-      else if (fullText.includes('bot')) matchedSubject = 'Botany';
-      else if (fullText.includes('zoo')) matchedSubject = 'Zoology';
-      else if (fullText.includes('eng')) matchedSubject = 'English';
-      else if (fullText.includes('sst') || fullText.includes('soc')) matchedSubject = 'SST';
+      // Detect Subject strictly from title
+      const matchedSubject = window.resolveFileSubject(file);
       if (subjectSelect) subjectSelect.value = matchedSubject;
 
       // Ensure Faculty & Timetable are fully loaded
@@ -7183,15 +7233,14 @@
         filteredFiles = filteredFiles.filter(f => {
           if (f.status === 'uploading' || f.status === 'queued') return true;
           const t = (f.customTitle || f.name || '').toLowerCase();
-          const b = (f.batch || '').toLowerCase();
-          const s = (f.subject || '').toLowerCase();
-          const eb = (window.extractBatchFromTitle ? window.extractBatchFromTitle(f.customTitle || f.originalName || f.name || '') : '').toLowerCase();
+          const b = (window.resolveFileBatch ? window.resolveFileBatch(f) : (f.batch || '')).toLowerCase();
+          const s = (window.resolveFileSubject ? window.resolveFileSubject(f) : (f.subject || '')).toLowerCase();
           let facText = '';
           if (window.matchTimetableFaculty) {
-            const m = window.matchTimetableFaculty(eb || b, s, f.date || f.name || '');
+            const m = window.matchTimetableFaculty(b, s, f.date || f.name || '');
             if (m) facText = `${m.teacher?.name || ''} ${m.facultyCode || ''}`.toLowerCase();
           }
-          return t.includes(currentSearchQuery) || b.includes(currentSearchQuery) || s.includes(currentSearchQuery) || eb.includes(currentSearchQuery) || facText.includes(currentSearchQuery);
+          return t.includes(currentSearchQuery) || b.includes(currentSearchQuery) || s.includes(currentSearchQuery) || facText.includes(currentSearchQuery);
         });
       }
 
@@ -7409,24 +7458,8 @@
         const rawBytes = file.totalBytes || file.size || 0;
         const byteSizeBadge = rawBytes > 0 ? `<span class="text-[9px] text-[var(--text-muted)] block">${formatBytes(rawBytes)}</span>` : '';
 
-        let rawBatchCode = (file.batch || '').trim();
-        if (rawBatchCode.toLowerCase().includes('aniket') || rawBatchCode.toLowerCase().includes('mishra') || rawBatchCode.toLowerCase() === 'batch' || rawBatchCode.toLowerCase() === 'default') {
-          rawBatchCode = '';
-        }
-        if (!rawBatchCode) {
-          rawBatchCode = window.extractBatchFromTitle ? window.extractBatchFromTitle(file.customTitle || file.originalName || file.name || '') : '';
-        }
-
-        const fullSubText = `${file.subject || ''} ${file.customTitle || ''} ${file.originalName || ''} ${file.name || ''}`.toLowerCase();
-        let subName = 'Lecture';
-        if (fullSubText.includes('phys')) subName = 'Physics';
-        else if (fullSubText.includes('chem')) subName = 'Chemistry';
-        else if (fullSubText.includes('math')) subName = 'Mathematics';
-        else if (fullSubText.includes('bio')) subName = 'Biology';
-        else if (fullSubText.includes('bot')) subName = 'Botany';
-        else if (fullSubText.includes('zoo')) subName = 'Zoology';
-        else if (fullSubText.includes('eng')) subName = 'English';
-        else if (fullSubText.includes('sst')) subName = 'SST';
+        const rawBatchCode = window.resolveFileBatch ? window.resolveFileBatch(file) : '—';
+        const subName = window.resolveFileSubject ? window.resolveFileSubject(file) : 'Lecture';
 
         const tMatch = window.matchTimetableFaculty ? window.matchTimetableFaculty(rawBatchCode, subName, file.date || file.name || '') : null;
         const facName = tMatch?.teacher?.name ? tMatch.teacher.name.split(' ')[0] : (tMatch?.facultyCode || '');
