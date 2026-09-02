@@ -249,7 +249,7 @@
 
   <!-- 1. Minimal Flat Editorial Header -->
   <header class="w-full border-b border-[var(--border-main)] px-3 sm:px-6 py-2.5 sm:py-3 bg-[var(--bg-header)] backdrop-blur-xs sticky top-0 z-40">
-    <div class="max-w-6xl mx-auto flex items-center justify-between flex-wrap gap-2">
+    <div class="w-full max-w-[1536px] mx-auto flex items-center justify-between flex-wrap gap-2">
       
       <!-- Brand Logo -->
       <div class="flex items-center gap-2 sm:gap-2.5">
@@ -357,6 +357,27 @@
           <span id="soundIcon">🔔</span>
         </button>
 
+        <!-- Theme Toggle Button (In Header) -->
+        <button
+          type="button"
+          id="headerThemeBtn"
+          onclick="toggleAppTheme()"
+          class="flex items-center justify-center w-8 h-8 border border-[var(--border-main)] bg-[var(--bg-card)] hover:bg-[var(--btn-secondary-hover)] text-[var(--text-main)] transition-all cursor-pointer shadow-2xs text-xs"
+          title="Toggle Light / Dark Theme (Press 'D')"
+        >
+          <span id="headerThemeIcon">☀️</span>
+        </button>
+
+        <!-- Documentation & Guide Button (In Header) -->
+        <button
+          type="button"
+          onclick="openInfoModal('guide')"
+          class="flex items-center justify-center w-8 h-8 border border-[var(--border-main)] bg-[var(--bg-card)] hover:bg-[var(--btn-secondary-hover)] text-[var(--text-main)] transition-all cursor-pointer shadow-2xs text-xs font-serif-editorial italic font-bold"
+          title="How to Use & Documentation Guide"
+        >
+          i
+        </button>
+
         <!-- SSE Status: Pure compact indicator dot (No text) -->
         <div
           id="connectionBadge"
@@ -369,8 +390,8 @@
     </div>
   </header>
 
-  <!-- Main Container -->
-  <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6">
+  <!-- Main Container (Responsive Full-Width Studio Layout) -->
+  <main class="flex-1 w-full max-w-[1536px] mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-5 space-y-4">
 
     <!-- Quota Alert Banner -->
     <div id="quotaAlertBanner" class="hidden border border-amber-700/60 bg-amber-950/30 p-3.5 flex items-center justify-between flex-wrap gap-3">
@@ -399,23 +420,8 @@
       </div>
     </div>
 
-    <!-- 2. Clean Architectural Editorial Hero & Inputs -->
-    <div class="space-y-4">
-      
-      <!-- Editorial Title & Tagline -->
-      <div class="space-y-1">
-        <div class="font-mono-code text-[10px] uppercase tracking-widest text-[var(--text-muted)]">
-          DIRECT CLOUD PIPELINE • 0 MB LOCAL BANDWIDTH
-        </div>
-        <div class="flex items-baseline justify-between flex-wrap gap-2">
-          <h2 class="text-2xl sm:text-3xl md:text-4xl font-serif-editorial text-[var(--text-main)] tracking-tight leading-tight">
-            Your Drive Videos, Now in Your <span class="italic font-normal text-[var(--btn-primary-bg)]">Channel.</span>
-          </h2>
-          <span class="hidden sm:inline font-mono-code text-xs text-[var(--text-muted)]">
-            // scan subfolders, preview &amp; select videos, unlisted 1080p stream
-          </span>
-        </div>
-      </div>
+    <!-- 2. Clean High-Density Command Studio Card (Hero Banner Removed) -->
+    <div class="p-4 sm:p-5 bg-[var(--bg-card)] border border-[var(--border-main)] shadow-xs space-y-3.5">
 
       <!-- Multi-Folder Drive URL Input -->
       <div class="space-y-1.5">
@@ -602,13 +608,11 @@
       </div>
     </div>
 
-    <hr class="border-t border-[var(--border-main)] my-5" />
-
     <!-- Hidden radio for processingMode compatibility -->
     <input type="radio" name="processingMode" value="youtube" checked class="hidden" />
 
-    <!-- 3. Library & Dashboard Table Section -->
-    <div class="space-y-3.5">
+    <!-- 3. Library & Dashboard Table Section Card -->
+    <div class="p-4 sm:p-5 bg-[var(--bg-card)] border border-[var(--border-main)] shadow-xs space-y-3.5">
       
       <!-- Section Header with Date Range Filter -->
       <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-3">
@@ -7868,6 +7872,10 @@
         icon.textContent = isDark ? '🌙' : '☀️';
         icon.classList.add('theme-icon-spin');
       }
+      const headerIcon = document.getElementById('headerThemeIcon');
+      if (headerIcon) {
+        headerIcon.textContent = isDark ? '🌙' : '☀️';
+      }
     }
 
     // Info & Architecture Modal Controls (4 Tabs)
@@ -7970,8 +7978,8 @@
     });
   </script>
 
-  <!-- Left Floating Information / Quick Guide Button (Bottom-Left) -->
-  <div id="floatingInfoDock" class="fixed bottom-6 left-6 z-40 select-none">
+  <!-- Left Floating Information / Quick Guide Button (Integrated into Header, Hidden here) -->
+  <div id="floatingInfoDock" class="hidden fixed bottom-6 left-6 z-40 select-none">
     <button
       type="button"
       onclick="openInfoModal('guide')"
@@ -7983,8 +7991,8 @@
     </button>
   </div>
 
-  <!-- Right Floating Tactile Theme Icon (Bottom-Right Icon-Only) -->
-  <div id="floatingThemeDock" class="fixed bottom-6 right-6 z-40 select-none">
+  <!-- Right Floating Tactile Theme Icon (Integrated into Header, Hidden here) -->
+  <div id="floatingThemeDock" class="hidden fixed bottom-6 right-6 z-40 select-none">
     <button
       type="button"
       id="floatingThemeBtn"
