@@ -2607,38 +2607,6 @@
       return { date: dmy, time: timeStr };
     }
 
-    function getFileAllYMDs(file) {
-      const set = new Set();
-      if (!file) return [];
-      // 1. Date from filename (actual lecture recording date)
-      const name = file.name || file.originalName || file.customTitle || '';
-      const ymdMatch = name.match(/(20\d{2})[-_](\d{2})[-_](\d{2})/);
-      if (ymdMatch) set.add(`${ymdMatch[1]}-${ymdMatch[2]}-${ymdMatch[3]}`);
-      const dmyMatch = name.match(/(\d{2})[-_](\d{2})[-_](20\d{2})/);
-      if (dmyMatch) set.add(`${dmyMatch[3]}-${dmyMatch[2]}-${dmyMatch[1]}`);
-
-      // 2. Date from createdTime / publishedAt (upload timestamp)
-      if (file.createdTime) {
-        const d = new Date(file.createdTime);
-        if (!isNaN(d.getTime())) set.add(formatDateToYMD(d));
-      }
-      if (file.recordedDate) {
-        const d = new Date(file.recordedDate);
-        if (!isNaN(d.getTime())) set.add(formatDateToYMD(d));
-      }
-      if (set.size === 0) set.add(getTodayYMD());
-      return Array.from(set);
-    }
-
-    function fileMatchesDate(file, start, end) {
-      if (!start && !end) return true;
-      const dates = getFileAllYMDs(file);
-      for (const d of dates) {
-        if (start && end && d >= start && d <= end) return true;
-        if (start && !end && d === start) return true;
-      }
-      return false;
-    }
 
     function getFileYMD(file) {
       if (!file) return getTodayYMD();
@@ -3278,12 +3246,14 @@
       if (start && end) {
         matchingFiles = matchingFiles.filter(f => {
           if (f.status === 'uploading' || f.status === 'queued') return true;
-          return fileMatchesDate(f, start, end);
+          const fileYMD = getFileYMD(f);
+          return fileYMD >= start && fileYMD <= end;
         });
       } else if (start) {
         matchingFiles = matchingFiles.filter(f => {
           if (f.status === 'uploading' || f.status === 'queued') return true;
-          return fileMatchesDate(f, start, start);
+          const fileYMD = getFileYMD(f);
+          return fileYMD === start;
         });
       }
 
@@ -7372,20 +7342,20 @@
         });
       }
 
-      // If searching, search across all videos without being restricted by date!
-      if (!currentSearchQuery) {
-        const { start, end } = dateFilterRange;
-        if (start && end) {
-          filteredFiles = filteredFiles.filter(f => {
-            if (f.status === 'uploading' || f.status === 'queued') return true;
-            return fileMatchesDate(f, start, end);
-          });
-        } else if (start) {
-          filteredFiles = filteredFiles.filter(f => {
-            if (f.status === 'uploading' || f.status === 'queued') return true;
-            return fileMatchesDate(f, start, start);
-          });
-        }
+      // Date Range Filter (Always strictly respected! Both with or without search!)
+      const { start, end } = dateFilterRange;
+      if (start && end) {
+        filteredFiles = filteredFiles.filter(f => {
+          if (f.status === 'uploading' || f.status === 'queued') return true;
+          const fileYMD = getFileYMD(f);
+          return fileYMD >= start && fileYMD <= end;
+        });
+      } else if (start) {
+        filteredFiles = filteredFiles.filter(f => {
+          if (f.status === 'uploading' || f.status === 'queued') return true;
+          const fileYMD = getFileYMD(f);
+          return fileYMD === start;
+        });
       }
       
       if (currentFilter === 'completed') {

@@ -1219,7 +1219,7 @@ app.post(['/api/sync-youtube', '/api/sync-youtube-uploads', '/api/channel-videos
       }
 
       pageToken = listRes.data.nextPageToken;
-    } while (pageToken && channelVideos.length < 300);
+    } while (pageToken && channelVideos.length < 3000);
 
     // Return only THIS user's videos from history
     const allHistory = loadUploadedHistory();
