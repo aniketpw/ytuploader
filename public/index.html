@@ -6445,7 +6445,7 @@
 
       if (titleInput) {
         const rawTitle = file.customTitle || file.name || '';
-        const isRaw = rawTitle.includes('| 202') || rawTitle.includes('|') || /^(Morning|Evening|Afternoon)\s*-/i.test(rawTitle) || rawTitle.length > 25;
+        const isRaw = /\|\s*202\d/i.test(rawTitle) || (/^(Morning|Evening|Afternoon)\s*-/i.test(rawTitle) && rawTitle.includes('202'));
         titleInput.value = isRaw ? (matchedSubject || 'BOTANY').toUpperCase() : rawTitle;
       }
       // Clean Batch Code strictly resolved
@@ -6744,12 +6744,10 @@
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
 
-          // If title is the long raw video filename or empty, show clean Subject Name (e.g. BOTANY)
+          // If title is an unedited raw camera recording or empty, default to clean Subject Name (e.g. BOTANY)
           let headlineText = (title || '').trim();
-          const isRawRecording = headlineText.includes('| 202') || 
-                                 headlineText.includes('|') || 
-                                 /^(Morning|Evening|Afternoon)\s*-/i.test(headlineText) ||
-                                 headlineText.length > 25;
+          const isRawRecording = /\|\s*202\d/i.test(headlineText) || 
+                                 (/^(Morning|Evening|Afternoon)\s*-/i.test(headlineText) && headlineText.includes('202'));
           if (!headlineText || isRawRecording) {
             headlineText = (subject || 'Lecture').toUpperCase();
           }
@@ -6788,15 +6786,15 @@
             return lines;
           };
 
-          // Scale font size: for short subject titles (e.g. BOTANY), use bold, prominent headline font
-          let chosenFontSize = Math.round(l * (headlineText.length <= 10 ? 0.125 : 0.09));
+          // Scale font size: short titles use large bold font; longer chapter topics auto-fit gracefully
+          let chosenFontSize = Math.round(l * (headlineText.length <= 10 ? 0.125 : (headlineText.length <= 25 ? 0.095 : 0.075)));
           let chosenLines = [];
 
-          for (let sz = chosenFontSize; sz >= Math.round(l * 0.052); sz -= 2) {
+          for (let sz = chosenFontSize; sz >= Math.round(l * 0.042); sz -= 2) {
             ctx.font = `800 ${sz}px 'Montserrat', sans-serif`;
             const lines = wrapWords(headlineText, sz, N);
-            const totalH = lines.length * (sz * 1.2);
-            if (totalH <= w || sz <= Math.round(l * 0.054)) {
+            const totalH = lines.length * (sz * 1.22);
+            if (totalH <= w || sz <= Math.round(l * 0.044)) {
               chosenFontSize = sz;
               chosenLines = lines;
               break;
