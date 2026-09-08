@@ -333,10 +333,19 @@ function loadJobState() {
     if (parsed) {
       if (parsed.status === 'processing' || parsed.status === 'scanning' || parsed.status === 'uploading') {
         parsed.status = 'error';
+        if (parsed.files) {
+          parsed.files.forEach(f => {
+            if (f.status === 'uploading') {
+              f.status = 'queued';
+              f.percentage = 0;
+              f.uploadedBytes = 0;
+            }
+          });
+        }
         if (parsed.logs) {
           parsed.logs.push({
             timestamp: new Date().toISOString(),
-            message: 'Server restarted while job was in progress.',
+            message: 'Server restarted while job was in progress. Interrupted uploads queued for retry.',
             level: 'warn'
           });
         }
@@ -1308,7 +1317,7 @@ app.post('/api/retry-pending', async (req, res) => {
     return res.status(401).json({ success: false, error: 'Google Account authorization token missing. Please connect account first.' });
   }
 
-  const pendingItems = jobState.files.filter(f => f.status === 'queued' || f.status === 'failed');
+  const pendingItems = jobState.files.filter(f => f.status === 'queued' || f.status === 'failed' || f.status === 'uploading');
   if (pendingItems.length === 0) {
     return res.json({ success: true, message: 'No pending or failed videos in queue.', retriedCount: 0 });
   }

@@ -6436,61 +6436,72 @@
     };
 
     window.openEditModal = async function(fileId) {
-      let file = currentState?.files?.find(f => f.id === fileId || f.videoId === fileId);
-      if (!file) return;
+      try {
+        let file = currentState?.files?.find(f => (fileId && (f.id === fileId || f.videoId === fileId)));
+        if (!file && fileId) {
+          file = currentState?.files?.find(f => (f.id && String(f.id) === String(fileId)) || (f.videoId && String(f.videoId) === String(fileId)));
+        }
+        if (!file && currentActiveEditFile && (currentActiveEditFile.id === fileId || currentActiveEditFile.videoId === fileId)) {
+          file = currentActiveEditFile;
+        }
+        if (!file) return;
 
-      currentActiveEditFile = file;
-      document.getElementById('editModalFileId').value = file.id;
-      document.getElementById('editModalVideoId').value = file.videoId || '';
-      
-      const titleInput = document.getElementById('editModalTitleInput');
-      const batchInput = document.getElementById('editModalBatchInput');
-      const subjectSelect = document.getElementById('editModalSubjectInput');
-      const teacherSelect = document.getElementById('editModalTeacherSelect');
-      const searchInput = document.getElementById('teacherSearchInput');
+        currentActiveEditFile = file;
+        document.getElementById('editModalFileId').value = file.id || file.videoId || '';
+        document.getElementById('editModalVideoId').value = file.videoId || file.id || '';
+        
+        const titleInput = document.getElementById('editModalTitleInput');
+        const batchInput = document.getElementById('editModalBatchInput');
+        const subjectSelect = document.getElementById('editModalSubjectInput');
+        const teacherSelect = document.getElementById('editModalTeacherSelect');
+        const searchInput = document.getElementById('teacherSearchInput');
 
-      // Detect Subject strictly from title
-      const matchedSubject = window.resolveFileSubject(file);
-      if (subjectSelect) subjectSelect.value = matchedSubject;
+        // Detect Subject strictly from title
+        const matchedSubject = window.resolveFileSubject(file);
+        if (subjectSelect) subjectSelect.value = matchedSubject;
 
-      if (titleInput) {
-        const rawTitle = file.customTitle || file.name || '';
-        const isRaw = /\|\s*202\d/i.test(rawTitle) || (/^(Morning|Evening|Afternoon)\s*-/i.test(rawTitle) && rawTitle.includes('202'));
-        titleInput.value = isRaw ? (matchedSubject || 'BOTANY').toUpperCase() : rawTitle;
+        if (titleInput) {
+          const rawTitle = file.customTitle || file.name || '';
+          const isRaw = /\|\s*202\d/i.test(rawTitle) || (/^(Morning|Evening|Afternoon)\s*-/i.test(rawTitle) && rawTitle.includes('202'));
+          titleInput.value = isRaw ? (matchedSubject || 'BOTANY').toUpperCase() : rawTitle;
+        }
+        // Clean Batch Code strictly resolved
+        let rawBatch = window.resolveFileBatch(file);
+        if (rawBatch === '—') rawBatch = '';
+
+        // Ensure Faculty & Timetable are fully loaded
+        if (!window.thumbcraftTeachers || window.thumbcraftTeachers.length === 0) {
+          await window.loadThumbCraftFaculty();
+        }
+        if (!window.timetableSchedule || window.timetableSchedule.length === 0) {
+          await window.loadTimetableSchedule();
+        }
+
+        // Auto-match for THIS specific video
+        const match = window.matchTimetableFaculty ? window.matchTimetableFaculty(rawBatch, matchedSubject, file.recordedDate || file.date || file.name || '') : null;
+        
+        let selectedDriveId = '';
+        if (match && match.teacher) {
+          selectedDriveId = match.teacher.driveId;
+          if (match.batch) rawBatch = match.batch;
+          showToast(`⚡ Auto-matched: ${match.teacher.name} (${match.facultyCode})`, 'success');
+        } else if (match && match.facultyCode) {
+          if (match.batch) rawBatch = match.batch;
+          showToast(`⚡ Timetable Code: ${match.facultyCode} (Photo not in roster)`, 'info');
+        }
+
+        if (batchInput) batchInput.value = rawBatch;
+
+        populateFacultyDropdown(window.thumbcraftTeachers || [], selectedDriveId);
+
+        renderThumbCraftCanvas();
+
+        document.getElementById('editModalThumbUrlInput').value = '';
+        document.getElementById('editVideoModal').classList.remove('hidden');
+      } catch (err) {
+        console.error('Error in openEditModal:', err);
+        document.getElementById('editVideoModal')?.classList.remove('hidden');
       }
-      // Clean Batch Code strictly resolved
-      let rawBatch = window.resolveFileBatch(file);
-      if (rawBatch === '—') rawBatch = '';
-
-      // Ensure Faculty & Timetable are fully loaded
-      if (!window.thumbcraftTeachers || window.thumbcraftTeachers.length === 0) {
-        await window.loadThumbCraftFaculty();
-      }
-      if (!window.timetableSchedule || window.timetableSchedule.length === 0) {
-        await window.loadTimetableSchedule();
-      }
-
-      // Auto-match for THIS specific video
-      const match = window.matchTimetableFaculty(rawBatch, matchedSubject, file.recordedDate || file.date || file.name || '');
-      
-      let selectedDriveId = '';
-      if (match && match.teacher) {
-        selectedDriveId = match.teacher.driveId;
-        if (match.batch) rawBatch = match.batch;
-        showToast(`⚡ Auto-matched: ${match.teacher.name} (${match.facultyCode})`, 'success');
-      } else if (match && match.facultyCode) {
-        if (match.batch) rawBatch = match.batch;
-        showToast(`⚡ Timetable Code: ${match.facultyCode} (Photo not in roster)`, 'info');
-      }
-
-      if (batchInput) batchInput.value = rawBatch;
-
-      populateFacultyDropdown(window.thumbcraftTeachers || [], selectedDriveId);
-
-      renderThumbCraftCanvas();
-
-      document.getElementById('editModalThumbUrlInput').value = '';
-      document.getElementById('editVideoModal').classList.remove('hidden');
     };
 
     window.thumbcraftTemplateImg = null;
