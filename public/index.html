@@ -855,15 +855,27 @@
         </div>
       </div>
 
-      <!-- Real-time Search Input -->
-      <div class="relative">
-        <input
-          type="text"
-          id="tableSearchInput"
-          placeholder="search videos by title, batch, or subject..."
-          oninput="handleTableSearch()"
-          class="w-full py-1.5 font-mono-code text-xs text-[var(--text-main)] bg-transparent border-b border-[var(--border-main)] placeholder:text-[var(--text-subtle)] focus:outline-none focus:border-b-2 focus:border-[var(--btn-primary-bg)]"
-        />
+      <!-- Real-time Search Input & Batch Filter -->
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 pb-1 border-b border-[var(--border-main)]">
+        <div class="relative flex-1">
+          <input
+            type="text"
+            id="tableSearchInput"
+            placeholder="search by title, batch code (e.g. 27-AN351EA), subject, or lecture date (e.g. 28/08, 2026-08-28)..."
+            oninput="handleTableSearch()"
+            class="w-full py-1 font-mono-code text-xs text-[var(--text-main)] bg-transparent placeholder:text-[var(--text-subtle)] focus:outline-none"
+          />
+        </div>
+        <div class="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
+          <label for="tableBatchFilterSelect" class="text-[10px] font-mono-code text-[var(--text-muted)] uppercase tracking-wider font-bold">🏷️ Batch:</label>
+          <select
+            id="tableBatchFilterSelect"
+            onchange="handleTableBatchFilter(this.value)"
+            class="py-1 px-2.5 font-mono-code text-xs bg-[var(--bg-subcard)] text-[var(--text-main)] border border-[var(--border-main)] rounded-xs focus:outline-none focus:border-[var(--btn-primary-bg)] cursor-pointer"
+          >
+            <option value="">All Batches</option>
+          </select>
+        </div>
       </div>
 
       <!-- Main Video Data Table (Flat, Sharp Borders) -->
@@ -2562,11 +2574,13 @@
 
     function getLectureYMD(file) {
       if (!file) return null;
-      const name = file.name || file.originalName || file.customTitle || '';
-      const ymdMatch = name.match(/(20\d{2})[-_](\d{2})[-_](\d{2})/);
-      if (ymdMatch) return `${ymdMatch[1]}-${ymdMatch[2]}-${ymdMatch[3]}`;
-      const dmyMatch = name.match(/(\d{2})[-_](\d{2})[-_](20\d{2})/);
-      if (dmyMatch) return `${dmyMatch[3]}-${dmyMatch[2]}-${dmyMatch[1]}`;
+      const candidates = [file.originalName, file.name, file.customTitle, file.folderPath].filter(Boolean);
+      for (const str of candidates) {
+        const ymdMatch = str.match(/(20\d{2})[-_](\d{2})[-_](\d{2})/);
+        if (ymdMatch) return `${ymdMatch[1]}-${ymdMatch[2]}-${ymdMatch[3]}`;
+        const dmyMatch = str.match(/(\d{2})[-_](\d{2})[-_](20\d{2})/);
+        if (dmyMatch) return `${dmyMatch[3]}-${dmyMatch[2]}-${dmyMatch[1]}`;
+      }
       return null;
     }
 
@@ -6070,6 +6084,7 @@
 
     let currentSearchQuery = '';
     let currentSourceFilter = 'all';
+    let currentBatchFilter = '';
     let currentActiveEditFile = null;
 
     window.handleTableSearch = function() {
@@ -6077,6 +6092,40 @@
       currentSearchQuery = input ? input.value.trim().toLowerCase() : '';
       tableCurrentPage = 1;
       renderFilteredTable();
+    };
+
+    window.handleTableBatchFilter = function(batch) {
+      currentBatchFilter = (batch || '').trim();
+      tableCurrentPage = 1;
+      renderFilteredTable();
+    };
+
+    window.updateBatchFilterDropdown = function(files) {
+      const select = document.getElementById('tableBatchFilterSelect');
+      if (!select) return;
+
+      const batchCounts = {};
+      (files || []).forEach(f => {
+        const b = window.resolveFileBatch ? window.resolveFileBatch(f) : (f.batch || '');
+        if (b && b !== '—') {
+          batchCounts[b] = (batchCounts[b] || 0) + 1;
+        }
+      });
+
+      const sortedBatches = Object.keys(batchCounts).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+      const currentVal = currentBatchFilter || select.value || '';
+
+      let html = `<option value="">All Batches (${files ? files.length : 0})</option>`;
+      sortedBatches.forEach(b => {
+        const count = batchCounts[b];
+        const selected = (b.toLowerCase() === currentVal.toLowerCase()) ? 'selected' : '';
+        html += `<option value="${escapeHtml(b)}" ${selected}>${escapeHtml(b)} (${count})</option>`;
+      });
+
+      select.innerHTML = html;
+      if (sortedBatches.some(b => b.toLowerCase() === currentVal.toLowerCase())) {
+        select.value = currentVal;
+      }
     };
 
     window.setSourceFilter = function(source) {
@@ -6338,14 +6387,15 @@
 
     window.resolveFileBatch = function(file) {
       if (!file) return '—';
-      let b = window.extractBatchFromTitle(file.customTitle || '') ||
-              window.extractBatchFromTitle(file.originalName || '') ||
-              window.extractBatchFromTitle(file.name || '');
-      if (b) return b;
+      const candidates = [file.originalName, file.customTitle, file.name, file.folderPath].filter(Boolean);
+      for (const str of candidates) {
+        const b = window.extractBatchFromTitle(str);
+        if (b) return b;
+      }
 
       let raw = (file.batch || '').trim();
       const lower = raw.toLowerCase();
-      if (lower && !lower.includes('aniket') && !lower.includes('mishra') && !lower.includes('lavish') && !lower.includes('dhingra') && !lower.includes('default') && !lower.includes('batch') && !/^[0-9]{2}-[0-9]{2}$/.test(raw)) {
+      if (lower && !lower.includes('aniket') && !lower.includes('mishra') && !lower.includes('lavish') && !lower.includes('dhingra') && !lower.includes('default') && !lower.includes('batch') && !/^[0-9]{2}-[0-9]{2}$/.test(raw) && raw !== '—') {
         return raw;
       }
       return '—';
@@ -7340,6 +7390,11 @@
       if (elCountYt) elCountYt.textContent = countYt;
       if (elCountDrive) elCountDrive.textContent = countDrive;
 
+      // Update Dynamic Batch Selector Options
+      if (typeof updateBatchFilterDropdown === 'function') {
+        updateBatchFilterDropdown(allFiles);
+      }
+
       let filteredFiles = allFiles;
 
       if (currentSourceFilter === 'youtube') {
@@ -7348,18 +7403,53 @@
         filteredFiles = filteredFiles.filter(f => !isYouTubeVideo(f) || f.status === 'uploading' || f.status === 'queued');
       }
 
-      if (currentSearchQuery) {
+      // Quick Batch Filter Selection
+      if (currentBatchFilter) {
         filteredFiles = filteredFiles.filter(f => {
           if (f.status === 'uploading' || f.status === 'queued') return true;
+          const b = window.resolveFileBatch ? window.resolveFileBatch(f) : (f.batch || '');
+          const lowerB = b.toLowerCase();
+          const target = currentBatchFilter.toLowerCase();
+          return lowerB.includes(target) || (f.batch && f.batch.toLowerCase().includes(target)) || (f.folderPath && f.folderPath.toLowerCase().includes(target));
+        });
+      }
+
+      // Real-time Multi-token Smart Search (Batch, Lecture Date, Title, Subject, Teacher)
+      if (currentSearchQuery) {
+        const searchTerms = currentSearchQuery.split(/\s+/).filter(Boolean);
+        filteredFiles = filteredFiles.filter(f => {
+          if (f.status === 'uploading' || f.status === 'queued') return true;
+
           const t = (f.customTitle || f.name || '').toLowerCase();
+          const orig = (f.originalName || '').toLowerCase();
           const b = (window.resolveFileBatch ? window.resolveFileBatch(f) : (f.batch || '')).toLowerCase();
           const s = (window.resolveFileSubject ? window.resolveFileSubject(f) : (f.subject || '')).toLowerCase();
+          const rawB = (f.batch || '').toLowerCase();
+          const fp = (f.folderPath || '').toLowerCase();
+
+          // Lecture dates in all formats
+          const lecYMD = (window.getLectureYMD ? (window.getLectureYMD(f) || '') : '').toLowerCase();
+          let lecDMY = '';
+          let lecMonth = '';
+          if (lecYMD && lecYMD.includes('-')) {
+            const [y, m, d] = lecYMD.split('-');
+            lecDMY = `${d}/${m}/${y} ${d}-${m}-${y} ${d}/${m}`;
+            const months = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+            const mIndex = parseInt(m, 10) - 1;
+            if (mIndex >= 0 && mIndex < 12) {
+              lecMonth = `${parseInt(d, 10)} ${months[mIndex]}`;
+            }
+          }
+
           let facText = '';
           if (window.matchTimetableFaculty) {
             const m = window.matchTimetableFaculty(b, s, f.date || f.name || '');
             if (m) facText = `${m.teacher?.name || ''} ${m.facultyCode || ''}`.toLowerCase();
           }
-          return t.includes(currentSearchQuery) || b.includes(currentSearchQuery) || s.includes(currentSearchQuery) || facText.includes(currentSearchQuery);
+
+          const fileHaystack = `${t} ${orig} ${b} ${rawB} ${fp} ${s} ${lecYMD} ${lecDMY} ${lecMonth} ${facText}`.toLowerCase();
+
+          return searchTerms.every(term => fileHaystack.includes(term));
         });
       }
 
@@ -7597,6 +7687,22 @@
         const rawBytes = file.totalBytes || file.size || 0;
         const byteSizeBadge = rawBytes > 0 ? `<span class="text-[9px] text-[var(--text-muted)] block">${formatBytes(rawBytes)}</span>` : '';
 
+        const origLecDate = window.getLectureYMD ? window.getLectureYMD(file) : null;
+        let formattedOrigDate = '';
+        if (origLecDate && origLecDate.includes('-')) {
+          const parts = origLecDate.split('-');
+          if (parts.length === 3) formattedOrigDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+        const hasCustomizedTitle = (file.customTitle && file.originalName && file.customTitle !== file.originalName) || 
+                                   (origLecDate && !displayTitle.includes(origLecDate));
+
+        const origBadgeHtml = hasCustomizedTitle && (origLecDate || (rawBatchCode && rawBatchCode !== '—'))
+          ? `<span class="inline-flex items-center gap-1 px-1.5 py-0.2 text-[9px] font-bold bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-400/40 rounded-xs" title="Original Lecture Recording Info">
+               <span>🗓️ Lec: ${formattedOrigDate || origLecDate || ''}</span>
+               ${rawBatchCode !== '—' ? `<span>(${escapeHtml(rawBatchCode)})</span>` : ''}
+             </span>`
+          : '';
+
         row.innerHTML = `
           <td class="py-2 px-3 text-center font-mono-code text-[var(--text-subtle)] border-r border-[var(--border-main)] text-[11px]">${startIndex + index + 1}</td>
           <td class="py-2 px-4 border-r border-[var(--border-main)]">
@@ -7604,10 +7710,11 @@
               <div class="font-bold text-[var(--text-main)] text-xs leading-snug cursor-pointer hover:text-orange-500 transition-colors" onclick="openVideoModal('${file.id || ytId}')">
                 ${escapeHtml(displayTitle)}
               </div>
-              <div class="flex items-center gap-1.5 font-mono-code text-[9px] text-[var(--text-muted)]">
+              <div class="flex items-center gap-1.5 font-mono-code text-[9px] text-[var(--text-muted)] flex-wrap">
                 <button onclick="copyToClipboard('${escapeHtml(displayTitle)}', 'Title')" class="underline hover:text-[var(--text-main)] cursor-pointer">copy title</button>
                 <span>•</span>
                 <span>${escapeHtml(file.subject || 'Lecture')}</span>
+                ${origBadgeHtml}
               </div>
             </div>
           </td>

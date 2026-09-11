@@ -1199,15 +1199,33 @@ app.post(['/api/sync-youtube', '/api/sync-youtube-uploads', '/api/channel-videos
           ? (snippet.thumbnails.maxres || snippet.thumbnails.standard || snippet.thumbnails.high || snippet.thumbnails.medium || snippet.thumbnails.default).url
           : `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
 
+        const desc = snippet.description || '';
+        let detectedBatch = channelTitle;
+        let detectedSubject = 'Lecture';
+        let detectedOrigName = title;
+
+        const batchMatch = desc.match(/Batch:\s*([^\n\r]+)/i) || desc.match(/^([^\n\r—]+)\s*—/);
+        if (batchMatch && batchMatch[1].trim() && batchMatch[1].trim() !== 'Batch' && batchMatch[1].trim() !== '—') {
+          detectedBatch = batchMatch[1].trim();
+        }
+        const subjMatch = desc.match(/Subject:\s*([^\n\r]+)/i) || desc.match(/—\s*([^\n\r]+)\s*\n/);
+        if (subjMatch && subjMatch[1].trim() && subjMatch[1].trim() !== 'Lecture') {
+          detectedSubject = subjMatch[1].trim();
+        }
+        const origMatch = desc.match(/Original(?:\s*File)?:\s*([^\n\r]+)/i);
+        if (origMatch && origMatch[1].trim()) {
+          detectedOrigName = origMatch[1].trim();
+        }
+
         const record = {
           id: videoId,
           videoId: videoId,
           name: title,
-          originalName: title,
+          originalName: detectedOrigName,
           customTitle: title,
-          batch: channelTitle,
-          subject: 'Lecture',
-          folderPath: channelTitle,
+          batch: detectedBatch,
+          subject: detectedSubject,
+          folderPath: (detectedBatch && detectedBatch !== channelTitle) ? detectedBatch : channelTitle,
           channelId: channelId,
           size: 0,
           createdTime: publishedAt,
@@ -1790,6 +1808,12 @@ app.post('/api/edit-video', async (req, res) => {
 
     if (title && title.trim()) {
       const trimmedTitle = sanitizeYouTubeTitle(title);
+      // Keep originalName safe if it holds the raw camera filename or lecture date!
+      if (!fileObj.originalName || fileObj.originalName === fileObj.name) {
+        if (/\|\s*202\d/i.test(fileObj.name) || /27-[A-Z0-9]+/i.test(fileObj.name) || /202\d[-_]\d\d[-_]\d\d/i.test(fileObj.name)) {
+          fileObj.originalName = fileObj.name;
+        }
+      }
       fileObj.name = trimmedTitle;
       fileObj.customTitle = trimmedTitle;
 
@@ -1802,7 +1826,7 @@ app.post('/api/edit-video', async (req, res) => {
               id: targetVideoId,
               snippet: {
                 title: trimmedTitle,
-                description: `Lecture Video: ${trimmedTitle}\nBatch: ${batch || fileObj.batch || ''}\nSubject: ${subject || fileObj.subject || ''}`,
+                description: `Lecture Video: ${trimmedTitle}\nBatch: ${batch || fileObj.batch || ''}\nSubject: ${subject || fileObj.subject || ''}${fileObj.originalName ? `\nOriginal: ${fileObj.originalName}` : ''}`,
                 tags: ['DriveToYouTube', subject || fileObj.subject, batch || fileObj.batch].filter(Boolean),
                 categoryId: '27'
               }
@@ -1815,8 +1839,12 @@ app.post('/api/edit-video', async (req, res) => {
       }
     }
 
-    if (batch !== undefined) fileObj.batch = (batch || '').trim();
-    if (subject !== undefined) fileObj.subject = (subject || '').trim();
+    if (batch !== undefined && (batch || '').trim() && (batch || '').trim() !== '—') {
+      fileObj.batch = (batch || '').trim();
+    }
+    if (subject !== undefined && (subject || '').trim()) {
+      fileObj.subject = (subject || '').trim();
+    }
 
     let newThumb = imageBase64 || (thumbnailUrl ? thumbnailUrl.trim() : null);
     let ytUpdated = false;

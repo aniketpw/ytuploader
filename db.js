@@ -310,10 +310,15 @@ function saveCompletedFileToHistory(fileObj) {
             ...existing,
             ...fileObj,
             id: existing.id,
+            originalName: (existing.originalName && (/202\d/.test(existing.originalName) || /27-/.test(existing.originalName)))
+              ? existing.originalName
+              : (fileObj.originalName || existing.originalName || existing.name),
             customTitle: fileObj.customTitle || existing.customTitle || fileObj.name || existing.name,
             name: fileObj.name || existing.name || fileObj.customTitle || existing.customTitle,
-            batch: (fileObj.batch && fileObj.batch !== 'Batch') ? fileObj.batch : (existing.batch || fileObj.batch || 'Batch'),
-            subject: (fileObj.subject && fileObj.subject !== 'Lecture') ? fileObj.subject : (existing.subject || fileObj.subject || 'Lecture'),
+            batch: (existing.batch && existing.batch !== 'Batch' && existing.batch !== '—' && !existing.batch.toLowerCase().includes('aniket') && !existing.batch.toLowerCase().includes('mishra'))
+              ? existing.batch
+              : ((fileObj.batch && fileObj.batch !== 'Batch' && fileObj.batch !== '—') ? fileObj.batch : (existing.batch || fileObj.batch || 'Batch')),
+            subject: (existing.subject && existing.subject !== 'Lecture') ? existing.subject : (fileObj.subject || existing.subject || 'Lecture'),
             channelId: fileObj.channelId || existing.channelId || null,
             ownerUserId: fileObj.ownerUserId || existing.ownerUserId || null,
             thumbnailUrl: fileObj.thumbnailUrl || existing.thumbnailUrl || ''
@@ -337,10 +342,15 @@ function saveCompletedFileToHistory(fileObj) {
     history[idx] = {
       ...existing,
       ...fileObj,
+      originalName: (existing.originalName && (/202\d/.test(existing.originalName) || /27-/.test(existing.originalName)))
+        ? existing.originalName
+        : (fileObj.originalName || existing.originalName || existing.name),
       customTitle: fileObj.customTitle || existing.customTitle || fileObj.name || existing.name,
       name: fileObj.name || existing.name || fileObj.customTitle || existing.customTitle,
-      batch: (fileObj.batch && fileObj.batch !== 'Batch') ? fileObj.batch : (existing.batch || fileObj.batch || 'Batch'),
-      subject: (fileObj.subject && fileObj.subject !== 'Lecture') ? fileObj.subject : (existing.subject || fileObj.subject || 'Lecture'),
+      batch: (existing.batch && existing.batch !== 'Batch' && existing.batch !== '—' && !existing.batch.toLowerCase().includes('aniket') && !existing.batch.toLowerCase().includes('mishra'))
+        ? existing.batch
+        : ((fileObj.batch && fileObj.batch !== 'Batch' && fileObj.batch !== '—') ? fileObj.batch : (existing.batch || fileObj.batch || 'Batch')),
+      subject: (existing.subject && existing.subject !== 'Lecture') ? existing.subject : (fileObj.subject || existing.subject || 'Lecture'),
       channelId: fileObj.channelId || existing.channelId || null,
       ownerUserId: fileObj.ownerUserId || existing.ownerUserId || null,
       thumbnailUrl: fileObj.thumbnailUrl || existing.thumbnailUrl || ''
