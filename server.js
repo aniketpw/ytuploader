@@ -846,13 +846,14 @@ async function scanDriveFolderRecursively(drive, rootFolderId, startDateIso, end
             if (passesDateFilter && !discoveredVideos.has(file.id)) {
               const subfolders = current.subfolders || [];
               const cleanRoot = normalizeUnicodeText(rootFolderName || '');
-              const isMasterRoot = !cleanRoot || cleanRoot.toLowerCase().includes('master') || cleanRoot.toLowerCase().includes('all batches') || cleanRoot === 'Batch Folder' || cleanRoot === 'Root';
+              const isDateRoot = /^20\d{2}[-_]\d{2}(?:[-_]\d{2})?$/.test(cleanRoot) || /^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i.test(cleanRoot);
+              const isMasterRoot = !cleanRoot || isDateRoot || cleanRoot.toLowerCase().includes('master') || cleanRoot.toLowerCase().includes('all batches') || cleanRoot === 'Batch Folder' || cleanRoot === 'Root';
 
-              let batch = cleanRoot || 'Batch';
+              let batch = isDateRoot ? 'Batch' : (cleanRoot || 'Batch');
               let subject = 'Lecture';
 
               if (subfolders.length === 0) {
-                batch = cleanRoot || 'Batch';
+                batch = isDateRoot ? 'Batch' : (cleanRoot || 'Batch');
                 subject = 'Lecture';
               } else if (subfolders.length === 1) {
                 if (isMasterRoot) {
@@ -871,6 +872,23 @@ async function scanDriveFolderRecursively(drive, rootFolderId, startDateIso, end
                   subject = normalizeUnicodeText(subfolders.join(' - '));
                 }
               }
+
+              // Check if filename itself has an explicit batch code (e.g. 27-LJ152EA 2026)
+              const fileNameBatchMatch = (file.name || '').split('|')[0].match(/(?:^|[^A-Z0-9])(27-\s*[A-Z0-9]+(?:\s+202[0-9])?)\b/i) ||
+                                         (file.name || '').split('|')[0].match(/\b(SIP\s+[A-Z0-9-]+(?:\s+202[0-9])?|[A-Z][0-9]{2}-[A-Z0-9]+(?:\s+202[0-9])?)\b/i);
+              if (fileNameBatchMatch) {
+                batch = fileNameBatchMatch[1].replace(/27-\s+/, '27-').trim();
+              }
+
+              const fileNameSubj = file.name || '';
+              if (/\b(physics|phys|phy)\b/i.test(fileNameSubj)) subject = 'Physics';
+              else if (/\b(zoology|zoo)\b/i.test(fileNameSubj)) subject = 'Zoology';
+              else if (/\b(botany|bot)\b/i.test(fileNameSubj)) subject = 'Botany';
+              else if (/\b(biology|bio)\b/i.test(fileNameSubj)) subject = 'Biology';
+              else if (/\b(mathematics|maths|math|mat)\b/i.test(fileNameSubj)) subject = 'Mathematics';
+              else if (/\b(chemistry|chem|chm)\b/i.test(fileNameSubj)) subject = 'Chemistry';
+              else if (/\b(english|eng)\b/i.test(fileNameSubj)) subject = 'English';
+              else if (/\b(sst|social)\b/i.test(fileNameSubj)) subject = 'SST';
 
               const durationMillis = file.videoMediaMetadata?.durationMillis ? parseInt(file.videoMediaMetadata.durationMillis, 10) : null;
               const width = file.videoMediaMetadata?.width || null;
@@ -1205,15 +1223,34 @@ app.post(['/api/sync-youtube', '/api/sync-youtube-uploads', '/api/channel-videos
         let detectedOrigName = title;
 
         const batchMatch = desc.match(/Batch:\s*([^\n\r]+)/i) || desc.match(/^([^\n\r—]+)\s*—/);
-        if (batchMatch && batchMatch[1].trim() && batchMatch[1].trim() !== 'Batch' && batchMatch[1].trim() !== '—') {
+        if (batchMatch && batchMatch[1].trim() && batchMatch[1].trim() !== 'Batch' && batchMatch[1].trim() !== '—' && !/^20\d{2}[-_]\d{2}/.test(batchMatch[1].trim())) {
           detectedBatch = batchMatch[1].trim();
         }
+
+        // Priority: If title itself contains a 27-series or SIP batch code, use it!
+        const titleBatch = (title || '').split('|')[0].match(/(?:^|[^A-Z0-9])(27-\s*[A-Z0-9]+(?:\s+202[0-9])?)\b/i) ||
+                           (title || '').split('|')[0].match(/\b(SIP\s+[A-Z0-9-]+(?:\s+202[0-9])?|[A-Z][0-9]{2}-[A-Z0-9]+(?:\s+202[0-9])?)\b/i);
+        if (titleBatch) {
+          detectedBatch = titleBatch[1].replace(/27-\s+/, '27-').trim();
+        }
+
         const subjMatch = desc.match(/Subject:\s*([^\n\r]+)/i) || desc.match(/—\s*([^\n\r]+)\s*\n/);
-        if (subjMatch && subjMatch[1].trim() && subjMatch[1].trim() !== 'Lecture') {
+        if (subjMatch && subjMatch[1].trim() && subjMatch[1].trim() !== 'Lecture' && !subjMatch[1].trim().includes('202')) {
           detectedSubject = subjMatch[1].trim();
         }
+
+        const titleSubj = title || '';
+        if (/\b(physics|phys|phy)\b/i.test(titleSubj)) detectedSubject = 'Physics';
+        else if (/\b(zoology|zoo)\b/i.test(titleSubj)) detectedSubject = 'Zoology';
+        else if (/\b(botany|bot)\b/i.test(titleSubj)) detectedSubject = 'Botany';
+        else if (/\b(biology|bio)\b/i.test(titleSubj)) detectedSubject = 'Biology';
+        else if (/\b(mathematics|maths|math|mat)\b/i.test(titleSubj)) detectedSubject = 'Mathematics';
+        else if (/\b(chemistry|chem|chm)\b/i.test(titleSubj)) detectedSubject = 'Chemistry';
+        else if (/\b(english|eng)\b/i.test(titleSubj)) detectedSubject = 'English';
+        else if (/\b(sst|social)\b/i.test(titleSubj)) detectedSubject = 'SST';
+
         const origMatch = desc.match(/Original(?:\s*File)?:\s*([^\n\r]+)/i);
-        if (origMatch && origMatch[1].trim()) {
+        if (origMatch && origMatch[1].trim() && !/^20\d{2}[-_]\d{2}$/.test(origMatch[1].trim())) {
           detectedOrigName = origMatch[1].trim();
         }
 

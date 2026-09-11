@@ -6354,17 +6354,26 @@
       // 1. Clean off pipe and dates/timestamps so timestamps like "| 2026-09-02" are NEVER mistaken for batch codes!
       const cleaned = text.split('|')[0].trim();
 
-      // 2. Priority 1: PW 27-series batches (allowing optional space e.g. "27- LN153MA 2026" or "27-LN153MA 2026")
-      const m1 = cleaned.match(/\b(27-\s*[A-Z0-9]+(?:\s+202[0-9])?)\b/i);
+      // Immediately reject pure dates or year-month strings (e.g. 2026-09, 2026-09-10, 10-09-2026)
+      if (/^20\d{2}[-_]\d{2}(?:[-_]\d{2})?$/.test(cleaned)) return '';
+      if (/^\d{2}[-_]\d{2}[-_]20\d{2}$/.test(cleaned)) return '';
+
+      // 2. Priority 1: PW 27-series batches (e.g. "27-LJ152EA 2026", "27-AN351EA 2026", "27-AJ251EA")
+      const m1 = cleaned.match(/(?:^|[^A-Z0-9])(27-\s*[A-Z0-9]+(?:\s+202[0-9])?)\b/i);
       if (m1) return m1[1].replace(/27-\s+/, '27-').trim();
 
       // 3. Priority 2: S-series / SIP batches (e.g. S41-UP32NA, S41-UP31EA, S41-UF31EA, SIP S41-AJ31MA 2026)
       const m2 = cleaned.match(/\b(SIP\s+[A-Z0-9-]+(?:\s+202[0-9])?|[A-Z][0-9]{2}-[A-Z0-9]+(?:\s+202[0-9])?)\b/i);
       if (m2) return m2[1].trim();
 
-      // 4. Priority 3: General batch patterns with hyphen (excluding pure dates like "26-09" or "02-09")
+      // 4. Priority 3: General batch patterns with hyphen (strictly excluding date patterns)
       const m3 = cleaned.match(/\b([A-Z0-9]{2,8}-[A-Z0-9]{2,8}(?:\s+202[0-9])?)\b/i);
-      if (m3 && !/^[0-9]{2}-[0-9]{2}$/.test(m3[1])) return m3[1].trim();
+      if (m3) {
+        const val = m3[1].trim();
+        if (!/^[0-9]{2}-[0-9]{2}$/.test(val) && !/^20\d{2}-[0-9]{2}$/.test(val) && !/^[0-9]{2}-20\d{2}$/.test(val) && !/^20\d{2}$/.test(val)) {
+          return val;
+        }
+      }
 
       return '';
     };
@@ -6387,16 +6396,23 @@
 
     window.resolveFileBatch = function(file) {
       if (!file) return '—';
-      const candidates = [file.originalName, file.customTitle, file.name, file.folderPath].filter(Boolean);
+      const isDateStr = s => /^20\d{2}[-_]\d{2}(?:[-_]\d{2})?$/.test((s || '').trim());
+
+      // Check titles first (customTitle, name, originalName, folderPath)
+      const candidates = [file.customTitle, file.name, file.originalName, file.folderPath].filter(Boolean);
       for (const str of candidates) {
+        if (isDateStr(str)) continue;
         const b = window.extractBatchFromTitle(str);
-        if (b) return b;
+        if (b && !isDateStr(b)) return b;
       }
 
       let raw = (file.batch || '').trim();
-      const lower = raw.toLowerCase();
-      if (lower && !lower.includes('aniket') && !lower.includes('mishra') && !lower.includes('lavish') && !lower.includes('dhingra') && !lower.includes('default') && !lower.includes('batch') && !/^[0-9]{2}-[0-9]{2}$/.test(raw) && raw !== '—') {
-        return raw;
+      if (raw && !isDateStr(raw)) {
+        const lower = raw.toLowerCase();
+        if (!lower.includes('aniket') && !lower.includes('mishra') && !lower.includes('lavish') && !lower.includes('dhingra') && !lower.includes('default') && !lower.includes('batch') && !/^[0-9]{2}-[0-9]{2}$/.test(raw) && !/^20\d{2}-[0-9]{2}$/.test(raw) && !/^20\d{2}$/.test(raw) && raw !== '—') {
+          const b = window.extractBatchFromTitle(raw);
+          return (b && !isDateStr(b)) ? b : raw;
+        }
       }
       return '—';
     };
@@ -7693,7 +7709,7 @@
           const parts = origLecDate.split('-');
           if (parts.length === 3) formattedOrigDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
         }
-        const hasCustomizedTitle = (file.customTitle && file.originalName && file.customTitle !== file.originalName) || 
+        const hasCustomizedTitle = (file.customTitle && file.originalName && file.customTitle !== file.originalName && !displayTitle.includes(origLecDate || '____')) || 
                                    (origLecDate && !displayTitle.includes(origLecDate));
 
         const origBadgeHtml = hasCustomizedTitle && (origLecDate || (rawBatchCode && rawBatchCode !== '—'))
@@ -7713,7 +7729,7 @@
               <div class="flex items-center gap-1.5 font-mono-code text-[9px] text-[var(--text-muted)] flex-wrap">
                 <button onclick="copyToClipboard('${escapeHtml(displayTitle)}', 'Title')" class="underline hover:text-[var(--text-main)] cursor-pointer">copy title</button>
                 <span>•</span>
-                <span>${escapeHtml(file.subject || 'Lecture')}</span>
+                <span>${escapeHtml(subName || file.subject || 'Lecture')}</span>
                 ${origBadgeHtml}
               </div>
             </div>
