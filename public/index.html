@@ -6595,6 +6595,32 @@
       } else {
         showToast('⚠️ No timetable match found for this Batch & Subject', 'info');
       }
+      // ── Title-code fallback for the ⚡ Auto-Match button ────────────────────
+      // If timetable still didn't resolve a photo, try extracting the code from
+      // the title  (e.g. "– ZPP –", "– PAK –") and match against the roster.
+      if (teacherSelect && !teacherSelect.value && currentActiveEditFile) {
+        const titleForCode = currentActiveEditFile.customTitle || currentActiveEditFile.name || '';
+        const tokenMatches = titleForCode.matchAll(/(?:^|\s-\s|\s–\s)([A-Z]{2,6})(?=\s-\s|\s–\s|$|\s*\|)/g);
+        const titleTokens = [...tokenMatches].map(m => m[1].toUpperCase());
+        if (titleTokens.length > 0) {
+          const allTeachers = window.thumbcraftAllTeachers || window.thumbcraftTeachers || [];
+          for (const token of titleTokens) {
+            const hit = allTeachers.find(t => {
+              const directCode = (t.code || '').toUpperCase();
+              if (directCode === token) return true;
+              const parenMatch = (t.name || '').match(/\(([A-Z]{2,6})\)\s*$/i);
+              return parenMatch && parenMatch[1].toUpperCase() === token;
+            });
+            if (hit) {
+              teacherSelect.value = hit.driveId;
+              renderThumbCraftCanvas();
+              showToast(`⚡ Auto-matched: ${hit.name} (${token}) — from title`, 'success');
+              break;
+            }
+          }
+        }
+      }
+      // ───────────────────────────────────────────────────────────────────────
     };
 
     window.openEditModal = async function(fileId) {
@@ -6651,6 +6677,39 @@
           if (match.batch) rawBatch = match.batch;
           showToast(`⚡ Timetable Code: ${match.facultyCode} (Photo not in roster)`, 'info');
         }
+
+        // ── Title-code fallback ──────────────────────────────────────────────
+        // If timetable matching didn't resolve a photo, scan the video title for
+        // an embedded teacher code like "– ZPP –", "– PAK –", "– CRR –".
+        // Titles follow the pattern:  Morning - NEET - 1H-YN401MA - ZPP - SEP …
+        // The code appears between " - " separators, is 2–6 uppercase letters,
+        // and matches t.code in the faculty roster OR the last parenthesised word
+        // in t.name  e.g. "Rohit Raj Ranjan (CRR)".
+        if (!selectedDriveId) {
+          const titleForCode = file.customTitle || file.name || '';
+          // Extract all dash-separated tokens that look like a teacher code
+          const tokenMatches = titleForCode.matchAll(/(?:^|\s-\s|\s–\s)([A-Z]{2,6})(?=\s-\s|\s–\s|$|\s*\|)/g);
+          const titleTokens = [...tokenMatches].map(m => m[1].toUpperCase());
+
+          if (titleTokens.length > 0) {
+            const allTeachers = window.thumbcraftAllTeachers || window.thumbcraftTeachers || [];
+            for (const token of titleTokens) {
+              const hit = allTeachers.find(t => {
+                const directCode = (t.code || '').toUpperCase();
+                if (directCode === token) return true;
+                // Also check last parenthesised abbreviation in name e.g. "Ranjan (CRR)"
+                const parenMatch = (t.name || '').match(/\(([A-Z]{2,6})\)\s*$/i);
+                return parenMatch && parenMatch[1].toUpperCase() === token;
+              });
+              if (hit) {
+                selectedDriveId = hit.driveId;
+                showToast(`⚡ Auto-matched: ${hit.name} (${token}) — from title`, 'success');
+                break;
+              }
+            }
+          }
+        }
+        // ────────────────────────────────────────────────────────────────────
 
         if (batchInput) batchInput.value = rawBatch;
 
