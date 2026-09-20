@@ -6421,15 +6421,51 @@
     window.extractSubjectFromTitle = function(text) {
       if (!text) return 'Chemistry';
       const cleaned = text.split('|')[0].toLowerCase();
-      
-      if (/\b(physics|phys|phy)\b/i.test(cleaned)) return 'Physics';
+      const upper = text.split('|')[0].toUpperCase();
+
+      // 1. Explicit subject keywords in title (highest confidence)
+      if (/\b(physics|phys)\b/i.test(cleaned)) return 'Physics';
       if (/\b(zoology|zoo)\b/i.test(cleaned)) return 'Zoology';
       if (/\b(botany|bot)\b/i.test(cleaned)) return 'Botany';
       if (/\b(biology|bio)\b/i.test(cleaned)) return 'Biology';
-      if (/\b(mathematics|maths|math|mat)\b/i.test(cleaned)) return 'Mathematics';
+      if (/\b(mathematics|maths|math)\b/i.test(cleaned)) return 'Mathematics';
       if (/\b(chemistry|chem|chm)\b/i.test(cleaned)) return 'Chemistry';
       if (/\b(english|eng)\b/i.test(cleaned)) return 'English';
-      if (/\b(sst|social)\b/i.test(cleaned)) return 'SST';
+      if (/\b(sst|social science)\b/i.test(cleaned)) return 'SST';
+
+      // 2. Infer subject from batch code prefix letter
+      // PW batch codes follow pattern: 1H-XX###XX where XX prefix = subject
+      // P=Physics, C=Chemistry, Z=Zoology, B=Botany, M=Math, E=English
+      // e.g. 1H-LJ201MA → no subject prefix, 1H-YN401MA → no clear prefix
+      // But teacher codes give subject: PKP, PAK → Physics; ZPP → Zoology;
+      // BRS → Botany; CRR, CRT → Chemistry; MRS → Math
+      const teacherCodeMatch = upper.match(/\s[-–]\s([A-Z]{2,5})\s[-–]\s/g);
+      if (teacherCodeMatch) {
+        for (const m of teacherCodeMatch) {
+          const code = m.replace(/\s[-–]\s/g, '').trim();
+          if (/^P[A-Z]{1,4}$/.test(code)) return 'Physics';
+          if (/^Z[A-Z]{1,4}$/.test(code)) return 'Zoology';
+          if (/^B[A-Z]{1,4}$/.test(code)) return 'Botany';
+          if (/^C[A-Z]{1,4}$/.test(code)) return 'Chemistry';
+          if (/^M[A-Z]{1,4}$/.test(code)) return 'Mathematics';
+          if (/^E[A-Z]{1,4}$/.test(code)) return 'English';
+        }
+      }
+
+      // 3. Batch subject segment: some titles have explicit subject segment
+      // e.g. "Morning - NEET - 1H-AN202MA - Chemistry - CRR - SEP"
+      const segments = text.split(/\s[-–]\s/);
+      for (const seg of segments) {
+        const s = seg.trim().toLowerCase();
+        if (s === 'physics' || s === 'phys') return 'Physics';
+        if (s === 'zoology' || s === 'zoo') return 'Zoology';
+        if (s === 'botany' || s === 'bot') return 'Botany';
+        if (s === 'biology' || s === 'bio') return 'Biology';
+        if (s === 'chemistry' || s === 'chem') return 'Chemistry';
+        if (s === 'mathematics' || s === 'maths' || s === 'math') return 'Mathematics';
+        if (s === 'english' || s === 'eng') return 'English';
+        if (s === 'sst' || s === 'social') return 'SST';
+      }
 
       return 'Chemistry';
     };
@@ -6438,8 +6474,10 @@
       if (!file) return '—';
       const isDateStr = s => /^20\d{2}[-_]\d{2}(?:[-_]\d{2})?$/.test((s || '').trim());
 
-      // Check titles first (customTitle, name, originalName, folderPath)
-      const candidates = [file.customTitle, file.name, file.originalName, file.folderPath].filter(Boolean);
+      // Check originalName first — it's the raw Drive filename and has the
+      // correct batch code intact. customTitle may have been collapsed to just
+      // the subject name (e.g. "CHEMISTRY") losing the batch code entirely.
+      const candidates = [file.originalName, file.name, file.customTitle, file.folderPath].filter(Boolean);
       for (const str of candidates) {
         if (isDateStr(str)) continue;
         const b = window.extractBatchFromTitle(str);
@@ -6459,9 +6497,14 @@
 
     window.resolveFileSubject = function(file) {
       if (!file) return 'Chemistry';
-      const fromTitle = window.extractSubjectFromTitle(file.customTitle || file.originalName || file.name || '');
+      // Use originalName first — it's the raw Drive filename which has the teacher
+      // code and subject keywords intact. customTitle may have been collapsed to
+      // just the subject name (e.g. "CHEMISTRY") by the modal, which loses context.
+      const srcText = file.originalName || file.name || file.customTitle || '';
+      const fromTitle = window.extractSubjectFromTitle(srcText);
       if (fromTitle && fromTitle !== 'Chemistry') return fromTitle;
 
+      // Fallback: server-assigned subject field
       if (file.subject && file.subject !== 'Lecture' && file.subject !== 'General') {
         const s = file.subject.toLowerCase();
         if (s.includes('phys')) return 'Physics';
@@ -6472,6 +6515,7 @@
         if (s.includes('chem')) return 'Chemistry';
         if (s.includes('eng')) return 'English';
         if (s.includes('sst')) return 'SST';
+        return file.subject;
       }
       return fromTitle || 'Chemistry';
     };
@@ -6596,7 +6640,7 @@
       ]);
       let titleResolved = false;
       if (currentActiveEditFile) {
-        const titleForCode = currentActiveEditFile.customTitle || currentActiveEditFile.name || '';
+        const titleForCode = currentActiveEditFile.originalName || currentActiveEditFile.name || currentActiveEditFile.customTitle || '';
         const segments = titleForCode.split(/\s[-–]\s/);
         const allTeachers = window.thumbcraftAllTeachers || window.thumbcraftTeachers || [];
         for (const seg of segments) {
@@ -6701,7 +6745,7 @@
           'ENGLISH','SST','HINDI','B1','B2','B3','B4','B5','DPP','PYQ','TEST',
         ]);
 
-        const titleForCode = file.customTitle || file.name || '';
+        const titleForCode = file.originalName || file.name || file.customTitle || '';
         // Split on " - " or " – " and check each segment
         const segments = titleForCode.split(/\s[-–]\s/);
         const allTeachers = window.thumbcraftAllTeachers || window.thumbcraftTeachers || [];
