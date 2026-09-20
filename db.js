@@ -125,6 +125,14 @@ try {
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_history_customTitle ON uploaded_history(customTitle COLLATE NOCASE);'); } catch (e) {}
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_editors_email ON allowed_editors(email COLLATE NOCASE);'); } catch (e) {}
   try { db.exec('CREATE INDEX IF NOT EXISTS idx_sessions_email ON editor_sessions(email COLLATE NOCASE);'); } catch (e) {}
+  // Composite indexes for date-range quota queries: (channelId, createdTime) and
+  // (ownerUserId, createdTime) let countHistoryInCycle / countUserHistoryInCycle
+  // do an index seek instead of a full-table scan.  createdTime alone is also
+  // indexed so a bare date-range filter (countAllHistoryInCycle) is fast.
+  try { db.exec('CREATE INDEX IF NOT EXISTS idx_history_createdTime ON uploaded_history(createdTime);'); } catch (e) {}
+  try { db.exec('CREATE INDEX IF NOT EXISTS idx_history_status ON uploaded_history(status);'); } catch (e) {}
+  try { db.exec('CREATE INDEX IF NOT EXISTS idx_history_channel_date ON uploaded_history(channelId, createdTime);'); } catch (e) {}
+  try { db.exec('CREATE INDEX IF NOT EXISTS idx_history_user_date ON uploaded_history(ownerUserId, createdTime);'); } catch (e) {}
 
   // Auto-deduplicate any existing history rows by videoId on startup
   try {

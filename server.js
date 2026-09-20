@@ -733,35 +733,297 @@ function extractGoogleDriveFileId(input) {
 }
 
 /**
+ * Filename date extraction for lecture recordings: supports 2026-09-20, 20-09-2026,
+ * 20.09.2026, 20/09/2026, 20_09_2026, 5-9-2026, 20 Sep 2026, Sep 20 2026 (and
+ * full month names). Returns epoch ms anchored to 12:00 IST, or null when the
+ * name carries no parseable date (caller then falls back to Drive upload time).
+ */
+const MONTH_NAME_TO_NUM = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, sept: 9, oct: 10, nov: 11, dec: 12 };
+
+function filenameDateToMs(name) {
+  if (!name) return null;
+  const buildMs = (y, mo, d) => {
+    const year = parseInt(y, 10), month = parseInt(mo, 10), day = parseInt(d, 10);
+    if (year < 2000 || year > 2099 || month < 1 || month > 12 || day < 1 || day > 31) return null;
+    const t = new Date(`${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T12:00:00+05:30`).getTime();
+    return Number.isNaN(t) ? null : t;
+  };
+  let m;
+  // Year first: 2026-09-20 / 2026_9_20 / 2026.09.20 / 2026/09/20
+  m = name.match(/(\d{4})[._\-\/](\d{1,2})[._\-\/](\d{1,2})/);
+  if (m) { const t = buildMs(m[1], m[2], m[3]); if (t) return t; }
+  // Day first: 20-09-2026 / 20.9.2026 / 20_09_2026 / 20/09/2026
+  m = name.match(/(\d{1,2})[._\-\/](\d{1,2})[._\-\/](\d{4})/);
+  if (m) { const t = buildMs(m[3], m[2], m[1]); if (t) return t; }
+  // 20 Sep 2026 / 20-Sep-2026 / 20 September 2026
+  m = name.match(/(\d{1,2})(?:st|nd|rd|th)?[\- _]([A-Za-z]{3,9})[\- _](\d{4})/);
+  if (m) {
+    const mo = MONTH_NAME_TO_NUM[m[2].slice(0, 3).toLowerCase()];
+    if (mo) { const t = buildMs(m[3], mo, m[1]); if (t) return t; }
+  }
+  // Sep 20 2026 / Sep-20-2026 / Sep 20th 2026
+  m = name.match(/([A-Za-z]{3,9})[\- _](\d{1,2})(?:st|nd|rd|th)?[,\- _]*(\d{4})/);
+  if (m) {
+    const mo = MONTH_NAME_TO_NUM[m[1].slice(0, 3).toLowerCase()];
+    if (mo) { const t = buildMs(m[3], mo, m[2]); if (t) return t; }
+  }
+  return null;
+}
+
+/**
  * Helper: Recursive Drive Scanner with Batch & Subject Hierarchy Tracking and Date Range Filtering
+ * Lists folders with a small worker pool (8 in parallel), follows folder/file shortcuts,
+ * retries transient Google API failures instead of silently dropping pages, and applies
+ * the date filter from the filename lecture date OR the Drive upload time.
  */
 async function scanDriveFolderRecursively(drive, rootFolderId, startDateIso, endDateIso) {
+  // Keep folders/shortcuts visible while asking Drive to discard obviously out-of-range
+  // media at the API level. This is much faster than downloading every child and
+  // applying the date filter only after the response arrives.
+  //
+  // FIX: Each date bound is wrapped in its own parentheses so the AND/OR precedence
+  // is correct when both startDateIso and endDateIso are present.  Previously the
+  // expression was:
+  //   (createdTime >= start or modifiedTime >= start) and (createdTime <= end or modifiedTime <= end)
+  // which was parsed as:
+  //   createdTime >= start or (modifiedTime >= start and createdTime <= end) or modifiedTime <= end
+  // — incorrect and caused Drive to return far more results than needed.
+  const dateMediaClauses = [
+    startDateIso
+      ? `(createdTime >= '${startDateIso}' or modifiedTime >= '${startDateIso}')`
+      : null,
+    endDateIso
+      ? `(createdTime <= '${endDateIso}' or modifiedTime <= '${endDateIso}')`
+      : null
+  ].filter(Boolean);
+  const dateQuery = (startDateIso || endDateIso)
+    ? ` and (mimeType = 'application/vnd.google-apps.folder' or mimeType = 'application/vnd.google-apps.shortcut' or (${dateMediaClauses.join(' and ')}))`
+    : '';
+  const scanStartedAt = Date.now();
   const discoveredVideos = new Map();
+  const scanWarnings = [];
   let rootFolderName = null;
+  let rootDriveId = null;
+  const folderQueue = [];
+  const visitedFolders = new Set();
+
+  const VIDEO_META_FIELDS = 'id, name, mimeType, size, createdTime, modifiedTime, videoMediaMetadata, shortcutDetails, driveId';
+
+  const fetchMeta = async (fileId) => {
+    const res = await drive.files.get({ fileId, fields: VIDEO_META_FIELDS, supportsAllDrives: true });
+    return res.data;
+  };
+
+  // Resolve a folder shortcut to its target folder metadata
+  const resolveFolderMeta = async (fileId) => {
+    let meta = await fetchMeta(fileId);
+    if (meta.mimeType === 'application/vnd.google-apps.shortcut' && meta.shortcutDetails?.targetId) {
+      meta = await fetchMeta(meta.shortcutDetails.targetId);
+    }
+    return meta;
+  };
+
+  const passesDateFilter = (file) => {
+    if (!startDateIso && !endDateIso) return true;
+    const fileTime = new Date(file.createdTime || file.modifiedTime || 0).getTime();
+    let matchedTime = fileTime;
+    const fnameMs = filenameDateToMs(file.name);
+    if (fnameMs) matchedTime = fnameMs;
+    if (startDateIso && matchedTime < new Date(startDateIso).getTime() && fileTime < new Date(startDateIso).getTime()) return false;
+    if (endDateIso && matchedTime > new Date(endDateIso).getTime() && fileTime > new Date(endDateIso).getTime()) return false;
+    return true;
+  };
+
+  const handleVideoFile = (file, current) => {
+    if (!passesDateFilter(file)) return;
+    if (discoveredVideos.has(file.id)) return;
+
+    const subfolders = current.subfolders || [];
+    const cleanRoot = normalizeUnicodeText(rootFolderName || '');
+    const isDateRoot = /^20\d{2}[-_]\d{2}(?:[-_]\d{2})?$/.test(cleanRoot) || /^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i.test(cleanRoot);
+    const isMasterRoot = !cleanRoot || isDateRoot || cleanRoot.toLowerCase().includes('master') || cleanRoot.toLowerCase().includes('all batches') || cleanRoot === 'Batch Folder' || cleanRoot === 'Root';
+
+    let batch = isDateRoot ? 'Batch' : (cleanRoot || 'Batch');
+    let subject = 'Lecture';
+
+    if (subfolders.length === 0) {
+      batch = isDateRoot ? 'Batch' : (cleanRoot || 'Batch');
+      subject = 'Lecture';
+    } else if (subfolders.length === 1) {
+      if (isMasterRoot) {
+        batch = normalizeUnicodeText(subfolders[0]);
+        subject = 'Lecture';
+      } else {
+        batch = cleanRoot;
+        subject = normalizeUnicodeText(subfolders[0]);
+      }
+    } else {
+      if (isMasterRoot) {
+        batch = normalizeUnicodeText(subfolders[0]);
+        subject = normalizeUnicodeText(subfolders.slice(1).join(' - '));
+      } else {
+        batch = cleanRoot;
+        subject = normalizeUnicodeText(subfolders.join(' - '));
+      }
+    }
+
+    // Check if filename itself has an explicit batch code (e.g. 27-LJ152EA 2026)
+    const fileNameBatchMatch = (file.name || '').split('|')[0].match(/(?:^|[^A-Z0-9])(27-\s*[A-Z0-9]+(?:\s+202[0-9])?)\b/i) ||
+                               (file.name || '').split('|')[0].match(/\b(SIP\s+[A-Z0-9-]+(?:\s+202[0-9])?|[A-Z][0-9]{2}-[A-Z0-9]+(?:\s+202[0-9])?)\b/i);
+    if (fileNameBatchMatch) {
+      batch = fileNameBatchMatch[1].replace(/27-\s+/, '27-').trim();
+    }
+
+    const fileNameSubj = file.name || '';
+    if (/\b(physics|phys|phy)\b/i.test(fileNameSubj)) subject = 'Physics';
+    else if (/\b(zoology|zoo)\b/i.test(fileNameSubj)) subject = 'Zoology';
+    else if (/\b(botany|bot)\b/i.test(fileNameSubj)) subject = 'Botany';
+    else if (/\b(biology|bio)\b/i.test(fileNameSubj)) subject = 'Biology';
+    else if (/\b(mathematics|maths|math|mat)\b/i.test(fileNameSubj)) subject = 'Mathematics';
+    else if (/\b(chemistry|chem|chm)\b/i.test(fileNameSubj)) subject = 'Chemistry';
+    else if (/\b(english|eng)\b/i.test(fileNameSubj)) subject = 'English';
+    else if (/\b(sst|social)\b/i.test(fileNameSubj)) subject = 'SST';
+
+    const durationMillis = file.videoMediaMetadata?.durationMillis ? parseInt(file.videoMediaMetadata.durationMillis, 10) : null;
+    const width = file.videoMediaMetadata?.width || null;
+    const height = file.videoMediaMetadata?.height || null;
+
+    discoveredVideos.set(file.id, {
+      ...file,
+      batch,
+      subject,
+      folderPath: current.folderPath || rootFolderName || 'Root',
+      subfolders,
+      durationMillis,
+      width,
+      height
+    });
+  };
+
+  const enqueueFolder = (folderId, folderPath, subfolders) => {
+    if (!visitedFolders.has(folderId)) {
+      folderQueue.push({ folderId, folderPath, subfolders });
+    }
+  };
+
+  const listPageWithRetry = async (params) => {
+    let lastErr = null;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        return await drive.files.list(params);
+      } catch (err) {
+        if (isAuthError(err)) throw err;
+        lastErr = err;
+        if (attempt < 3) await new Promise(resolve => setTimeout(resolve, 400 * attempt));
+      }
+    }
+    throw lastErr;
+  };
+
+  const processFolder = async (current) => {
+    const folderStartedAt = Date.now();
+    let pageToken = null;
+    do {
+      let listRes;
+      try {
+        listRes = await listPageWithRetry({
+          q: `'${current.folderId}' in parents and trashed = false${dateQuery}`,
+          fields: 'nextPageToken, files(id, name, mimeType, size, createdTime, modifiedTime, videoMediaMetadata, shortcutDetails, driveId)',
+          pageSize: 1000,
+          supportsAllDrives: true,
+          includeItemsFromAllDrives: true,
+          ...(rootDriveId ? { corpora: 'drive', driveId: rootDriveId } : {}),
+          pageToken: pageToken || undefined
+        });
+      } catch (err) {
+        if (err.code === 'ENOTFOUND' || err.message.includes('getaddrinfo')) {
+          throw new Error(`Network Connection Error: Could not reach Google APIs. Please check your internet connection.`);
+        }
+        // Folder-level failure after retries: report it instead of silently skipping files
+        console.warn(`Scan warning in folder ${current.folderId} after 3 attempts:`, err.message);
+        scanWarnings.push(`Folder "${current.folderPath || current.folderId}" could not be fully scanned: ${err.message}`);
+        return;
+      }
+
+      const files = listRes.data.files || [];
+      if (process.env.DEBUG_DRIVE_SCAN === '1') {
+        console.log(`[DRIVE_SCAN] ${current.folderPath || current.folderId}: ${files.length} entries${pageToken ? ' (next page)' : ''}`);
+      }
+
+      // Split the file list into two groups so we can handle them efficiently:
+      //   • Non-shortcuts (folders + direct video files) — synchronous, no extra API call needed.
+      //   • Video shortcuts — each requires a drive.files.get() to fetch full metadata.
+      //     Firing them all in parallel via Promise.all cuts per-page latency from
+      //     O(shortcutCount) sequential round-trips down to O(1) round-trips.
+      const shortcutFetches = [];
+      for (const file of files) {
+        const childPath = current.folderPath ? `${current.folderPath} / ${file.name}` : file.name;
+        const childSubfolders = [...current.subfolders, file.name];
+
+        if (file.mimeType === 'application/vnd.google-apps.folder') {
+          enqueueFolder(file.id, childPath, childSubfolders);
+          notifyWorkers(); // wake any idle workers immediately
+          continue;
+        }
+
+        if (file.mimeType === 'application/vnd.google-apps.shortcut') {
+          const targetId = file.shortcutDetails?.targetId;
+          const targetMime = file.shortcutDetails?.targetMimeType || '';
+          if (!targetId) continue;
+          if (targetMime === 'application/vnd.google-apps.folder') {
+            enqueueFolder(targetId, childPath, childSubfolders);
+            notifyWorkers();
+            continue;
+          }
+          if (targetMime.startsWith('video/') || isVideoFile(file)) {
+            // Defer the API call — batch all video-shortcut fetches per page
+            shortcutFetches.push(
+              fetchMeta(targetId)
+                .then(target => { if (isVideoFile(target)) handleVideoFile(target, current); })
+                .catch(e => { scanWarnings.push(`Shortcut "${file.name}" target could not be read: ${e.message}`); })
+            );
+          }
+          continue;
+        }
+
+        if (isVideoFile(file)) handleVideoFile(file, current);
+      }
+
+      // Resolve all video-shortcut metadata fetches for this page in parallel
+      if (shortcutFetches.length > 0) await Promise.all(shortcutFetches);
+
+      pageToken = listRes.data.nextPageToken;
+    } while (pageToken);
+    if (process.env.DEBUG_DRIVE_SCAN === '1') {
+      console.log(`[DRIVE_SCAN] folder complete: ${current.folderPath || current.folderId} in ${Date.now() - folderStartedAt}ms`);
+    }
+  };
 
   try {
-    const rootMeta = await drive.files.get({
-      fileId: rootFolderId,
-      fields: 'id, name, mimeType, size, createdTime, modifiedTime',
-      supportsAllDrives: true
-    });
-    rootFolderName = rootMeta.data.name;
+    const rootMeta = await resolveFolderMeta(rootFolderId);
+    rootFolderName = rootMeta.name;
+    rootDriveId = rootMeta.driveId || null;
 
     // Check if the provided link/ID is a direct video file rather than a folder
-    if (rootMeta.data.mimeType !== 'application/vnd.google-apps.folder') {
-      if (isVideoFile(rootMeta.data)) {
-        const cleanName = normalizeUnicodeText(rootFolderName || 'Direct Upload');
-        discoveredVideos.set(rootMeta.data.id, {
-          ...rootMeta.data,
+    if (rootMeta.mimeType !== 'application/vnd.google-apps.folder') {
+      if (isVideoFile(rootMeta)) {
+        const cleanName = normalizeUnicodeText(rootMeta.name || 'Direct Upload');
+        discoveredVideos.set(rootMeta.id, {
+          ...rootMeta,
           batch: cleanName,
           subject: 'Video',
-          folderPath: rootMeta.data.name
+          folderPath: rootMeta.name
         });
         return {
-          rootFolderName: rootMeta.data.name,
-          videos: Array.from(discoveredVideos.values())
+          rootFolderName: rootMeta.name,
+          videos: Array.from(discoveredVideos.values()),
+          scanIncomplete: false
         };
       }
+    }
+    // Root was a shortcut; continue scanning the resolved target folder
+    if (rootMeta.id && rootMeta.id !== rootFolderId) {
+      rootFolderId = rootMeta.id;
     }
   } catch (e) {
     if (isAuthError(e)) {
@@ -771,160 +1033,58 @@ async function scanDriveFolderRecursively(drive, rootFolderId, startDateIso, end
     rootFolderName = 'Batch Folder';
   }
 
-  // Queue stores objects: { folderId, folderPath, subfolders }
-  const folderQueue = [{
-    folderId: rootFolderId,
-    folderPath: '',
-    subfolders: []
-  }];
-  const visitedFolders = new Set();
+  folderQueue.push({ folderId: rootFolderId, folderPath: '', subfolders: [] });
 
-  while (folderQueue.length > 0) {
-    const current = folderQueue.shift();
-    if (visitedFolders.has(current.folderId)) continue;
-    visitedFolders.add(current.folderId);
+  // ── Event-driven worker pool ────────────────────────────────────────────────
+  // Workers used to spin-poll every 25 ms waiting for new folders to appear in
+  // the queue.  With deep trees that wasted ~25 ms of idle time per worker for
+  // every subfolder level discovered late.  Instead we keep a list of resolve
+  // callbacks ("waiters") that are called immediately whenever enqueueFolder()
+  // or notifyWorkers() adds work, so idle workers wake up with zero delay.
+  const workerWaiters = [];
+  const notifyWorkers = () => {
+    while (workerWaiters.length > 0) {
+      const resolve = workerWaiters.shift();
+      resolve();
+    }
+  };
+  const waitForWork = () => new Promise(resolve => workerWaiters.push(resolve));
 
-    // List all files and subfolders with pagination
-    let pageToken = null;
-    do {
-      try {
-        const listRes = await drive.files.list({
-          q: `'${current.folderId}' in parents and trashed = false`,
-          fields: 'nextPageToken, files(id, name, mimeType, size, createdTime, modifiedTime, videoMediaMetadata)',
-          pageSize: 1000,
-          supportsAllDrives: true,
-          includeItemsFromAllDrives: true,
-          corpora: 'allDrives',
-          pageToken: pageToken || undefined
-        });
-
-        const files = listRes.data.files || [];
-
-        for (const file of files) {
-          // If it's a subfolder, enqueue for traversal
-          if (file.mimeType === 'application/vnd.google-apps.folder') {
-            if (!visitedFolders.has(file.id)) {
-              const nextSubfolders = [...current.subfolders, file.name];
-              folderQueue.push({
-                folderId: file.id,
-                folderPath: current.folderPath ? `${current.folderPath} / ${file.name}` : file.name,
-                subfolders: nextSubfolders
-              });
-            }
-            continue;
-          }
-
-          // If it's a video file, check date filter (if specified)
-          if (isVideoFile(file)) {
-            let passesDateFilter = true;
-
-            if (startDateIso || endDateIso) {
-              const fileTime = new Date(file.createdTime || file.modifiedTime || 0).getTime();
-              let matchedTime = fileTime;
-
-              // Also check if filename has explicit date (e.g. 2026-08-28 or 28-08-2026)
-              const ymdMatch = (file.name || '').match(/(\d{4})-(\d{2})-(\d{2})/);
-              if (ymdMatch) {
-                const fnameDate = new Date(`${ymdMatch[1]}-${ymdMatch[2]}-${ymdMatch[3]}T12:00:00+05:30`);
-                if (!isNaN(fnameDate.getTime())) matchedTime = fnameDate.getTime();
-              } else {
-                const dmyMatch = (file.name || '').match(/(\d{2})-(\d{2})-(\d{4})/);
-                if (dmyMatch) {
-                  const fnameDate = new Date(`${dmyMatch[3]}-${dmyMatch[2]}-${dmyMatch[1]}T12:00:00+05:30`);
-                  if (!isNaN(fnameDate.getTime())) matchedTime = fnameDate.getTime();
-                }
-              }
-
-              if (startDateIso && matchedTime < new Date(startDateIso).getTime() && fileTime < new Date(startDateIso).getTime()) {
-                passesDateFilter = false;
-              }
-              if (endDateIso && matchedTime > new Date(endDateIso).getTime() && fileTime > new Date(endDateIso).getTime()) {
-                passesDateFilter = false;
-              }
-            }
-
-            if (passesDateFilter && !discoveredVideos.has(file.id)) {
-              const subfolders = current.subfolders || [];
-              const cleanRoot = normalizeUnicodeText(rootFolderName || '');
-              const isDateRoot = /^20\d{2}[-_]\d{2}(?:[-_]\d{2})?$/.test(cleanRoot) || /^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i.test(cleanRoot);
-              const isMasterRoot = !cleanRoot || isDateRoot || cleanRoot.toLowerCase().includes('master') || cleanRoot.toLowerCase().includes('all batches') || cleanRoot === 'Batch Folder' || cleanRoot === 'Root';
-
-              let batch = isDateRoot ? 'Batch' : (cleanRoot || 'Batch');
-              let subject = 'Lecture';
-
-              if (subfolders.length === 0) {
-                batch = isDateRoot ? 'Batch' : (cleanRoot || 'Batch');
-                subject = 'Lecture';
-              } else if (subfolders.length === 1) {
-                if (isMasterRoot) {
-                  batch = normalizeUnicodeText(subfolders[0]);
-                  subject = 'Lecture';
-                } else {
-                  batch = cleanRoot;
-                  subject = normalizeUnicodeText(subfolders[0]);
-                }
-              } else {
-                if (isMasterRoot) {
-                  batch = normalizeUnicodeText(subfolders[0]);
-                  subject = normalizeUnicodeText(subfolders.slice(1).join(' - '));
-                } else {
-                  batch = cleanRoot;
-                  subject = normalizeUnicodeText(subfolders.join(' - '));
-                }
-              }
-
-              // Check if filename itself has an explicit batch code (e.g. 27-LJ152EA 2026)
-              const fileNameBatchMatch = (file.name || '').split('|')[0].match(/(?:^|[^A-Z0-9])(27-\s*[A-Z0-9]+(?:\s+202[0-9])?)\b/i) ||
-                                         (file.name || '').split('|')[0].match(/\b(SIP\s+[A-Z0-9-]+(?:\s+202[0-9])?|[A-Z][0-9]{2}-[A-Z0-9]+(?:\s+202[0-9])?)\b/i);
-              if (fileNameBatchMatch) {
-                batch = fileNameBatchMatch[1].replace(/27-\s+/, '27-').trim();
-              }
-
-              const fileNameSubj = file.name || '';
-              if (/\b(physics|phys|phy)\b/i.test(fileNameSubj)) subject = 'Physics';
-              else if (/\b(zoology|zoo)\b/i.test(fileNameSubj)) subject = 'Zoology';
-              else if (/\b(botany|bot)\b/i.test(fileNameSubj)) subject = 'Botany';
-              else if (/\b(biology|bio)\b/i.test(fileNameSubj)) subject = 'Biology';
-              else if (/\b(mathematics|maths|math|mat)\b/i.test(fileNameSubj)) subject = 'Mathematics';
-              else if (/\b(chemistry|chem|chm)\b/i.test(fileNameSubj)) subject = 'Chemistry';
-              else if (/\b(english|eng)\b/i.test(fileNameSubj)) subject = 'English';
-              else if (/\b(sst|social)\b/i.test(fileNameSubj)) subject = 'SST';
-
-              const durationMillis = file.videoMediaMetadata?.durationMillis ? parseInt(file.videoMediaMetadata.durationMillis, 10) : null;
-              const width = file.videoMediaMetadata?.width || null;
-              const height = file.videoMediaMetadata?.height || null;
-
-              discoveredVideos.set(file.id, {
-                ...file,
-                batch,
-                subject,
-                folderPath: current.folderPath || rootFolderName || 'Root',
-                subfolders,
-                durationMillis,
-                width,
-                height
-              });
-            }
-          }
-        }
-
-        pageToken = listRes.data.nextPageToken;
-      } catch (err) {
-        if (isAuthError(err)) {
-          throw new Error(`Google Authentication Error (${err.message}). Please check your Google OAuth credentials or reconnect.`);
-        }
-        if (err.code === 'ENOTFOUND' || err.message.includes('getaddrinfo')) {
-          throw new Error(`Network Connection Error: Could not reach Google APIs. Please check your internet connection.`);
-        }
-        console.warn(`Query warning in folder ${current.folderId}:`, err.message);
-        pageToken = null;
+  const configuredWorkerCount = Number.parseInt(process.env.DRIVE_SCAN_WORKERS || '16', 10);
+  const WORKER_COUNT = Math.min(24, Math.max(4, Number.isFinite(configuredWorkerCount) ? configuredWorkerCount : 16));
+  let inFlight = 0;
+  const worker = async () => {
+    while (true) {
+      const current = folderQueue.shift();
+      if (!current) {
+        if (inFlight === 0) return;   // all work done
+        await waitForWork();          // sleep until notifyWorkers() wakes us
+        continue;
       }
-    } while (pageToken);
+      if (visitedFolders.has(current.folderId)) continue;
+      visitedFolders.add(current.folderId);
+      inFlight++;
+      try {
+        await processFolder(current);
+      } finally {
+        inFlight--;
+        // When a worker finishes, wake remaining idle workers — they need to
+        // re-check whether inFlight has dropped to 0 (termination condition).
+        notifyWorkers();
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: WORKER_COUNT }, () => worker()));
+
+  if (process.env.DEBUG_DRIVE_SCAN === '1') {
+    console.log(`[DRIVE_SCAN] complete: root=${rootFolderName || rootFolderId}, drive=${rootDriveId || 'my-drive'}, folders=${visitedFolders.size}, videos=${discoveredVideos.size}, duration=${Date.now() - scanStartedAt}ms`);
   }
 
   return {
     rootFolderName,
-    videos: Array.from(discoveredVideos.values())
+    videos: Array.from(discoveredVideos.values()),
+    scanIncomplete: scanWarnings.length > 0,
+    warnings: scanWarnings.slice(0, 10)
   };
 }
 
@@ -1624,87 +1784,166 @@ app.post('/api/thumbnail', async (req, res) => {
 
 // ══════════════════════════════════════════════════════════════════
 // THUMBCRAFT FACULTY & THUMBNAIL PROXY ENGINE
+// Reads EVERY subsheet of the Teachers Data spreadsheet (PCMC, TC,
+// Viman Nagar, Hadapsar, Latur, ...) and merges them into one roster.
 // ══════════════════════════════════════════════════════════════════
 let cachedFacultyList = null;
+let cachedFacultyAll = null;
 let cachedFacultyTime = 0;
-const FACULTY_SHEET_URL = 'https://docs.google.com/spreadsheets/d/10TOZqECN2LW0dJj8JuWDdeE28sV4p19KDpAGkltlvwE/gviz/tq?tqx=out:json';
+let cachedFacultySheets = null;
+let cachedFacultySheetsTime = 0;
+const FACULTY_SHEET_ID = '10TOZqECN2LW0dJj8JuWDdeE28sV4p19KDpAGkltlvwE';
+
+function httpsGetText(url, redirects = 0) {
+  return new Promise((resolve, reject) => {
+    const https = require('https');
+    https.get(url, (res) => {
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location && redirects < 4) {
+        return resolve(httpsGetText(res.headers.location, redirects + 1));
+      }
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => resolve(data));
+    }).on('error', reject);
+  });
+}
+
+function parseGviz(text) {
+  const jsonStr = text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1);
+  return JSON.parse(jsonStr);
+}
+
+// Discover every subsheet (name + gid) from the spreadsheet's htmlview page,
+// so new center tabs added later are picked up automatically.
+async function discoverFacultySheets() {
+  if (cachedFacultySheets && (Date.now() - cachedFacultySheetsTime) < 3600000) return cachedFacultySheets;
+  try {
+    const html = await httpsGetText(`https://docs.google.com/spreadsheets/d/${FACULTY_SHEET_ID}/htmlview`);
+    const sheets = [];
+    const seen = new Set();
+    const re = /items\.push\(\{name:\s*"([^"]+)",\s*pageUrl:\s*"([^"]*)"/g;
+    let m;
+    while ((m = re.exec(html)) !== null) {
+      const gidMatch = /[?&]gid=(-?\d+)/.exec(m[2]);
+      if (gidMatch && !seen.has(gidMatch[1])) {
+        seen.add(gidMatch[1]);
+        sheets.push({ name: m[1], gid: gidMatch[1] });
+      }
+    }
+    if (sheets.length === 0) sheets.push({ name: 'Sheet1', gid: '0' }); // safety net
+    cachedFacultySheets = sheets;
+    cachedFacultySheetsTime = Date.now();
+    return sheets;
+  } catch (err) {
+    console.error('Faculty subsheet discovery failed:', err.message);
+    return cachedFacultySheets || [{ name: 'Sheet1', gid: '0' }];
+  }
+}
 
 app.get('/api/faculty-list', async (req, res) => {
+  const forceFresh = req.query.fresh === '1';
   try {
     const now = Date.now();
-    if (cachedFacultyList && (now - cachedFacultyTime) < 3600000) {
-      return res.json({ success: true, teachers: cachedFacultyList, cached: true });
+    if (!forceFresh && cachedFacultyList && (now - cachedFacultyTime) < 3600000) {
+      return res.json({ success: true, teachers: cachedFacultyList, allTeachers: cachedFacultyAll, cached: true });
     }
 
-    const https = require('https');
-    https.get(FACULTY_SHEET_URL, (sheetRes) => {
-      let data = '';
-      sheetRes.on('data', chunk => data += chunk);
-      sheetRes.on('end', () => {
-        try {
-          const jsonStr = data.substring(data.indexOf('{'), data.lastIndexOf('}') + 1);
-          const json = JSON.parse(jsonStr);
-          const rows = json.table.rows;
-          const emailToCode = new Map();
-          rows.forEach(r => {
-            if (!r.c) return;
-            const email = (r.c[10]?.v || '').trim().toLowerCase();
-            const code = (r.c[11]?.v || '').trim().toUpperCase();
-            if (email && code && code !== 'TEACHER CODE' && /^[A-Z]{2,4}$/.test(code)) {
-              emailToCode.set(email, code);
-            }
-          });
+    const sheets = await discoverFacultySheets();
+    const results = (await Promise.all(sheets.map(async (s) => {
+      try {
+        const text = await httpsGetText(`https://docs.google.com/spreadsheets/d/${FACULTY_SHEET_ID}/gviz/tq?tqx=out:json&gid=${s.gid}`);
+        return { sheet: s.name, json: parseGviz(text) };
+      } catch (err) {
+        console.error(`Faculty subsheet "${s.name}" fetch failed:`, err.message);
+        return null;
+      }
+    }))).filter(Boolean);
 
-          const IGNORED_CODE_WORDS = new Set(['SIR', 'MAM', 'MAAM', 'MA\'AM', 'MISS', 'MR', 'MRS', 'DR', 'PROF', 'LIV', 'LIVE', 'PW']);
+    const IGNORED_CODE_WORDS = new Set(['SIR', 'MAM', 'MAAM', 'MA\'AM', 'MISS', 'MR', 'MRS', 'DR', 'PROF', 'LIV', 'LIVE', 'PW']);
 
-          const teachers = [];
-          rows.forEach((r, idx) => {
-            if (idx === 0) return;
-            const cells = r.c;
-            if (!cells) return;
-            const center = cells[0]?.v || '';
-            const name = (cells[1]?.v || '').trim();
-            const email = (cells[2]?.v || '').trim().toLowerCase();
-            const driveId = (cells[4]?.v || '').trim();
-            let code = (cells[5]?.v || '').trim().toUpperCase();
-            const status = (cells[6]?.v || 'Active').trim();
-
-            // Priority 1: Explicit Code in Table 1 (Col 5)
-            // Priority 2: Relational Email Lookup from Table 2 (Cols 10, 11)
-            if (!code && email && emailToCode.has(email)) {
-              code = emailToCode.get(email);
-            }
-
-            // Priority 3: Trailing token in Name (excluding common honorifics)
-            if (!code && name) {
-              const parts = name.split(/\s+/);
-              if (parts.length > 1) {
-                const last = parts[parts.length - 1].toUpperCase();
-                if (/^[A-Z]{2,4}$/.test(last) && !IGNORED_CODE_WORDS.has(last)) {
-                  code = last;
-                }
-              }
-            }
-
-            if (name && driveId && status.toLowerCase() === 'active') {
-              teachers.push({ center, name, driveId, code: code || '' });
-            }
-          });
-          cachedFacultyList = teachers;
-          cachedFacultyTime = now;
-          return res.json({ success: true, teachers: cachedFacultyList });
-        } catch (parseErr) {
-          console.error('Failed to parse faculty sheet JSON:', parseErr.message);
-          if (cachedFacultyList) return res.json({ success: true, teachers: cachedFacultyList, fallback: true });
-          return res.status(500).json({ success: false, error: 'Failed to parse faculty sheet.' });
+    // Pass 1: global email -> faculty code map from Table 2 (cols 10-12) on EVERY sheet
+    const emailToCode = new Map();
+    results.forEach(({ json }) => {
+      (json.table.rows || []).forEach(r => {
+        if (!r.c) return;
+        const email = (r.c[10]?.v || '').trim().toLowerCase();
+        const code = (r.c[11]?.v || '').trim().toUpperCase();
+        if (email && code && /^[A-Z]{2,4}$/.test(code) && !IGNORED_CODE_WORDS.has(code) && !emailToCode.has(email)) {
+          emailToCode.set(email, code);
         }
       });
-    }).on('error', (err) => {
-      console.error('Faculty sheet fetch error:', err.message);
-      if (cachedFacultyList) return res.json({ success: true, teachers: cachedFacultyList, fallback: true });
-      return res.status(500).json({ success: false, error: err.message });
     });
+
+    // Pass 2: teachers from Table 1 (cols 0-6) of EVERY sheet, merged + deduped by photo
+    const teachers = [];       // Active only (dropdown + primary matching)
+    const allTeachers = [];    // everyone with a photo, incl. Transferred/Inactive (matching fallback)
+    const byDriveId = new Map();
+    const sheetCounts = [];
+    results.forEach(({ sheet, json }) => {
+      let count = 0;
+      (json.table.rows || []).forEach((r, idx) => {
+        if (idx === 0) return; // header row of the main table
+        const cells = r.c;
+        if (!cells) return;
+        const center = cells[0]?.v || '';
+        const name = (cells[1]?.v || '').trim();
+        const email = (cells[2]?.v || '').trim().toLowerCase();
+        const driveId = (cells[4]?.v || '').trim();
+        let code = (cells[5]?.v || '').trim().toUpperCase();
+        const status = (cells[6]?.v || 'Active').trim();
+
+        // Priority 1: Explicit Code in Table 1 (Col 5)
+        // Priority 2: Relational Email Lookup from Table 2 (Cols 10, 11)
+        if (!code && email && emailToCode.has(email)) {
+          code = emailToCode.get(email);
+        }
+
+        // Priority 3: Trailing token in Name (excluding common honorifics)
+        if (!code && name) {
+          const parts = name.split(/\s+/);
+          if (parts.length > 1) {
+            const last = parts[parts.length - 1].toUpperCase();
+            if (/^[A-Z]{2,4}$/.test(last) && !IGNORED_CODE_WORDS.has(last)) {
+              code = last;
+            }
+          }
+        }
+
+        if (!name || !driveId) return;
+
+        const teacher = { center, name, driveId, code: code || '', status, sheet };
+        const dupAll = byDriveId.get(driveId);
+        if (dupAll) {
+          if (!dupAll.code && code) {
+            dupAll.code = code;
+            const dupActive = teachers.find(t => t.driveId === driveId);
+            if (dupActive && !dupActive.code) dupActive.code = code;
+          }
+          return;
+        }
+        byDriveId.set(driveId, teacher);
+        allTeachers.push(teacher);
+
+        if (status.toLowerCase() === 'active') {
+          teachers.push({ center, name, driveId, code: code || '', sheet });
+          count++;
+        }
+      });
+      sheetCounts.push({ sheet, teachers: count });
+    });
+
+    if (teachers.length === 0 && cachedFacultyList) {
+      return res.json({ success: true, teachers: cachedFacultyList, allTeachers: cachedFacultyAll, fallback: true });
+    }
+
+    cachedFacultyList = teachers;
+    cachedFacultyAll = allTeachers;
+    cachedFacultyTime = now;
+    console.log(`[FACULTY] Loaded ${teachers.length} active teachers (${allTeachers.length} total with photos) from ${sheetCounts.length} subsheets: ${sheetCounts.map(s => `${s.sheet}=${s.teachers}`).join(', ')}`);
+    return res.json({ success: true, teachers, allTeachers, sheetCounts, total: teachers.length });
   } catch (err) {
+    console.error('Faculty list error:', err.message);
+    if (cachedFacultyList) return res.json({ success: true, teachers: cachedFacultyList, allTeachers: cachedFacultyAll, fallback: true });
     return res.status(500).json({ success: false, error: err.message });
   }
 });
@@ -1732,6 +1971,9 @@ app.get('/api/timetable', async (req, res) => {
           const rows = json.table.rows;
           const schedule = [];
 
+          // Non-lecture pseudo rows (footer of faculty sheets) + header remnants must not enter the schedule
+          const PSEUDO_FACULTY_CODES = new Set(['CLASS_TEST', 'CANCELLED', 'OFFICIAL_EVENT', 'FACULTY CODE']);
+
           rows.forEach((r, idx) => {
             if (!r.c) return;
             const day = r.c[0]?.v || '';
@@ -1740,13 +1982,15 @@ app.get('/api/timetable', async (req, res) => {
             const endTime = r.c[3]?.f || r.c[3]?.v || '';
             const batchCode = (r.c[8]?.f || r.c[8]?.v || '').trim();
             const facultyCode = (r.c[9]?.f || r.c[9]?.v || '').trim().toUpperCase();
+            const center = (r.c[10]?.f || r.c[10]?.v || '').trim(); // Center column in RawDB, if added
 
-            if (batchCode && facultyCode && facultyCode !== 'CLASS_TEST') {
+            if (batchCode && facultyCode && !PSEUDO_FACULTY_CODES.has(facultyCode) && batchCode !== 'Batch Code') {
               schedule.push({
                 day: String(day).trim(),
                 date: String(rawDate).trim(),
                 startTime: String(startTime).trim(),
                 endTime: String(endTime).trim(),
+                center,
                 batchCode,
                 facultyCode,
                 subjectPrefix: facultyCode.charAt(0)
@@ -2606,18 +2850,44 @@ app.post('/api/auth/editor-logout', (req, res) => {
   return res.json({ success: true, message: 'Logged out successfully.' });
 });
 
-// In-memory TTL cache for Drive folder scan results (60s)
+// In-memory TTL cache for Drive folder scan results (5 min)
 const folderScanCache = new Map();
+const folderScanInFlight = new Map();
+function getScanCacheKey(folderId, startDate, endDate) {
+  return `${folderId}:${startDate || ''}:${endDate || ''}`;
+}
 function getCachedScan(folderId, startDate, endDate) {
-  const key = `${folderId}:${startDate || ''}:${endDate || ''}`;
+  const key = getScanCacheKey(folderId, startDate, endDate);
   const cached = folderScanCache.get(key);
   if (cached && Date.now() < cached.expiresAt) return cached.data;
   folderScanCache.delete(key);
   return null;
 }
 function setCachedScan(folderId, startDate, endDate, data) {
-  const key = `${folderId}:${startDate || ''}:${endDate || ''}`;
-  folderScanCache.set(key, { data, expiresAt: Date.now() + 60000 });
+  const key = getScanCacheKey(folderId, startDate, endDate);
+  folderScanCache.set(key, { data, expiresAt: Date.now() + 300000 });
+  // Avoid unbounded memory growth on a long-running server.
+  if (folderScanCache.size > 100) {
+    const oldestKey = folderScanCache.keys().next().value;
+    if (oldestKey) folderScanCache.delete(oldestKey);
+  }
+}
+
+async function scanWithSharedPromise(drive, folderId, startDateIso, endDateIso) {
+  const key = getScanCacheKey(folderId, startDateIso, endDateIso);
+  const cached = getCachedScan(folderId, startDateIso, endDateIso);
+  if (cached) return cached;
+
+  // Two taps (common on mobile) should not start two complete Drive traversals.
+  if (folderScanInFlight.has(key)) return folderScanInFlight.get(key);
+  const scanPromise = scanDriveFolderRecursively(drive, folderId, startDateIso, endDateIso)
+    .then(result => {
+      setCachedScan(folderId, startDateIso, endDateIso, result);
+      return result;
+    })
+    .finally(() => folderScanInFlight.delete(key));
+  folderScanInFlight.set(key, scanPromise);
+  return scanPromise;
 }
 
 /**
@@ -2666,12 +2936,12 @@ app.post('/api/scan-preview', async (req, res) => {
     const discoveredMap = new Map();
     let autoDetectedFolderName = null;
 
-    for (const fId of folderIds) {
-      let scanResult = getCachedScan(fId, startDateIso, endDateIso);
-      if (!scanResult) {
-        scanResult = await scanDriveFolderRecursively(drive, fId, startDateIso, endDateIso);
-        setCachedScan(fId, startDateIso, endDateIso, scanResult);
-      }
+    // Multiple pasted folder links are independent; scanning them in series made
+    // the total time equal to the sum of every folder traversal.
+    const scanResults = await Promise.all(
+      folderIds.map(fId => scanWithSharedPromise(drive, fId, startDateIso, endDateIso))
+    );
+    for (const scanResult of scanResults) {
       if (!autoDetectedFolderName && scanResult.rootFolderName) {
         autoDetectedFolderName = scanResult.rootFolderName;
       }
@@ -2876,16 +3146,17 @@ app.post(['/api/process', '/api/process-folder'], async (req, res) => {
       const discoveredMap = new Map();
       let autoDetectedFolderName = null;
 
-      for (const fId of folderIds) {
-        let scanResult = getCachedScan(fId, startDateIso, endDateIso);
-      if (!scanResult) {
-        scanResult = await scanDriveFolderRecursively(drive, fId, startDateIso, endDateIso);
-        setCachedScan(fId, startDateIso, endDateIso, scanResult);
-      }
+      // Scan all folder IDs in parallel (same approach as /api/scan-preview).
+      // Previously this was a sequential for-of loop, meaning a job with N folders
+      // took N × (single-folder scan time).  Promise.all cuts that to the time of
+      // the slowest single folder.
+      const processResults = await Promise.all(
+        folderIds.map(fId => scanWithSharedPromise(drive, fId, startDateIso, endDateIso))
+      );
+      for (const scanResult of processResults) {
         if (!autoDetectedFolderName && scanResult.rootFolderName) {
           autoDetectedFolderName = scanResult.rootFolderName;
         }
-
         for (const vid of scanResult.videos) {
           if (!discoveredMap.has(vid.id)) {
             discoveredMap.set(vid.id, vid);

@@ -231,6 +231,41 @@
         -webkit-overflow-scrolling: touch;
       }
 
+      /* Scan review modal: use the full phone viewport and keep the wide table
+         inside its own horizontal scroller instead of squeezing/cropping columns. */
+      #scanReviewModal {
+        padding: 0 !important;
+        align-items: stretch !important;
+      }
+      #scanReviewModal > div {
+        width: 100% !important;
+        max-width: none !important;
+        max-height: 100dvh !important;
+        height: 100dvh !important;
+        border-left: 0 !important;
+        border-right: 0 !important;
+      }
+      #scanReviewModal .px-5 {
+        padding-left: 0.75rem !important;
+        padding-right: 0.75rem !important;
+      }
+      #scanReviewModal .overflow-y-auto {
+        padding: 0.5rem !important;
+      }
+      #scanReviewModal .overflow-x-auto {
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+      }
+      #scanReviewModal table {
+        min-width: 620px;
+      }
+      #scanReviewModal h3 {
+        max-width: calc(100vw - 7rem);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
       /* Floating info & theme buttons: smaller on mobile */
       #floatingInfoDock, #floatingThemeDock {
         bottom: 1rem !important;
@@ -980,9 +1015,9 @@
       </div>
 
       <!-- Files List Table Container -->
-      <div class="overflow-y-auto flex-1 p-4">
-        <div class="border border-[var(--border-main)] bg-[var(--bg-card)] overflow-hidden">
-          <table class="w-full text-left border-collapse text-xs">
+      <div class="overflow-y-auto flex-1 p-2 sm:p-4">
+        <div class="border border-[var(--border-main)] bg-[var(--bg-card)] overflow-x-auto -webkit-overflow-scrolling-touch">
+          <table class="w-full text-left border-collapse text-xs min-w-[620px]">
             <thead>
               <tr class="border-b border-[var(--border-main)] bg-[var(--bg-subcard)] text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
                 <th class="py-2 px-3 w-8 text-center border-r border-[var(--border-main)]">
@@ -6258,6 +6293,7 @@
     // THUMBCRAFT OFFICIAL THUMBNAIL STUDIO & FACULTY ENGINE
     // ══════════════════════════════════════════════════════════════════
     window.thumbcraftTeachers = [];
+    window.thumbcraftAllTeachers = [];
     window.thumbcraftImageCache = {};
 
     window.loadThumbCraftFaculty = async function() {
@@ -6266,7 +6302,11 @@
         const data = await res.json();
         if (data.success && Array.isArray(data.teachers)) {
           window.thumbcraftTeachers = data.teachers;
+          // Full roster incl. Transferred/Inactive — used as matching fallback when
+          // the timetable points to a teacher who is no longer marked Active.
+          window.thumbcraftAllTeachers = (Array.isArray(data.allTeachers) && data.allTeachers.length) ? data.allTeachers : data.teachers;
           populateFacultyDropdown(data.teachers);
+          console.log('✔ Faculty loaded:', data.teachers.length, 'teachers across', (data.sheetCounts || []).length, 'subsheets');
         }
       } catch (err) {
         console.warn('Faculty list fetch error, using local fallback:', err);
@@ -6436,6 +6476,29 @@
       return fromTitle || 'Chemistry';
     };
 
+    // Tolerant date parser: handles 15-Sep-2026, 2026-09-15, 15/09/2026, Sep 15 2026,
+    // and extracts dates embedded inside filenames/titles.
+    window.parseLooseDate = function(s) {
+      if (!s) return null;
+      const str = String(s).trim();
+      if (!str) return null;
+      let m = str.match(/\b(20\d{2})[-_\/.](\d{1,2})[-_\/.](\d{1,2})\b/); // ISO yyyy-mm-dd
+      if (m) return new Date(+m[1], +m[2] - 1, +m[3]).getTime();
+      m = str.match(/\b(\d{1,2})[-_\/. ]([A-Za-z]{3,9})[-_\/. ](\d{4})\b/); // dd-Mon-yyyy
+      if (m) {
+        const t = Date.parse(`${m[1]} ${m[2]} ${m[3]}`);
+        if (!isNaN(t)) return t;
+      }
+      m = str.match(/\b([A-Za-z]{3,9})\s+(\d{1,2}),?\s+(\d{4})\b/); // Mon dd, yyyy
+      if (m) {
+        const t = Date.parse(`${m[1]} ${m[2]} ${m[3]}`);
+        if (!isNaN(t)) return t;
+      }
+      m = str.match(/\b(\d{1,2})[-_\/.](\d{1,2})[-_\/.](20\d{2})\b/); // dd/mm/yyyy
+      if (m) return new Date(+m[3], +m[2] - 1, +m[1]).getTime();
+      return null;
+    };
+
     window.matchTimetableFaculty = function(batch, subject, dateStr) {
       if (!window.timetableSchedule || window.timetableSchedule.length === 0) return null;
       let bNorm = (batch || '').toLowerCase().replace(/[\s-]+/g, '');
@@ -6458,30 +6521,53 @@
       const coreMatch = bNorm.match(/27[a-z0-9]+/);
       const coreBatch = coreMatch ? coreMatch[0].replace(/202[0-9]/, '') : bNorm;
 
-      // 1. Match batch + subject prefix
-      let matchedEntry = window.timetableSchedule.find(entry => {
+      const fileTs = window.parseLooseDate(dateStr);
+
+      // Score every batch+subject entry instead of taking the first hit:
+      //   batch exactness (exact > core > substring) dominates,
+      //   then the entry whose lecture date is nearest the file's date wins
+      //   (handles the same batch+subject repeating weekly, or a faculty swap mid-week).
+      let best = null;
+      window.timetableSchedule.forEach(entry => {
+        if (entry.subjectPrefix !== prefix) return;
         const eb = (entry.batchCode || '').toLowerCase().replace(/[\s-]+/g, '');
-        const matchesBatch = eb.includes(bNorm) || bNorm.includes(eb) || (coreBatch && eb.includes(coreBatch));
-        const matchesSubject = entry.subjectPrefix === prefix;
-        return matchesBatch && matchesSubject;
+        if (!eb) return;
+        let batchScore = -1;
+        if (eb === bNorm) batchScore = 0;
+        else if (coreBatch && eb === coreBatch) batchScore = 1;
+        else if (coreBatch && eb.includes(coreBatch)) batchScore = 2;
+        else if (eb.includes(bNorm) || bNorm.includes(eb)) batchScore = 3;
+        if (batchScore < 0) return;
+
+        let dateScore = 0;
+        const entryTs = window.parseLooseDate(entry.date);
+        if (fileTs && entryTs) dateScore = Math.min(Math.abs(entryTs - fileTs) / 86400000, 3650);
+        const score = batchScore * 10000 + dateScore;
+        if (!best || score < best.score) best = { entry, score };
       });
 
-      if (!matchedEntry) return null;
+      if (!best) return null;
+      const matchedEntry = best.entry;
 
-      // Find teacher in roster by faculty code
+      // Find photo in roster by faculty code — Active teachers first,
+      // then the full roster (incl. Transferred/Inactive whose cutouts still exist).
       const fCode = (matchedEntry.facultyCode || '').toUpperCase();
-      const teacher = (window.thumbcraftTeachers || []).find(t => {
+      const codeMatch = (t) => {
         const tc = (t.code || '').toUpperCase();
-        if (tc === fCode) return true;
+        if (tc && tc === fCode) return true;
         const nameParts = (t.name || '').trim().split(/\s+/);
-        return nameParts[nameParts.length - 1].toUpperCase() === fCode;
-      });
+        return nameParts.length > 1 && nameParts[nameParts.length - 1].toUpperCase() === fCode;
+      };
+      const teacher = (window.thumbcraftTeachers || []).find(codeMatch)
+        || (window.thumbcraftAllTeachers || []).find(codeMatch);
 
       return {
         entry: matchedEntry,
         facultyCode: fCode,
         teacher: teacher || null,
-        batch: matchedEntry.batchCode
+        batch: matchedEntry.batchCode,
+        matchedDate: matchedEntry.date || '',
+        exactBatch: best.score < 10000
       };
     };
 
@@ -6794,6 +6880,49 @@
       ctx.restore();
     }
 
+    // Measure the visible (non-transparent) region of a teacher cutout so the canvas
+    // can ignore empty margins — cutouts saved with large transparent borders would
+    // otherwise render as tiny figures. Falls back to the full image on any error.
+    const computeTeacherAlphaBox = (img) => {
+      try {
+        const iw = img.naturalWidth || img.width;
+        const ih = img.naturalHeight || img.height;
+        if (!iw || !ih) return null;
+        const MAX_SAMPLE = 320;
+        const scale = Math.min(1, MAX_SAMPLE / Math.max(iw, ih));
+        const w = Math.max(1, Math.round(iw * scale));
+        const h = Math.max(1, Math.round(ih * scale));
+        const tc = document.createElement('canvas');
+        tc.width = w;
+        tc.height = h;
+        const tctx = tc.getContext('2d', { willReadFrequently: true });
+        tctx.drawImage(img, 0, 0, w, h);
+        const data = tctx.getImageData(0, 0, w, h).data;
+        let minX = w, minY = h, maxX = -1, maxY = -1;
+        for (let y = 0; y < h; y++) {
+          const row = y * w * 4;
+          for (let x = 0; x < w; x++) {
+            if (data[row + x * 4 + 3] > 8) {
+              if (x < minX) minX = x;
+              if (x > maxX) maxX = x;
+              if (y < minY) minY = y;
+              if (y > maxY) maxY = y;
+            }
+          }
+        }
+        if (maxX < 0) return null;
+        const pad = 1;
+        const sx = Math.max(0, (minX - pad) / scale);
+        const sy = Math.max(0, (minY - pad) / scale);
+        const ex = Math.min(iw, (maxX + 1 + pad) / scale);
+        const ey = Math.min(ih, (maxY + 1 + pad) / scale);
+        return { sx, sy, sw: ex - sx, sh: ey - sy };
+      } catch (e) {
+        return null;
+      }
+    };
+    window.__computeTeacherAlphaBox = computeTeacherAlphaBox;
+
     window.generateThumbCraftBase64 = function(title, batch, subject, teacherDriveId) {
       return new Promise((resolve) => {
         const canvas = document.createElement('canvas');
@@ -6814,7 +6943,13 @@
 
           // 2. Draw Teacher Cutout on the Right White Section
           if (teacherImg && teacherImg.complete && teacherImg.naturalWidth > 0) {
-            const A = teacherImg.naturalWidth / teacherImg.naturalHeight;
+            // Draw only the visible person (transparent padding trimmed) so every
+            // faculty cutout renders at the same full height on the canvas
+            if (teacherImg.__alphaBox === undefined) {
+              teacherImg.__alphaBox = computeTeacherAlphaBox(teacherImg);
+            }
+            const box = teacherImg.__alphaBox;
+            const A = box ? (box.sw / box.sh) : (teacherImg.naturalWidth / teacherImg.naturalHeight);
             let Y = l * 0.94 * 1.05;
             let L = Y * A;
             const maxL = O * 0.39 * 1.05;
@@ -6826,7 +6961,11 @@
             ctx.shadowColor = 'rgba(0, 0, 0, 0.16)';
             ctx.shadowBlur = 14;
             ctx.shadowOffsetY = 4;
-            ctx.drawImage(teacherImg, pe, Ne, L, Y);
+            if (box) {
+              ctx.drawImage(teacherImg, box.sx, box.sy, box.sw, box.sh, pe, Ne, L, Y);
+            } else {
+              ctx.drawImage(teacherImg, pe, Ne, L, Y);
+            }
             ctx.restore();
           }
 
