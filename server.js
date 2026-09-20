@@ -220,6 +220,25 @@ app.use(express.static(path.join(__dirname, 'public'), {
 
 // Store active SSE client connections
 const clients = new Map();
+// Secondary indexes so broadcastSSE can target a specific user/channel in
+// O(subscribers) instead of iterating every connected client.
+const clientsByChannel = new Map(); // channelId  → Set<clientId>
+const clientsByUser    = new Map(); // userId     → Set<clientId>
+
+/** Add a clientId to a secondary index Map (channel or user). */
+function indexClient(indexMap, key, clientId) {
+  if (!key) return;
+  if (!indexMap.has(key)) indexMap.set(key, new Set());
+  indexMap.get(key).add(clientId);
+}
+/** Remove a clientId from a secondary index Map. */
+function unindexClient(indexMap, key, clientId) {
+  if (!key) return;
+  const set = indexMap.get(key);
+  if (!set) return;
+  set.delete(clientId);
+  if (set.size === 0) indexMap.delete(key);
+}
 
 // Per-User Isolation: token → channelId cache (auto-expires)
 const tokenChannelCache = new Map();
@@ -365,28 +384,45 @@ function persistJobState() {
 }
 
 function broadcastSSE(data, targetFilter = null) {
-  for (const client of clients.values()) {
-    if (client && client.res) {
-      if (targetFilter) {
-        const hasFilter = !!(targetFilter.userId || targetFilter.channelId);
-        if (hasFilter) {
-          const matchUser = targetFilter.userId && client.userId === targetFilter.userId;
-          const matchChannel = targetFilter.channelId && client.channelId === targetFilter.channelId;
-          if (!matchUser && !matchChannel) {
-            continue; // Skip client: not their upload/job!
-          }
-        }
-      } else {
-        // Strict Privacy: Never leak personal upload state/progress across clients without a target filter!
-        if (data.type === 'state_sync' || data.type === 'file_progress' || data.type === 'file_start' || data.type === 'file_complete' || data.type === 'file_error') {
-          continue;
-        }
+  // Collect the exact set of client IDs that should receive this event.
+  // Targeted events use the secondary indexes → O(subscribers for that user/channel).
+  // Global/public events still iterate all clients but skip personal-data types.
+  let targetIds = null;
+
+  if (targetFilter) {
+    const hasFilter = !!(targetFilter.userId || targetFilter.channelId);
+    if (hasFilter) {
+      targetIds = new Set();
+      if (targetFilter.channelId) {
+        const byChannel = clientsByChannel.get(targetFilter.channelId);
+        if (byChannel) byChannel.forEach(id => targetIds.add(id));
       }
-      try {
-        client.res.write(`data: ${JSON.stringify(data)}\n\n`);
-      } catch (err) {
-        // Client disconnected
+      if (targetFilter.userId) {
+        const byUser = clientsByUser.get(targetFilter.userId);
+        if (byUser) byUser.forEach(id => targetIds.add(id));
       }
+    }
+  }
+
+  const serialized = JSON.stringify(data);
+  const isPersonalType = data.type === 'state_sync' || data.type === 'file_progress' ||
+                         data.type === 'file_start'  || data.type === 'file_complete' ||
+                         data.type === 'file_error';
+
+  if (targetIds) {
+    // Fast path: only write to the specific subscribers
+    for (const clientId of targetIds) {
+      const client = clients.get(clientId);
+      if (client?.res) {
+        try { client.res.write(`data: ${serialized}\n\n`); } catch (_) {}
+      }
+    }
+  } else {
+    // Broadcast path: all clients, but never leak personal events without a filter
+    for (const client of clients.values()) {
+      if (!client?.res) continue;
+      if (isPersonalType) continue; // Strict Privacy: never broadcast personal events globally
+      try { client.res.write(`data: ${serialized}\n\n`); } catch (_) {}
     }
   }
 }
@@ -623,10 +659,19 @@ function extractFolderIds(input) {
 
 /**
  * Helper: Find or Create a YouTube Playlist (Unlisted)
+ * Results are cached for 1 hour so repeated job starts with the same playlist
+ * name don't re-scan all channel playlists via the YouTube API every time.
  */
+const playlistTitleCache = new Map(); // key: title.toLowerCase() → { id, expiresAt }
+
 async function getOrCreatePlaylist(youtube, playlistTitle) {
   if (!playlistTitle || !playlistTitle.trim()) return null;
   const trimmed = playlistTitle.trim();
+  const cacheKey = trimmed.toLowerCase();
+
+  // Return cached ID if still fresh
+  const cached = playlistTitleCache.get(cacheKey);
+  if (cached && Date.now() < cached.expiresAt) return cached.id;
 
   try {
     let nextPageToken = null;
@@ -639,10 +684,11 @@ async function getOrCreatePlaylist(youtube, playlistTitle) {
       });
 
       const existing = (listRes.data.items || []).find(
-        p => p.snippet && p.snippet.title && p.snippet.title.toLowerCase() === trimmed.toLowerCase()
+        p => p.snippet && p.snippet.title && p.snippet.title.toLowerCase() === cacheKey
       );
 
       if (existing) {
+        playlistTitleCache.set(cacheKey, { id: existing.id, expiresAt: Date.now() + 3_600_000 });
         return existing.id;
       }
 
@@ -662,7 +708,9 @@ async function getOrCreatePlaylist(youtube, playlistTitle) {
       }
     });
 
-    return createRes.data.id;
+    const newId = createRes.data.id;
+    playlistTitleCache.set(cacheKey, { id: newId, expiresAt: Date.now() + 3_600_000 });
+    return newId;
   } catch (err) {
     console.error('Error in getOrCreatePlaylist:', err);
     throw err;
@@ -823,14 +871,20 @@ async function scanDriveFolderRecursively(drive, rootFolderId, startDateIso, end
     return meta;
   };
 
+  // Pre-compute the filter bounds once — these are constant for the whole scan.
+  // Previously new Date(startDateIso) / new Date(endDateIso) were re-constructed
+  // inside passesDateFilter on every single file, allocating two Date objects per
+  // file even though the values never change.
+  const startMs = startDateIso ? new Date(startDateIso).getTime() : null;
+  const endMs   = endDateIso   ? new Date(endDateIso).getTime()   : null;
+
   const passesDateFilter = (file) => {
-    if (!startDateIso && !endDateIso) return true;
-    const fileTime = new Date(file.createdTime || file.modifiedTime || 0).getTime();
-    let matchedTime = fileTime;
-    const fnameMs = filenameDateToMs(file.name);
-    if (fnameMs) matchedTime = fnameMs;
-    if (startDateIso && matchedTime < new Date(startDateIso).getTime() && fileTime < new Date(startDateIso).getTime()) return false;
-    if (endDateIso && matchedTime > new Date(endDateIso).getTime() && fileTime > new Date(endDateIso).getTime()) return false;
+    if (!startMs && !endMs) return true;
+    const fileTime = new Date(file.createdTime || file.modifiedTime).getTime() || 0;
+    const fnameMs  = filenameDateToMs(file.name);
+    const matchedTime = fnameMs ?? fileTime;
+    if (startMs && matchedTime < startMs && fileTime < startMs) return false;
+    if (endMs   && matchedTime > endMs   && fileTime > endMs  ) return false;
     return true;
   };
 
@@ -900,9 +954,11 @@ async function scanDriveFolderRecursively(drive, rootFolderId, startDateIso, end
     });
   };
 
-  const enqueueFolder = (folderId, folderPath, subfolders) => {
+  const enqueueFolder = (folderId, folderPath, subfolders, driveId) => {
     if (!visitedFolders.has(folderId)) {
-      folderQueue.push({ folderId, folderPath, subfolders });
+      // Carry the driveId forward so processFolder can use the correct corpora
+      // for this specific folder instead of the shared root driveId closure var.
+      folderQueue.push({ folderId, folderPath, subfolders, driveId: driveId || null });
     }
   };
 
@@ -932,7 +988,14 @@ async function scanDriveFolderRecursively(drive, rootFolderId, startDateIso, end
           pageSize: 1000,
           supportsAllDrives: true,
           includeItemsFromAllDrives: true,
-          ...(rootDriveId ? { corpora: 'drive', driveId: rootDriveId } : {}),
+          // Use this folder's own driveId (not the global rootDriveId) so that
+          // cross-drive shortcuts — which may live in a different Shared Drive or
+          // My Drive — are listed against the correct corpus.  Falling back to
+          // allDrives when no driveId is present is safe for both My Drive and
+          // Shared Drive folders.
+          ...(current.driveId
+            ? { corpora: 'drive', driveId: current.driveId }
+            : { corpora: 'allDrives' }),
           pageToken: pageToken || undefined
         });
       } catch (err) {
@@ -961,7 +1024,7 @@ async function scanDriveFolderRecursively(drive, rootFolderId, startDateIso, end
         const childSubfolders = [...current.subfolders, file.name];
 
         if (file.mimeType === 'application/vnd.google-apps.folder') {
-          enqueueFolder(file.id, childPath, childSubfolders);
+          enqueueFolder(file.id, childPath, childSubfolders, file.driveId || current.driveId);
           notifyWorkers(); // wake any idle workers immediately
           continue;
         }
@@ -971,7 +1034,10 @@ async function scanDriveFolderRecursively(drive, rootFolderId, startDateIso, end
           const targetMime = file.shortcutDetails?.targetMimeType || '';
           if (!targetId) continue;
           if (targetMime === 'application/vnd.google-apps.folder') {
-            enqueueFolder(targetId, childPath, childSubfolders);
+            // Shortcut points into another folder — that folder may live in a
+            // different drive so we do NOT inherit current.driveId here.
+            // Let it resolve to null and fall back to allDrives corpora.
+            enqueueFolder(targetId, childPath, childSubfolders, null);
             notifyWorkers();
             continue;
           }
@@ -1033,7 +1099,7 @@ async function scanDriveFolderRecursively(drive, rootFolderId, startDateIso, end
     rootFolderName = 'Batch Folder';
   }
 
-  folderQueue.push({ folderId: rootFolderId, folderPath: '', subfolders: [] });
+  folderQueue.push({ folderId: rootFolderId, folderPath: '', subfolders: [], driveId: rootDriveId });
 
   // ── Event-driven worker pool ────────────────────────────────────────────────
   // Workers used to spin-poll every 25 ms waiting for new folders to appear in
@@ -1121,6 +1187,8 @@ app.get('/api/events', async (req, res) => {
   });
 
   clients.set(clientId, { res, req, userId, channelId, token });
+  indexClient(clientsByChannel, channelId, clientId);
+  indexClient(clientsByUser,    userId,    clientId);
 
   res.write(`data: ${JSON.stringify({ type: 'connected', clientId })}\n\n`);
 
@@ -1157,6 +1225,8 @@ app.get('/api/events', async (req, res) => {
   req.on('close', () => {
     clearInterval(heartbeat);
     clients.delete(clientId);
+    unindexClient(clientsByChannel, channelId, clientId);
+    unindexClient(clientsByUser,    userId,    clientId);
   });
 });
 
@@ -2954,6 +3024,16 @@ app.post('/api/scan-preview', async (req, res) => {
 
     const rawFiles = Array.from(discoveredMap.values());
 
+    // Build in-memory lookup maps from the upload history once, then do O(1)
+    // lookups per file instead of firing a separate SQLite query for each file.
+    // For 500 files this replaces 500 × checkDuplicate prepared-statement calls
+    // with 1 × loadUploadedHistory + 500 × Map.get() — roughly 100x faster for
+    // large history tables where SQLite page-cache is cold.
+    const uploadHistory = db.loadUploadedHistory();
+    const histById     = new Map(uploadHistory.map(h => [h.id,                                  h]));
+    const histByTitle  = new Map(uploadHistory.map(h => [(h.customTitle || '').toLowerCase(),    h]));
+    const histByName   = new Map(uploadHistory.map(h => [(h.name        || '').toLowerCase(),    h]));
+
     const formattedFiles = rawFiles.map((f, idx) => {
       const cleanOriginalName = (f.name || 'Video').replace(/\.[^/.]+$/, '');
       const prefixParts = [];
@@ -2975,9 +3055,14 @@ app.post('/api/scan-preview', async (req, res) => {
         combinedTitle = combinedTitle.substring(0, 95) + '...';
       }
 
-      const duplicateCheck = db.isDuplicate(f.id, combinedTitle, f.name);
-      const isDuplicate = duplicateCheck.isDuplicate;
-      const existingRecord = duplicateCheck.existing;
+      // O(1) in-memory lookup — check by Drive file ID first (cheapest),
+      // then by custom title, then by original filename.
+      const existingRecord =
+        histById.get(f.id) ||
+        histByTitle.get(combinedTitle.toLowerCase()) ||
+        histByName.get((f.name || '').toLowerCase()) ||
+        null;
+      const isDuplicate = !!existingRecord;
 
       return {
         index: idx + 1,
