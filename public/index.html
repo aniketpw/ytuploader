@@ -6584,43 +6584,56 @@
       const subject = subjectSelect?.value || (currentActiveEditFile ? window.resolveFileSubject(currentActiveEditFile) : 'Chemistry');
       const fileDate = currentActiveEditFile ? (currentActiveEditFile.recordedDate || currentActiveEditFile.date || currentActiveEditFile.name || '') : '';
 
-      const match = window.matchTimetableFaculty(batch, subject, fileDate);
-      if (match && match.teacher) {
-        if (teacherSelect) teacherSelect.value = match.teacher.driveId;
-        if (match.batch && batchInput && (!batchInput.value || batchInput.value === '—')) batchInput.value = match.batch;
-        renderThumbCraftCanvas();
-        showToast(`⚡ Matched Timetable: ${match.teacher.name} (${match.facultyCode})`, 'success');
-      } else if (match && match.facultyCode) {
-        showToast(`⚡ Matched Code ${match.facultyCode}, but teacher photo not in roster`, 'warn');
-      } else {
-        showToast('⚠️ No timetable match found for this Batch & Subject', 'info');
-      }
-      // ── Title-code fallback for the ⚡ Auto-Match button ────────────────────
-      // If timetable still didn't resolve a photo, try extracting the code from
-      // the title  (e.g. "– ZPP –", "– PAK –") and match against the roster.
-      if (teacherSelect && !teacherSelect.value && currentActiveEditFile) {
+      // ── STEP 1: Title-code match (HIGHEST PRIORITY) ─────────────────────
+      // Try to extract the teacher code from the title segments FIRST.
+      // This is the most reliable signal and must win over the timetable.
+      const SKIP_BTN = new Set([
+        'NEET','JEE','SEP','AUG','JAN','FEB','MAR','APR','MAY','JUN',
+        'JUL','OCT','NOV','DEC','SUN','MON','TUE','WED','THU','FRI','SAT',
+        'MORNING','EVENING','AFTERNOON','EXTRA','LIVE','CLASS','LECTURE',
+        'CHEMISTRY','PHYSICS','BIOLOGY','BOTANY','ZOOLOGY','MATHS','MATH',
+        'ENGLISH','SST','HINDI','B1','B2','B3','B4','B5','DPP','PYQ','TEST',
+      ]);
+      let titleResolved = false;
+      if (currentActiveEditFile) {
         const titleForCode = currentActiveEditFile.customTitle || currentActiveEditFile.name || '';
-        const tokenMatches = titleForCode.matchAll(/(?:^|\s-\s|\s–\s)([A-Z]{2,6})(?=\s-\s|\s–\s|$|\s*\|)/g);
-        const titleTokens = [...tokenMatches].map(m => m[1].toUpperCase());
-        if (titleTokens.length > 0) {
-          const allTeachers = window.thumbcraftAllTeachers || window.thumbcraftTeachers || [];
-          for (const token of titleTokens) {
-            const hit = allTeachers.find(t => {
-              const directCode = (t.code || '').toUpperCase();
-              if (directCode === token) return true;
-              const parenMatch = (t.name || '').match(/\(([A-Z]{2,6})\)\s*$/i);
-              return parenMatch && parenMatch[1].toUpperCase() === token;
-            });
-            if (hit) {
-              teacherSelect.value = hit.driveId;
-              renderThumbCraftCanvas();
-              showToast(`⚡ Auto-matched: ${hit.name} (${token}) — from title`, 'success');
-              break;
-            }
+        const segments = titleForCode.split(/\s[-–]\s/);
+        const allTeachers = window.thumbcraftAllTeachers || window.thumbcraftTeachers || [];
+        for (const seg of segments) {
+          const tok = seg.trim().toUpperCase();
+          if (!/^[A-Z]{2,6}$/.test(tok)) continue;
+          if (SKIP_BTN.has(tok)) continue;
+          const hit = allTeachers.find(t => {
+            const directCode = (t.code || '').toUpperCase();
+            if (directCode === tok) return true;
+            const parenMatch = (t.name || '').match(/\(([A-Z]{2,6})\)\s*$/i);
+            return parenMatch && parenMatch[1].toUpperCase() === tok;
+          });
+          if (hit) {
+            if (teacherSelect) teacherSelect.value = hit.driveId;
+            renderThumbCraftCanvas();
+            showToast(`⚡ Auto-matched: ${hit.name} (${tok}) — from title`, 'success');
+            titleResolved = true;
+            break;
           }
         }
       }
-      // ───────────────────────────────────────────────────────────────────────
+
+      // ── STEP 2: Timetable fallback (only if title had no code) ──────────
+      if (!titleResolved) {
+        const match = window.matchTimetableFaculty(batch, subject, fileDate);
+        if (match && match.teacher) {
+          if (teacherSelect) teacherSelect.value = match.teacher.driveId;
+          if (match.batch && batchInput && (!batchInput.value || batchInput.value === '—')) batchInput.value = match.batch;
+          renderThumbCraftCanvas();
+          showToast(`⚡ Matched Timetable: ${match.teacher.name} (${match.facultyCode})`, 'success');
+        } else if (match && match.facultyCode) {
+          showToast(`⚡ Matched Code ${match.facultyCode}, but teacher photo not in roster`, 'warn');
+        } else {
+          showToast('⚠️ No match found for this video', 'info');
+        }
+      }
+      // ─────────────────────────────────────────────────────────────────────
     };
 
     window.openEditModal = async function(fileId) {
@@ -6665,49 +6678,69 @@
           await window.loadTimetableSchedule();
         }
 
-        // Auto-match for THIS specific video
-        const match = window.matchTimetableFaculty ? window.matchTimetableFaculty(rawBatch, matchedSubject, file.recordedDate || file.date || file.name || '') : null;
-        
+        // ── STEP 1: Title-code match (HIGHEST PRIORITY) ─────────────────────
+        // The video filename/title contains the teacher code directly, e.g.:
+        //   "Morning - NEET - 1H-YN401MA - ZPP - SEP - 18-09-26"
+        //   "Morning - NEET - 1H-LN101MA 2026 - CRT - SEP - 17-09-26"
+        //   "Morning - NEET - 1H-AN202MA (B1) - BRS - SEP - 17-09-26"
+        // This is the most reliable signal — always try it FIRST before
+        // falling back to the timetable (which matches only on batch+subject
+        // and can return the wrong teacher when a batch has multiple faculty).
+        //
+        // Tokens are extracted from between " - " separators, skipping known
+        // non-code tokens: NEET, JEE, SEP, AUG, JAN..DEC, and anything that
+        // looks like a batch code (contains digits) or a time/date pattern.
         let selectedDriveId = '';
-        if (match && match.teacher) {
-          selectedDriveId = match.teacher.driveId;
-          if (match.batch) rawBatch = match.batch;
-          showToast(`⚡ Auto-matched: ${match.teacher.name} (${match.facultyCode})`, 'success');
-        } else if (match && match.facultyCode) {
-          if (match.batch) rawBatch = match.batch;
-          showToast(`⚡ Timetable Code: ${match.facultyCode} (Photo not in roster)`, 'info');
+        let titleMatchedCode = '';
+
+        const SKIP_TOKENS = new Set([
+          'NEET','JEE','SEP','AUG','JAN','FEB','MAR','APR','MAY','JUN',
+          'JUL','OCT','NOV','DEC','SUN','MON','TUE','WED','THU','FRI','SAT',
+          'MORNING','EVENING','AFTERNOON','EXTRA','LIVE','CLASS','LECTURE',
+          'CHEMISTRY','PHYSICS','BIOLOGY','BOTANY','ZOOLOGY','MATHS','MATH',
+          'ENGLISH','SST','HINDI','B1','B2','B3','B4','B5','DPP','PYQ','TEST',
+        ]);
+
+        const titleForCode = file.customTitle || file.name || '';
+        // Split on " - " or " – " and check each segment
+        const segments = titleForCode.split(/\s[-–]\s/);
+        const allTeachers = window.thumbcraftAllTeachers || window.thumbcraftTeachers || [];
+
+        for (const seg of segments) {
+          const tok = seg.trim().toUpperCase();
+          // Must be 2–6 uppercase letters only (no digits, no spaces)
+          if (!/^[A-Z]{2,6}$/.test(tok)) continue;
+          if (SKIP_TOKENS.has(tok)) continue;
+
+          const hit = allTeachers.find(t => {
+            const directCode = (t.code || '').toUpperCase();
+            if (directCode === tok) return true;
+            const parenMatch = (t.name || '').match(/\(([A-Z]{2,6})\)\s*$/i);
+            return parenMatch && parenMatch[1].toUpperCase() === tok;
+          });
+
+          if (hit) {
+            selectedDriveId = hit.driveId;
+            titleMatchedCode = tok;
+            showToast(`⚡ Auto-matched: ${hit.name} (${tok}) — from title`, 'success');
+            break;
+          }
         }
 
-        // ── Title-code fallback ──────────────────────────────────────────────
-        // If timetable matching didn't resolve a photo, scan the video title for
-        // an embedded teacher code like "– ZPP –", "– PAK –", "– CRR –".
-        // Titles follow the pattern:  Morning - NEET - 1H-YN401MA - ZPP - SEP …
-        // The code appears between " - " separators, is 2–6 uppercase letters,
-        // and matches t.code in the faculty roster OR the last parenthesised word
-        // in t.name  e.g. "Rohit Raj Ranjan (CRR)".
-        if (!selectedDriveId) {
-          const titleForCode = file.customTitle || file.name || '';
-          // Extract all dash-separated tokens that look like a teacher code
-          const tokenMatches = titleForCode.matchAll(/(?:^|\s-\s|\s–\s)([A-Z]{2,6})(?=\s-\s|\s–\s|$|\s*\|)/g);
-          const titleTokens = [...tokenMatches].map(m => m[1].toUpperCase());
+        // ── STEP 2: Timetable fallback (only if title had no code) ──────────
+        // Use batch+subject+date timetable lookup only when the title didn't
+        // contain a recognisable teacher code.
+        const match = (!selectedDriveId && window.matchTimetableFaculty)
+          ? window.matchTimetableFaculty(rawBatch, matchedSubject, file.recordedDate || file.date || file.name || '')
+          : null;
 
-          if (titleTokens.length > 0) {
-            const allTeachers = window.thumbcraftAllTeachers || window.thumbcraftTeachers || [];
-            for (const token of titleTokens) {
-              const hit = allTeachers.find(t => {
-                const directCode = (t.code || '').toUpperCase();
-                if (directCode === token) return true;
-                // Also check last parenthesised abbreviation in name e.g. "Ranjan (CRR)"
-                const parenMatch = (t.name || '').match(/\(([A-Z]{2,6})\)\s*$/i);
-                return parenMatch && parenMatch[1].toUpperCase() === token;
-              });
-              if (hit) {
-                selectedDriveId = hit.driveId;
-                showToast(`⚡ Auto-matched: ${hit.name} (${token}) — from title`, 'success');
-                break;
-              }
-            }
-          }
+        if (!selectedDriveId && match && match.teacher) {
+          selectedDriveId = match.teacher.driveId;
+          if (match.batch) rawBatch = match.batch;
+          showToast(`⚡ Auto-matched: ${match.teacher.name} (${match.facultyCode}) — timetable`, 'success');
+        } else if (!selectedDriveId && match && match.facultyCode) {
+          if (match.batch) rawBatch = match.batch;
+          showToast(`⚡ Timetable Code: ${match.facultyCode} (Photo not in roster)`, 'info');
         }
         // ────────────────────────────────────────────────────────────────────
 
