@@ -832,22 +832,11 @@ async function scanDriveFolderRecursively(drive, rootFolderId, startDateIso, end
   // FIX: Each date bound is wrapped in its own parentheses so the AND/OR precedence
   // is correct when both startDateIso and endDateIso are present.  Previously the
   // expression was:
-  //   (createdTime >= start or modifiedTime >= start) and (createdTime <= end or modifiedTime <= end)
-  // which was parsed as:
-  //   createdTime >= start or (modifiedTime >= start and createdTime <= end) or modifiedTime <= end
-  // — incorrect and caused Drive to return far more results than needed.
-  const dateMediaClauses = [
-    startDateIso
-      ? `(createdTime >= '${startDateIso}' or modifiedTime >= '${startDateIso}')`
-      : null,
-    endDateIso
-      ? `(createdTime <= '${endDateIso}' or modifiedTime <= '${endDateIso}')`
-      : null
-  ].filter(Boolean);
-  const dateQuery = (startDateIso || endDateIso)
-    ? ` and (mimeType = 'application/vnd.google-apps.folder' or mimeType = 'application/vnd.google-apps.shortcut' or (${dateMediaClauses.join(' and ')}))`
-    : '';
   const scanStartedAt = Date.now();
+  const SCAN_MAX_DURATION_MS = 45000; // 45s deadline guard (Hugging Face proxy timeout is 60s)
+  let scanAborted = false;
+  const isTimeExceeded = () => (Date.now() - scanStartedAt) > SCAN_MAX_DURATION_MS;
+
   const discoveredVideos = new Map();
   const scanWarnings = [];
   let rootFolderName = null;
@@ -872,9 +861,6 @@ async function scanDriveFolderRecursively(drive, rootFolderId, startDateIso, end
   };
 
   // Pre-compute the filter bounds once — these are constant for the whole scan.
-  // Previously new Date(startDateIso) / new Date(endDateIso) were re-constructed
-  // inside passesDateFilter on every single file, allocating two Date objects per
-  // file even though the values never change.
   const startMs = startDateIso ? new Date(startDateIso).getTime() : null;
   const endMs   = endDateIso   ? new Date(endDateIso).getTime()   : null;
 
@@ -956,8 +942,6 @@ async function scanDriveFolderRecursively(drive, rootFolderId, startDateIso, end
 
   const enqueueFolder = (folderId, folderPath, subfolders, driveId) => {
     if (!visitedFolders.has(folderId)) {
-      // Carry the driveId forward so processFolder can use the correct corpora
-      // for this specific folder instead of the shared root driveId closure var.
       folderQueue.push({ folderId, folderPath, subfolders, driveId: driveId || null });
     }
   };
@@ -970,29 +954,26 @@ async function scanDriveFolderRecursively(drive, rootFolderId, startDateIso, end
       } catch (err) {
         if (isAuthError(err)) throw err;
         lastErr = err;
-        if (attempt < 3) await new Promise(resolve => setTimeout(resolve, 400 * attempt));
+        if (attempt < 3) await new Promise(resolve => setTimeout(resolve, 300 * attempt));
       }
     }
     throw lastErr;
   };
 
   const processFolder = async (current) => {
+    if (scanAborted || isTimeExceeded()) return;
     const folderStartedAt = Date.now();
     let pageToken = null;
     do {
+      if (scanAborted || isTimeExceeded()) break;
       let listRes;
       try {
         listRes = await listPageWithRetry({
-          q: `'${current.folderId}' in parents and trashed = false${dateQuery}`,
+          q: `'${current.folderId}' in parents and trashed = false`,
           fields: 'nextPageToken, files(id, name, mimeType, size, createdTime, modifiedTime, videoMediaMetadata, shortcutDetails, driveId)',
           pageSize: 1000,
           supportsAllDrives: true,
           includeItemsFromAllDrives: true,
-          // Use this folder's own driveId (not the global rootDriveId) so that
-          // cross-drive shortcuts — which may live in a different Shared Drive or
-          // My Drive — are listed against the correct corpus.  Falling back to
-          // allDrives when no driveId is present is safe for both My Drive and
-          // Shared Drive folders.
           ...(current.driveId
             ? { corpora: 'drive', driveId: current.driveId }
             : { corpora: 'allDrives' }),
@@ -1002,8 +983,7 @@ async function scanDriveFolderRecursively(drive, rootFolderId, startDateIso, end
         if (err.code === 'ENOTFOUND' || err.message.includes('getaddrinfo')) {
           throw new Error(`Network Connection Error: Could not reach Google APIs. Please check your internet connection.`);
         }
-        // Folder-level failure after retries: report it instead of silently skipping files
-        console.warn(`Scan warning in folder ${current.folderId} after 3 attempts:`, err.message);
+        console.warn(`Scan warning in folder ${current.folderId}:`, err.message);
         scanWarnings.push(`Folder "${current.folderPath || current.folderId}" could not be fully scanned: ${err.message}`);
         return;
       }
@@ -1013,19 +993,15 @@ async function scanDriveFolderRecursively(drive, rootFolderId, startDateIso, end
         console.log(`[DRIVE_SCAN] ${current.folderPath || current.folderId}: ${files.length} entries${pageToken ? ' (next page)' : ''}`);
       }
 
-      // Split the file list into two groups so we can handle them efficiently:
-      //   • Non-shortcuts (folders + direct video files) — synchronous, no extra API call needed.
-      //   • Video shortcuts — each requires a drive.files.get() to fetch full metadata.
-      //     Firing them all in parallel via Promise.all cuts per-page latency from
-      //     O(shortcutCount) sequential round-trips down to O(1) round-trips.
       const shortcutFetches = [];
       for (const file of files) {
+        if (scanAborted || isTimeExceeded()) break;
         const childPath = current.folderPath ? `${current.folderPath} / ${file.name}` : file.name;
         const childSubfolders = [...current.subfolders, file.name];
 
         if (file.mimeType === 'application/vnd.google-apps.folder') {
           enqueueFolder(file.id, childPath, childSubfolders, file.driveId || current.driveId);
-          notifyWorkers(); // wake any idle workers immediately
+          notifyWorkers();
           continue;
         }
 
@@ -1034,15 +1010,11 @@ async function scanDriveFolderRecursively(drive, rootFolderId, startDateIso, end
           const targetMime = file.shortcutDetails?.targetMimeType || '';
           if (!targetId) continue;
           if (targetMime === 'application/vnd.google-apps.folder') {
-            // Shortcut points into another folder — that folder may live in a
-            // different drive so we do NOT inherit current.driveId here.
-            // Let it resolve to null and fall back to allDrives corpora.
             enqueueFolder(targetId, childPath, childSubfolders, null);
             notifyWorkers();
             continue;
           }
           if (targetMime.startsWith('video/') || isVideoFile(file)) {
-            // Defer the API call — batch all video-shortcut fetches per page
             shortcutFetches.push(
               fetchMeta(targetId)
                 .then(target => { if (isVideoFile(target)) handleVideoFile(target, current); })
@@ -1055,11 +1027,11 @@ async function scanDriveFolderRecursively(drive, rootFolderId, startDateIso, end
         if (isVideoFile(file)) handleVideoFile(file, current);
       }
 
-      // Resolve all video-shortcut metadata fetches for this page in parallel
       if (shortcutFetches.length > 0) await Promise.all(shortcutFetches);
 
       pageToken = listRes.data.nextPageToken;
-    } while (pageToken);
+    } while (pageToken && !scanAborted && !isTimeExceeded());
+
     if (process.env.DEBUG_DRIVE_SCAN === '1') {
       console.log(`[DRIVE_SCAN] folder complete: ${current.folderPath || current.folderId} in ${Date.now() - folderStartedAt}ms`);
     }
@@ -1070,7 +1042,6 @@ async function scanDriveFolderRecursively(drive, rootFolderId, startDateIso, end
     rootFolderName = rootMeta.name;
     rootDriveId = rootMeta.driveId || null;
 
-    // Check if the provided link/ID is a direct video file rather than a folder
     if (rootMeta.mimeType !== 'application/vnd.google-apps.folder') {
       if (isVideoFile(rootMeta)) {
         const cleanName = normalizeUnicodeText(rootMeta.name || 'Direct Upload');
@@ -1087,7 +1058,6 @@ async function scanDriveFolderRecursively(drive, rootFolderId, startDateIso, end
         };
       }
     }
-    // Root was a shortcut; continue scanning the resolved target folder
     if (rootMeta.id && rootMeta.id !== rootFolderId) {
       rootFolderId = rootMeta.id;
     }
@@ -1101,30 +1071,42 @@ async function scanDriveFolderRecursively(drive, rootFolderId, startDateIso, end
 
   folderQueue.push({ folderId: rootFolderId, folderPath: '', subfolders: [], driveId: rootDriveId });
 
-  // ── Event-driven worker pool ────────────────────────────────────────────────
-  // Workers used to spin-poll every 25 ms waiting for new folders to appear in
-  // the queue.  With deep trees that wasted ~25 ms of idle time per worker for
-  // every subfolder level discovered late.  Instead we keep a list of resolve
-  // callbacks ("waiters") that are called immediately whenever enqueueFolder()
-  // or notifyWorkers() adds work, so idle workers wake up with zero delay.
+  // ── Worker pool with deadline cutoff and deadlock protection ───────────────
   const workerWaiters = [];
   const notifyWorkers = () => {
     while (workerWaiters.length > 0) {
       const resolve = workerWaiters.shift();
-      resolve();
+      if (resolve) resolve();
     }
   };
-  const waitForWork = () => new Promise(resolve => workerWaiters.push(resolve));
+  const waitForWork = () => new Promise(resolve => {
+    workerWaiters.push(resolve);
+    // 500ms safety timeout guarantees workers wake up even if a notification was missed
+    setTimeout(() => {
+      const idx = workerWaiters.indexOf(resolve);
+      if (idx !== -1) workerWaiters.splice(idx, 1);
+      resolve();
+    }, 500);
+  });
 
-  const configuredWorkerCount = Number.parseInt(process.env.DRIVE_SCAN_WORKERS || '16', 10);
-  const WORKER_COUNT = Math.min(24, Math.max(4, Number.isFinite(configuredWorkerCount) ? configuredWorkerCount : 16));
+  // Default to 4 workers: stays well within Google Drive's 10 QPS per-user limit
+  const configuredWorkerCount = Number.parseInt(process.env.DRIVE_SCAN_WORKERS || '4', 10);
+  const WORKER_COUNT = Math.min(8, Math.max(2, Number.isFinite(configuredWorkerCount) ? configuredWorkerCount : 4));
   let inFlight = 0;
+
   const worker = async () => {
-    while (true) {
+    while (!scanAborted) {
+      if (isTimeExceeded()) {
+        scanAborted = true;
+        scanWarnings.push('Scan reached 45s safety limit; returning all files discovered so far.');
+        folderQueue.length = 0;
+        notifyWorkers();
+        return;
+      }
       const current = folderQueue.shift();
       if (!current) {
-        if (inFlight === 0) return;   // all work done
-        await waitForWork();          // sleep until notifyWorkers() wakes us
+        if (inFlight === 0 || scanAborted) return;
+        await waitForWork();
         continue;
       }
       if (visitedFolders.has(current.folderId)) continue;
@@ -1132,14 +1114,15 @@ async function scanDriveFolderRecursively(drive, rootFolderId, startDateIso, end
       inFlight++;
       try {
         await processFolder(current);
+      } catch (err) {
+        console.warn(`Worker error on folder ${current.folderId}:`, err.message);
       } finally {
         inFlight--;
-        // When a worker finishes, wake remaining idle workers — they need to
-        // re-check whether inFlight has dropped to 0 (termination condition).
         notifyWorkers();
       }
     }
   };
+
   await Promise.all(Array.from({ length: WORKER_COUNT }, () => worker()));
 
   if (process.env.DEBUG_DRIVE_SCAN === '1') {
@@ -3092,7 +3075,7 @@ app.post('/api/scan-preview', async (req, res) => {
     });
   } catch (err) {
     console.error('Scan preview error:', err);
-    return res.status(500).json({ success: false, error: 'An internal error occurred. Please try again.' });
+    return res.status(500).json({ success: false, error: err.message || 'An internal error occurred. Please try again.' });
   }
 });
 
